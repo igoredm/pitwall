@@ -98,7 +98,7 @@
     <div class="layout">
       <ng-container *ngTemplateOutlet="card; context: { $implicit: gpu() }" />
 
-      <section class="center" [class.idle]="!t.game()">
+      <section class="center" [class.idle]="!t.game()" [pwFitScale]="vertical() ? '' : 'self'">
         @if (theme() === 'neon') {
           <svg class="hud" viewBox="0 0 200 200" aria-hidden="true">
             <circle cx="100" cy="100" r="96" class="ring" />
@@ -110,7 +110,7 @@
         @if (!t.connected()) {
           <div class="status-pill">{{ s().connectingPitwall }}</div>
         } @else if (t.game(); as game) {
-          <div class="game-chip"><i></i>{{ theme() === 'terminal' ? '> ' + game.exe : game.exe }}</div>
+          <div class="game-chip" [title]="game.exe"><i></i><span class="gc-name">{{ theme() === 'terminal' ? '> ' + game.exe : game.exe }}</span></div>
           <div class="fps">{{ fps().current?.text ?? '—' }}</div>
           <div class="fps-label">FPS</div>
         @if (fpsBlocked()) {

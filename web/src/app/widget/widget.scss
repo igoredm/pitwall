@@ -77,7 +77,13 @@ $spring: linear(0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7
 .h .layout {
   flex-direction: row;
   > .card-gpu { flex: 1.35 1 0; min-width: 0; }
-  > .center { flex: 0 0 u(350); }
+  // Coluna do FPS: largura fixa; com muitas pílulas + gráfico + bateria o conteúdo passava do topo e do pé.
+  // FitScale (pwFitScale="self") reduz só a escala dela (--fit) até caber.
+  > .center {
+    flex: 0 0 calc(350 * min(calc(100cqh / 400), calc(100cqw / 1280)));
+    --u: calc(min(calc(100cqh / 400), calc(100cqw / 1280)) * var(--fit, 1));
+    justify-content: safe center;
+  }
   > .side { flex: 1 1 0; min-width: 0; }
 }
 .v .layout {
@@ -401,11 +407,16 @@ header {
 }
 .game-chip {
   align-items: center;
+  // nome de exe comprido não passa da coluna do FPS (ia por cima dos cards da GPU/CPU)
+  max-width: 100%;
+  box-sizing: border-box;
   margin-bottom: u(12);
   font-size: f(13);
   font-weight: 600;
   color: var(--text2);
+  .gc-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   i {
+    flex: 0 0 auto;
     width: u(8);
     height: u(8);
     border-radius: 50%;
@@ -464,6 +475,19 @@ header {
   .many &::before { content: '▴'; margin-right: 0.15em; font-size: 0.85em; }
 }
 .t-neon .tiles.many .tag { letter-spacing: 0.04em; padding: u(1) u(4); }
+// Grade de 3 colunas do card da GPU: nome numa linha, tag + pico na de baixo. Com a tag de alerta e o pico na
+// mesma linha do nome, ele sumia ("H…") em 1280×400 no Neon/Splash/Mínimo. A linha a mais pede tile mais alto.
+.pw:not(.t-terminal) .card-gpu .tiles.many {
+  --tile-min: 84;
+  .t-label { flex-wrap: wrap; row-gap: u(2); }
+  .t-name { flex: 1 0 100%; }
+  .pk { margin-left: 0; flex-basis: auto; }
+}
+// Lumen: o ponto de alerta continua antes do nome (base 0 = mesma linha); só o pico desce
+.pw.t-lumen .card-gpu .tiles.many {
+  .t-name { flex: 1 1 0; }
+  .pk { flex-basis: 100%; }
+}
 // Vertical com 3 colunas: tiles altos e estreitos — o pico desce para a linha de baixo do nome
 .v .tiles.many .t-label { flex-wrap: wrap; row-gap: 0; }
 .v .tiles.many .pk { margin-left: 0; flex-basis: 100%; }
@@ -497,6 +521,8 @@ header {
 }
 // "Picos desde 21:02 · Zerar": faixa no pé da coluna do FPS, fora da região de arrasto (senão o WebView2 não
 // entrega o hover). A pílula aparece no hover e fica 2 s com "Picos zerados" depois de zerar.
+// Reserva o pé da coluna para a pílula: sem isso ela cobre a bateria/1% low no hover (vertical e 1280×400)
+.center:has(> .peaks-zone) { padding-bottom: u(34); }
 .peaks-zone {
   position: absolute;
   left: 0;
@@ -1021,7 +1047,8 @@ header {
 // Médio: o topo (FPS + linha de info) nunca encolhe abaixo do conteúdo; os cards é que cedem
 .pw.c:not(.tiny) {
   --c-fps: 46;
-  .c-top { flex: 0 0 auto; min-height: auto; overflow: visible; }
+  // cresce (sem encolher) para o FPS ficar no meio da sobra em janelas altas (320×620), não colado no topo
+  .c-top { flex: 1 0 auto; min-height: auto; overflow: visible; }
   .c-rows { flex: 0 0 auto; }
 }
 .t-neon.c:not(.tiny), .t-terminal.c:not(.tiny) { --c-fps: 38; }
@@ -1150,6 +1177,10 @@ header {
   font-style: normal;
   font-size: u(9.5);
 }
+// Card estreito (CPU | RAM no médio): "4700MHz ▴4700" não cabia e o pico era cortado no meio. O chip
+// fica na largura do card e o pico é o que cede, com reticências.
+.chip { max-width: 100%; }
+.chip .pk { flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .t-splash.c .chip .pk { color: inherit; }
 .c-split {
   display: grid;
