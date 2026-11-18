@@ -64,6 +64,7 @@ public sealed class TrayApp : ApplicationContext
         };
 
         hub.QuitRequested += () => _ui.Post(_ => ExitThread(), null);
+        UpdateTray.Attach(_tray, _ui, hub.Updater, ExitThread, OpenSettings);
 
         // Sincroniza a flag com o Agendador (pode ter sido removida por fora)
         _autostartState = Autostart.IsEnabled();
@@ -140,6 +141,8 @@ public sealed class TrayApp : ApplicationContext
             File.WriteAllText(path, _dumpSensors());
             Process.Start("notepad.exe", path);
         });
+
+        menu.Items.Add(UpdateTray.MenuItem(_hub.Updater));
 
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(L.T("Sair", "Exit"), null, (_, _) => ExitThread());

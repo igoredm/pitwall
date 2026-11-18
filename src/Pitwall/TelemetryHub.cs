@@ -81,6 +81,10 @@ public sealed class TelemetryHub : IDisposable
 
     public int Port => _ws.Port;
 
+    /// <summary>Atualizador (Update/UpdateService): estado no catálogo e mensagens próprias no WebSocket.</summary>
+    public Update.UpdateService? Updater { get; set; }
+    public void Broadcast(string json) => _ws.Broadcast(json);
+
     /// <summary>
     /// Log = tudo que o hardware principal (CPU/GPU/RAM/FPS) expõe, visível ou não no widget,
     /// + os "Outros" (discos, placa-mãe, rede) que estiverem habilitados — esses só são lidos quando ativos.
@@ -201,6 +205,7 @@ public sealed class TelemetryHub : IDisposable
             battery = _battery.Available,
             hardware = new { cpu = _sensors.CpuName, gpu = _sensors.GpuName, gpu2 = _sensors.Gpu2Name },
             tuning = _tuner.Caps,
+            update = Updater?.State,
             tuningPresets = new[] { "balanced", "cool" }.ToDictionary(p => p, p =>
             {
                 var (pp, cp) = GpuTuner.Preset(p);
@@ -240,6 +245,7 @@ public sealed class TelemetryHub : IDisposable
         try
         {
             var node = JsonNode.Parse(raw);
+            if (node != null && Updater?.TryHandle(node, out var updateReply) == true) return updateReply;
             switch (node?["type"]?.GetValue<string>())
             {
                 case "setConfig":
