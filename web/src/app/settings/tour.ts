@@ -51,8 +51,12 @@ export class TourService {
   readonly running = computed(() => this.step() > 0);
 
   /** Idempotente: com o tour na tela, um gatilho novo (bandeja, URL) não reinicia. */
+  /** Quem tinha o foco antes do tour (ex.: "Começar tour"): volta para ele ao fechar ou concluir. */
+  private returnFocus: HTMLElement | null = null;
+
   start(resume = false) {
     if (this.running()) return;
+    this.returnFocus = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
     const saved = this.ctx.draft()?.tour;
     const from = resume && saved && !saved.done && saved.step > 0 ? Math.min(saved.step, N) : 1;
     this.go(from);
@@ -72,16 +76,26 @@ export class TourService {
     const at = this.step();
     if (!at) return;
     this.step.set(0);
+    this.restoreFocus();
     const s = this.s();
     this.ctx.toast({ title: s.tourClosed(at), body: s.tourClosedHint, action: { label: s.resume, run: () => this.start(true) } });
   }
 
   finish() {
     this.step.set(0);
+    this.restoreFocus();
     this.ctx.update((c) => {
       c.tour = { step: N, done: true, dismissed: c.tour?.dismissed ?? false };
       c.tutorialDone = true;
     });
+  }
+
+  private restoreFocus() {
+    const el = this.returnFocus;
+    this.returnFocus = null;
+    // O botão pode ter saído da tela (o tour troca de página): aí o foco vai para o conteúdo
+    if (el?.isConnected) el.focus();
+    else document.querySelector<HTMLElement>('.st-main')?.focus({ preventScroll: true });
   }
 
   private go(i: number) {

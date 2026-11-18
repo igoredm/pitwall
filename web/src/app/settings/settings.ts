@@ -123,12 +123,14 @@ export class Settings implements SettingsCtx {
     const g = this.t.game();
     const live = this.t.sessions()[0];
     const fps = this.t.values()['fps.current'];
+    // Sem conexão: o rodapé não pode continuar dizendo "ao vivo" com o último jogo e FPS
+    if (!this.t.connected()) return { visible: false, offline: true, title: s.sideOffline, line: s.sideOfflineLine };
     let line: string;
     if (g) {
       const dur = live && !live.end && live.exe === g.exe ? fmtDuration((Date.now() - new Date(live.start).getTime()) / 1000) : '';
       line = [g.exe, dur, fps != null ? `${Math.round(fps)} FPS` : ''].filter(Boolean).join(' · ');
     } else line = s.sideIdle(fmtMs(d?.refreshMs ?? 1000, s));
-    return { visible: !!d?.widget.visible, title: d?.widget.visible ? s.sideWidgetOn(m?.index ?? '—') : s.sideWidgetHidden, line };
+    return { visible: !!d?.widget.visible, offline: false, title: d?.widget.visible ? s.sideWidgetOn(m?.index ?? '—') : s.sideWidgetHidden, line };
   });
 
   constructor() {
@@ -208,8 +210,19 @@ export class Settings implements SettingsCtx {
     this.nav.go(page, anchor, flash);
   }
 
+  private previewReturn: HTMLElement | null = null;
+
   openPreview() {
+    // Diálogo modal: o foco entra no × e volta para o botão "Pré-visualizar" ao fechar
+    this.previewReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     this.preview.set(true);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('.pw-prev-x')?.focus());
+  }
+
+  protected closePreview() {
+    this.preview.set(false);
+    if (this.previewReturn?.isConnected) this.previewReturn.focus();
+    this.previewReturn = null;
   }
 
   toast(opts: ToastOptions) {
@@ -219,8 +232,12 @@ export class Settings implements SettingsCtx {
     this.resumeToast();
   }
 
+  /** Quem abriu o diálogo: o foco volta para ele ao fechar (sem isso, ia para o body). */
+  private dialogReturn: HTMLElement | null = null;
+
   confirm(opts: ConfirmOptions): Promise<boolean> {
     return new Promise((resolve) => {
+      this.dialogReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       this.dialog.set({ ...opts, resolve });
       // Ação destrutiva: o foco começa em Cancelar
       requestAnimationFrame(() => this.confirmBtn()?.nativeElement.focus());
@@ -256,6 +273,8 @@ export class Settings implements SettingsCtx {
     const d = this.dialog();
     this.dialog.set(null);
     d?.resolve(ok);
+    if (this.dialogReturn?.isConnected) this.dialogReturn.focus();
+    this.dialogReturn = null;
   }
 
   /** Tab fica dentro do diálogo aberto. */
@@ -308,7 +327,7 @@ export class Settings implements SettingsCtx {
     if (this.tour.running()) return;
     if (e.key === 'Escape') {
       if (this.dialog()) this.closeDialog(false);
-      else if (this.preview()) this.preview.set(false);
+      else if (this.preview()) this.closePreview();
       else if (this.invite()) this.inviteLater();
       else return;
       e.preventDefault();

@@ -42,13 +42,13 @@
         </a>
       }
       <div class="st-live">
-        <b><i class="dot" [style.background]="side().visible ? 'var(--g)' : 'var(--tx3)'"></i>{{ side().title }}</b>
+        <b><i class="dot" [style.background]="side().offline ? 'var(--r)' : side().visible ? 'var(--g)' : 'var(--tx3)'"></i>{{ side().title }}</b>
         <span class="ell">{{ side().line }}</span>
       </div>
     </div>
   </nav>
 
-  <main class="st-main" #main>
+  <main class="st-main" tabindex="-1" #main>
     @if (!t.connected() && draft()) {
       <div class="st-offline note n-r mid" role="alert">
         <span class="ico"><pw-icon name="warn" [size]="16" [stroke]="2" /></span>
@@ -177,11 +177,11 @@
 
 @if (preview()) {
   <!-- Fora de .pw-app: o widget da prévia não pode herdar os controles do app -->
-  <div class="pw-prev" [class]="appearance.cls()" (click)="preview.set(false)">
-    <div class="pw-prev-body" role="dialog" aria-modal="true" [attr.aria-label]="sx.preview" (click)="$event.stopPropagation()">
+  <div class="pw-prev" [class]="appearance.cls()" (click)="closePreview()">
+    <div class="pw-prev-body" role="dialog" aria-modal="true" [attr.aria-label]="sx.preview" (click)="$event.stopPropagation()" (keydown)="trapTab($event)">
       <div class="pw-prev-head">
         <span>{{ sx.preview }}</span>
-        <button type="button" class="pw-prev-x" [attr.aria-label]="sx.close" [title]="sx.close" (click)="preview.set(false)">
+        <button type="button" class="pw-prev-x" [attr.aria-label]="sx.close" [title]="sx.close" (click)="closePreview()">
           <pw-icon name="x" [size]="16" [stroke]="2" />
         </button>
       </div>

@@ -148,6 +148,10 @@ pw-settings,
     padding: 28px 40px 40px;
     position: relative;
     scrollbar-gutter: stable;
+    // tabindex="-1": recebe o foco quando o tour fecha; não é alvo do Tab, então sem anel
+    &:focus {
+      outline: none;
+    }
   }
   .st-col {
     max-width: 840px;
