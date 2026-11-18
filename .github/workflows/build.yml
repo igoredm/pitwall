@@ -61,6 +61,8 @@ jobs:
         shell: pwsh
         run: ./installer/build.ps1 -Version ${{ steps.ver.outputs.version }}
 
+      # Assinatura (SignPath Foundation): passo pronto e comentado em docs/signpath.md. Entra aqui, antes dos checksums.
+
       - name: Checksums
         shell: pwsh
         run: |
