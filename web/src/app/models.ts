@@ -52,6 +52,7 @@ export interface AppConfig {
   gpuTuning: GpuTuningConfig;
   battery: { enabled: boolean; hidden: string[]; lowPercent: number };
   games: { autoDetect: boolean; include: string[]; ignore: string[] };
+  update?: UpdateConfig;
   metrics: MetricSetting[];
 }
 
@@ -116,7 +117,50 @@ export interface Catalog {
   metrics: MetricDef[];
   tuning?: TuningCaps;
   tuningPresets?: Record<string, { powerW: number; clockMhz: number }>;
+  update?: UpdateState;
 }
+
+/** Atualizador (docs/updater.md). */
+export interface UpdateConfig {
+  autoCheck: boolean;
+  channel: UpdateChannel;
+  /** Versão que o usuário mandou pular. */
+  skippedVersion?: string;
+}
+
+export type UpdateChannel = 'stable' | 'beta';
+
+export type UpdateStatus = 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'error';
+
+export interface UpdateState {
+  status: UpdateStatus;
+  /** Versão em execução. */
+  current: string;
+  /** Versão nova (available/downloading/ready). */
+  version?: string;
+  /** Página da release no GitHub. */
+  notesUrl?: string;
+  /** Notas da release em markdown, truncadas. Vem da internet: renderizar sanitizado. */
+  notes?: string;
+  channel: UpdateChannel;
+  /** 0–100 durante o download. */
+  progress?: number;
+  /** Mensagem já traduzida. */
+  error?: string;
+  /** O usuário escolheu "atualizar ao sair". */
+  installOnExit: boolean;
+  /** "Atualizar agora" pedido com jogo aberto: instala quando o jogo fechar. */
+  waitingForGame: boolean;
+  lastCheck?: string;
+}
+
+/** Mensagens do atualizador enviadas pela página. */
+export type UpdateCommand =
+  | { type: 'checkUpdate' }
+  | { type: 'installUpdate'; when: 'now' | 'exit' }
+  | { type: 'skipUpdate' }
+  | { type: 'setUpdateChannel'; channel: UpdateChannel }
+  | { type: 'getUpdate' };
 
 export interface GameSession {
   exe: string;
@@ -162,6 +206,7 @@ export type ServerMessage =
       batteries?: WirelessDevice[] | null;
     }
   | { type: 'sessions'; sessions: GameSession[] }
+  | { type: 'update'; update: UpdateState }
   | { type: 'error'; message: string };
 
 export type Level = 'ok' | 'warn' | 'crit';
