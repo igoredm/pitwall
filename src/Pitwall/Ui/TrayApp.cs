@@ -157,6 +157,8 @@ public sealed class TrayApp : ApplicationContext
             Process.Start("notepad.exe", path);
         });
 
+        menu.Items.Add(L.T("Rever tutorial", "Replay tutorial"), null, (_, _) => ReplayTutorial());
+
         menu.Items.Add(UpdateTray.MenuItem(_hub.Updater));
 
         menu.Items.Add(new ToolStripSeparator());
@@ -193,6 +195,14 @@ public sealed class TrayApp : ApplicationContext
         // Fechar a janela libera o WebView2 dela (a RAM volta ao nível do widget sozinho)
         _settings.FormClosed += (_, _) => _settings = null;
         _settings.Show();
+    }
+
+    /// <summary>Volta tutorialDone para false (igual à mensagem replayTutorial), abre as configurações e avisa a página.</summary>
+    void ReplayTutorial()
+    {
+        _config.Update(c => c.TutorialDone = false);
+        OpenSettings();
+        _settings?.StartTutorial();
     }
 
     void Toggle(Action<AppConfig> change) => _config.Update(change);

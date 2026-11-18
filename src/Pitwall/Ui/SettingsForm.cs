@@ -47,7 +47,21 @@ public sealed partial class SettingsForm : Form
         base.OnLoad(e);
         _core = await WebViewHost.Init(_web, nonClientDrag: false);
         _core.WebMessageReceived += OnWebMessage;
-        _core.Navigate(WebViewHost.Url(_port, "settings"));
+        // "Rever tutorial" com a janela fechada: a página abre o tutorial ao ler ?tutorial=1 no hash
+        _core.Navigate(WebViewHost.Url(_port, _tutorialOnLoad ? "settings?tutorial=1" : "settings"));
+        _tutorialOnLoad = false;
+    }
+
+    bool _tutorialOnLoad;
+
+    /// <summary>
+    /// "Rever tutorial" (bandeja). Janela recém-criada: vai na URL (#/settings?tutorial=1), porque a página ainda não
+    /// carregou para ouvir mensagens; janela já aberta: mensagem do host { type: "startTutorial" }.
+    /// </summary>
+    public void StartTutorial()
+    {
+        if (_core == null) _tutorialOnLoad = true;
+        else Reply(new { type = "startTutorial" });
     }
 
     void ApplyTheme(AppConfig c)
