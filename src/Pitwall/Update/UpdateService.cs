@@ -263,6 +263,11 @@ public sealed class UpdateService : IDisposable
                 throw new InvalidDataException("não foi possível ler o certificado do app atual");
             if (expected != null && !string.Equals(neu.Subject, expected, StringComparison.Ordinal))
                 throw new InvalidDataException($"assinado por outro certificado: {neu.Subject}");
+            // Certificados compartilhados (ex.: SignPath Foundation assina vários projetos com o mesmo subject): o
+            // recurso de versão faz parte do que foi assinado, então exige também que o binário seja um instalador do Pitwall.
+            var product = FileVersionInfo.GetVersionInfo(installer).ProductName?.Trim(' ', '\0'); // o Inno completa com espaços
+            if (!string.Equals(product, "Pitwall", StringComparison.Ordinal))
+                throw new InvalidDataException($"binário assinado não é do Pitwall (ProductName={product})");
             UpdateLog.Write($"assinatura ok: {neu.Subject}");
             return;
         }
