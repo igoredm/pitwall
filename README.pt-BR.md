@@ -19,9 +19,11 @@ Spec: [docs/spec.md](docs/spec.md) · Design: [docs/design-notes.md](docs/design
 ![Widget, layout completo, tema Lumen escuro](docs/screenshots/widget-full-lumen-dark.png)
 ![Widget, layout completo, tema Splash](docs/screenshots/widget-full-splash.png)
 
-<img src="docs/screenshots/settings-games.png" width="620" alt="Configurações: resumo da sessão depois do jogo"> <img src="docs/screenshots/phone-lumen-dark.png" width="200" alt="Página do celular, só leitura, na rede local">
+<img src="docs/screenshots/settings-overview.png" width="620" alt="Configurações: Visão geral com a prévia do widget e o que o Pitwall está fazendo agora"> <img src="docs/screenshots/pair-phone.png" width="200" alt="Parear o celular digitando o código de 6 dígitos">
 
-Mais em [docs/screenshots](docs/screenshots) (todos os temas, layouts médio e compacto, Configurações).
+![Tour da primeira execução: destaque no layout do widget](docs/screenshots/tour.png)
+
+Mais em [docs/screenshots](docs/screenshots) (todos os temas do widget, layouts médio e compacto, Configurações no claro e no escuro, a tela de parear da TV).
 
 ## Arquitetura
 

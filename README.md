@@ -19,9 +19,11 @@ memory junction), clocks, power, RAM, wireless mouse/headset battery, a CSV log 
 ![Widget, full layout, Lumen dark theme](docs/screenshots/widget-full-lumen-dark.png)
 ![Widget, full layout, Splash theme](docs/screenshots/widget-full-splash.png)
 
-<img src="docs/screenshots/settings-games.png" width="620" alt="Settings: post-game session summary"> <img src="docs/screenshots/phone-lumen-dark.png" width="200" alt="Read-only phone page on the local network">
+<img src="docs/screenshots/settings-overview.png" width="620" alt="Settings: Overview with the widget preview and what Pitwall is doing now"> <img src="docs/screenshots/pair-phone.png" width="200" alt="Pairing a phone by typing the 6-digit code">
 
-More in [docs/screenshots](docs/screenshots) (every theme, medium and compact layouts, Settings).
+![First-run tour: coach mark on the widget layout](docs/screenshots/tour.png)
+
+More in [docs/screenshots](docs/screenshots) (every widget theme, medium and compact layouts, Settings in light and dark, the TV pairing screen).
 
 ## Install
 
