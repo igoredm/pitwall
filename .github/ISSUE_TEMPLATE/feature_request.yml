@@ -1,0 +1,32 @@
+name: Pedido de recurso · Feature request
+description: Uma ideia para o Pitwall · An idea for Pitwall
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qual problema isso resolve? · What problem does it solve?
+      description: 'Ex.: "durante o jogo eu não consigo ver..." · E.g. "while gaming I can''t see..."'
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: Ideia · Proposal
+      description: Como você imagina que funcione (tela, tema, layout, métrica) · How you picture it working (screen, theme, layout, metric)
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas · Alternatives
+      description: Outras formas de resolver, ou como outro app faz · Other ways to solve it, or how another app does it
+
+  - type: markdown
+    attributes:
+      value: |
+        O Pitwall é leve (< 1% de CPU) e não toca no processo do jogo (sem overlay, sem injeção): ideias que precisem disso
+        provavelmente ficam de fora. · Pitwall is lightweight (< 1% CPU) and never touches the game process (no overlay, no
+        injection): ideas that need that will likely be out of scope.
