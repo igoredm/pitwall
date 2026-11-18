@@ -6,25 +6,23 @@ namespace Pitwall.Ui;
 /// <summary>Parte do atualizador na bandeja: item de menu e balões. Separado do TrayApp para manter o merge simples.</summary>
 internal static class UpdateTray
 {
-    /// <summary>Liga os eventos do atualizador ao ícone da bandeja. <paramref name="exit"/> fecha o app (o instalador espera).</summary>
-    public static void Attach(NotifyIcon tray, SynchronizationContext ui, UpdateService? updater, Action exit, Action openSettings)
+    /// <summary>
+    /// Liga os eventos do atualizador à bandeja. <paramref name="exit"/> fecha o app (o instalador espera);
+    /// <paramref name="balloon"/> mostra o balão (o TrayApp manda o clique para App › Atualizações).
+    /// </summary>
+    public static void Attach(SynchronizationContext ui, UpdateService? updater, Action exit, Action<int, string, string, ToolTipIcon> balloon)
     {
         if (updater == null) return;
-        var balloonIsUpdate = false;
-        tray.BalloonTipClicked += (_, _) => { if (balloonIsUpdate) openSettings(); };
-        tray.BalloonTipClosed += (_, _) => balloonIsUpdate = false;
 
         updater.UpdateAvailable += ver => ui.Post(_ =>
         {
-            balloonIsUpdate = true;
-            tray.ShowBalloonTip(8000, "Pitwall",
+            balloon(8000, "Pitwall",
                 L.T($"Pitwall {ver} está disponível. Use \"Atualização\" no menu da bandeja para instalar.",
                     $"Pitwall {ver} is available. Use \"Update\" in the tray menu to install it."), ToolTipIcon.Info);
         }, null);
         updater.Notice += (text, error) => ui.Post(_ =>
         {
-            balloonIsUpdate = false;
-            tray.ShowBalloonTip(5000, "Pitwall", text, error ? ToolTipIcon.Warning : ToolTipIcon.Info);
+            balloon(5000, "Pitwall", text, error ? ToolTipIcon.Warning : ToolTipIcon.Info);
         }, null);
         updater.ExitRequested += () => ui.Post(_ => exit(), null);
     }

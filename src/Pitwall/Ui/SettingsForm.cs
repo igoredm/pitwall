@@ -47,12 +47,36 @@ public sealed partial class SettingsForm : Form
         base.OnLoad(e);
         _core = await WebViewHost.Init(_web, nonClientDrag: false);
         _core.WebMessageReceived += OnWebMessage;
-        // "Rever tutorial" com a janela fechada: a página abre o tutorial ao ler ?tutorial=1 no hash
-        _core.Navigate(WebViewHost.Url(_port, _tutorialOnLoad ? "settings?tutorial=1" : "settings"));
+        // Deep link (#/settings/<página>/<âncora>) e/ou "Rever tutorial" com a janela recém-aberta: vão na URL,
+        // porque a página ainda não carregou para ouvir mensagens do host
+        var route = "settings" + (_pendingPage != null ? "/" + _pendingPage + (_pendingAnchor != null ? "/" + _pendingAnchor : "") : "");
+        _core.Navigate(WebViewHost.Url(_port, _tutorialOnLoad ? route + "?tutorial=1" : route));
         _tutorialOnLoad = false;
+        _pendingPage = _pendingAnchor = null;
     }
 
     bool _tutorialOnLoad;
+    string? _pendingPage, _pendingAnchor;
+
+    /// <summary>Páginas das configurações que aceitam deep link (ids estáveis do frontend).</summary>
+    public static readonly string[] Pages = ["overview", "appearance", "metrics", "alerts", "games", "sessions", "gpu", "phone", "features", "app"];
+
+    /// <summary>
+    /// Leva a página das configurações para <paramref name="page"/> (e rola até <paramref name="anchor"/>). Janela recém-criada:
+    /// vai na URL; já aberta: mensagem do host { type: "navigate", page, anchor }. Página desconhecida = não faz nada.
+    /// </summary>
+    public void Navigate(string? page, string? anchor = null)
+    {
+        if (page == null || !Pages.Contains(page)) return;
+        anchor = CleanAnchor(anchor);
+        if (_core == null) (_pendingPage, _pendingAnchor) = (page, anchor);
+        else Reply(anchor == null ? (object)new { type = "navigate", page } : new { type = "navigate", page, anchor });
+    }
+
+    /// <summary>Âncora vai crua na URL: só letras minúsculas, dígitos e hífen (até 40); outra coisa = sem âncora.</summary>
+    internal static string? CleanAnchor(string? anchor) =>
+        !string.IsNullOrEmpty(anchor) && anchor.Length <= 40 && anchor.All(ch => ch is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-')
+            ? anchor : null;
 
     /// <summary>
     /// "Rever tutorial" (bandeja). Janela recém-criada: vai na URL (#/settings?tutorial=1), porque a página ainda não
@@ -66,17 +90,29 @@ public sealed partial class SettingsForm : Form
 
     void ApplyTheme(AppConfig c)
     {
-        var bg = Theme.Background(c, c.AppTheme);
+        // Visual único do app (1.0): só claro/escuro, por config.appearance (themeMode/appTheme são do widget)
+        var isDark = Theme.AppIsDark(c);
+        var bg = Theme.AppBackground(isDark);
         BackColor = bg;
         _web.DefaultBackgroundColor = bg;
         if (IsHandleCreated)
         {
-            // Barra de título escura/clara conforme o tema do app
-            int dark = Theme.IsDark(c, c.AppTheme) ? 1 : 0;
+            // Barra de título escura/clara conforme a aparência das configurações
+            int dark = isDark ? 1 : 0;
             DwmSetWindowAttribute(Handle, 20, ref dark, sizeof(int));
             var colorRef = bg.R | (bg.G << 8) | (bg.B << 16);
             DwmSetWindowAttribute(Handle, 35, ref colorRef, sizeof(int)); // DWMWA_CAPTION_COLOR (Win11)
         }
+    }
+
+    /// <summary>Aparência "Sistema": o usuário trocou o tema de apps do Windows com a janela aberta → repinta a barra de título.</summary>
+    protected override void WndProc(ref Message m)
+    {
+        const int WM_SETTINGCHANGE = 0x001A;
+        if (m.Msg == WM_SETTINGCHANGE && _config.Current.Appearance == "system" && m.LParam != IntPtr.Zero
+            && Marshal.PtrToStringUni(m.LParam) == "ImmersiveColorSet")
+            ApplyTheme(_config.Current);
+        base.WndProc(ref m);
     }
 
     protected override void OnHandleCreated(EventArgs e)

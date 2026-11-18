@@ -396,3 +396,99 @@ arquivo não existir (ex.: apagado pela retenção) abre a pasta.
 - `PairingMessage` (ok): `code`, `typeUrl`, `typeUrls`.
 - `ClientMessage`: `{ type: 'replayTutorial' }`.
 - Demo (`?demo=v07`): `scene=tutorial`, `features=a,b`, dispositivos com `lastSeen`/`online`, código de 6 dígitos, `clockReasons`.
+
+---
+
+## 8. 1.0 — rodada 2
+
+Versão do app continua `0.9.0`. Config passa para a **v7** (migração automática). Tudo abaixo já está no backend.
+
+### 8.1 Erros de pareamento (socket da rede)
+```jsonc
+{ "type": "paired", "ok": false, "error": "invalidCode", "attemptsLeft": 3 }   // também "expired" | "noPending"
+{ "type": "paired", "ok": false, "error": "blocked", "retryAfterSec": 300 }
+```
+- `attemptsLeft`: quantos erros este IP ainda pode cometer antes de ser bloqueado (5 por minuto). Vem com `invalidCode`,
+  `expired` e `noPending` (os três contam como erro). Depois o socket fecha (1008), como antes.
+- `blocked`: o erro que acabou de acontecer bloqueou o IP (ou ele já estava bloqueado) → `retryAfterSec` (segundos até liberar,
+  ~300) e **sem** `attemptsLeft`. Enquanto bloqueado, o HTTP responde 429 (a página nem consegue abrir o socket; tratar o
+  fechamento sem resposta como "bloqueado, tente mais tarde").
+- Limites iguais aos de antes: 5 erros/min por IP → 5 min de bloqueio; 20 erros com o mesmo código (somando IPs) → o código
+  morre (`noPending`).
+
+### 8.2 Tipo do aparelho
+`devices[].kind` e `config.remote.pairedDevices[].kind`: `"phone" | "tv" | "desktop" | "unknown"`. Deduzido do User-Agent no
+pareamento e gravado; aparelhos pareados antes disso ficam `unknown`. Só exibição (ícone/nome), nada de segurança depende disso.
+- TV: `SmartTV`, `SMART-TV`, `Tizen`, `Web0S`, `webOS`, `BRAVIA`, `Android TV`, `GoogleTV`/`Google TV`, `CrKey`, `HbbTV`, `Roku`,
+  `AFT…` (Fire TV). Testado antes de celular, porque essas TVs também dizem "Android".
+- Celular: `Mobi` (inclui `Mobile`) ou `iPhone`.
+- PC: `Windows`, `Macintosh`, `X11` ou `CrOS`, sem `Mobi`.
+- O resto (inclui tablet Android, que não diz "Mobile") → `unknown`. iPad moderno se apresenta como Mac → `desktop`.
+
+### 8.3 Prévia da retenção dos CSVs
+Cliente → servidor: `{ "type": "getLogStats", "keepDays"?: number, "maxTotalMb"?: number }`. Resposta **só para quem pediu**:
+```json
+{ "type": "logStats", "totalBytes": 734003200, "files": 42, "oldest": "2026-08-20T21:04:05-03:00",
+  "wouldDeleteFiles": 12, "wouldDeleteBytes": 209715200 }
+```
+- `files`/`totalBytes`/`oldest`: `pitwall_*.csv` da pasta de logs (`oldest` = última gravação do mais antigo; `null` sem arquivos).
+- `wouldDelete*`: o que a retenção apagaria **agora** com os valores dados (mesma seleção e mesmas proteções da limpeza real:
+  arquivo atual, o da sessão mais recente, o mais novo e o do relatório de crash). Campo ausente = valor da config.
+  `keepDays` passa pelo mesmo ajuste do `setConfig` (`7 → 15`, `> 90 → 0`); `maxTotalMb` fica em 0–1.000.000.
+- Nunca apaga nada. Só lista a pasta (barato): dá para chamar a cada mudança do seletor.
+
+### 8.4 Histórico de sessões paginado
+- `sessions.json` guarda até **500** sessões (antes 20). O broadcast `sessions` (2.3) continua igual: as **20** mais recentes.
+- Cliente → servidor: `{ "type": "getSessions", "offset": number, "limit": number, "exe"?: string }`. Resposta **só para quem pediu**:
+```json
+{ "type": "sessionsPage", "total": 137, "offset": 20, "sessions": [ { "exe": "FC25.exe", "start": "2026-11-18T20:00:00-03:00" } ] }
+```
+- Mais recente primeiro. `limit` fica em 1–100 (ausente = 100); `offset` ≥ 0 (o `offset` da resposta já vem corrigido).
+- `exe`: só as sessões daquele executável (nome inteiro, sem diferenciar maiúsculas); vazio ou ausente = todas. `total` conta
+  depois do filtro.
+- A sessão em andamento aparece (sem `end`), como no `sessions`.
+
+### 8.5 Tour
+```jsonc
+"tour": { "step": 0, "done": false, "dismissed": false }   // dentro de config
+```
+- Migração v7: `done = tutorialDone`, `step = 0`, `dismissed = false`. Instalação nova: `false`/`0`.
+- `tutorialDone` continua no config como **apelido** de `tour.done` (o backend sempre deixa os dois iguais). No `setConfig` quem
+  manda é o `tour`; um cliente antigo, que não manda `tour` e só muda `tutorialDone`, continua funcionando (`true` = concluído,
+  `false` = tour do começo).
+- `replayTutorial` e a bandeja "Rever tutorial" gravam `tour = { step: 0, done: false, dismissed: false }` (e `tutorialDone = false`).
+  A bandeja continua mandando `startTutorial` (janela já aberta) ou `#/settings?tutorial=1` (janela nova), sem mudança.
+- `step` fica em 0–1000; o backend não interpreta o número.
+
+### 8.6 Deep links das configurações
+- Páginas: `overview | appearance | metrics | alerts | games | sessions | gpu | phone | features | app`.
+- Janela nova: `…/index.html?port=…&token=…#/settings/<página>[/<âncora>]` (o `token` continua na query, como antes). Junto com
+  "Rever tutorial": `…#/settings/<página>?tutorial=1`.
+- Janela já aberta: mensagem do host `{ "type": "navigate", "page": "sessions", "anchor": "crash" }` (`anchor` omitido quando não há).
+- Âncora: só `a-z`, `0-9` e `-` (até 40); outra coisa é descartada. Página fora da lista = só abre/traz a janela, sem navegar.
+- Quem usa: balão de crash → `sessions/crash`; balão de alerta vermelho → `alerts`; balões de atualização → `app/updates`;
+  falha ao mudar "Iniciar com o Windows" → `app`. Duplo clique na bandeja e o menu abrem sem página (como antes).
+- O widget também pode pedir: mensagem do host `{ "type": "openSettings", "page"?: "...", "anchor"?: "..." }` (sem os campos = como antes).
+
+### 8.7 Sobre
+`catalog.about` (só no socket local; o catálogo do celular não leva):
+```json
+"about": { "app": "0.9.0", "dotnet": "10.0.0", "webView2": "131.0.2903.70", "presentMon": "2.3.0.0", "pawnIO": "2.0.1" }
+```
+Os cinco campos sempre vêm: `string` com a versão ou `null` explícito (componente não encontrado). `presentMon` = versão do arquivo
+`tools\PresentMon.exe` (o executável oficial não tem recurso de versão; aí vale o SHA-256 conhecido do `fetch-deps.ps1`, hoje 2.6.0); `pawnIO` = `DisplayVersion` em `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO`;
+`webView2` = runtime instalado; `dotnet` = `Environment.Version`. Lido uma vez e guardado em cache.
+
+### 8.8 Aparência das configurações
+- `config.appearance: "system" | "light" | "dark"` vale só para as configurações (página e barra de título nativa). `themeMode`
+  continua só para o widget (e o celular). Migração v7: `appearance = themeMode` (`"system"` continua `"system"`). Instalação nova:
+  `"system"`. Valor inválido → `"system"`.
+- `"system"` segue o tema de apps do Windows (`AppsUseLightTheme`), inclusive se ele mudar com a janela aberta.
+- Fundo nativo da janela (antes de a página carregar) e cor da barra de título: `--bg` do app (`#0E1014` escuro / `#F3F4F6` claro).
+
+### 8.9 Resumo para o `models.ts`
+- `AppConfig`: `tour: { step, done, dismissed }`, `appearance: 'system'|'light'|'dark'`. `PairedDevice`: `kind`.
+- `CatalogMessage`: `about?: { app, dotnet, webView2, presentMon, pawnIO: string | null }` (sempre presente no socket local).
+- `ClientMessage`: `getLogStats { keepDays?, maxTotalMb? }`, `getSessions { offset, limit, exe? }`.
+- `ServerMessage`: `logStats`, `sessionsPage`. Host → página: `navigate { page, anchor? }`.
+- Socket da rede: `paired` com erro ganha `attemptsLeft?`, `retryAfterSec?` e o erro `blocked`.

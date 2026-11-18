@@ -4,6 +4,9 @@ namespace Pitwall.Logging;
 
 public readonly record struct LogFileInfo(string Path, DateTime LastWriteUtc, long Size);
 
+/// <summary>Uso da pasta de logs e o que a retenção apagaria com os valores dados (prévia; nada é apagado).</summary>
+public readonly record struct LogStats(long TotalBytes, int Files, DateTime? OldestUtc, int WouldDeleteFiles, long WouldDeleteBytes);
+
 /// <summary>
 /// Limpeza da pasta de logs: apaga CSVs do Pitwall mais velhos que KeepDays e, se o total passar de MaxTotalMb,
 /// os mais antigos até caber. Nunca apaga o arquivo atual, o da sessão mais recente nem o mais novo da pasta,
@@ -46,14 +49,38 @@ public static class LogRetention
         return delete;
     }
 
+    /// <summary>Prévia (função pura): totais da pasta e o que <see cref="SelectForDeletion"/> apagaria. Mesmas regras de proteção.</summary>
+    public static LogStats Stats(IReadOnlyList<LogFileInfo> files, DateTime nowUtc, int keepDays, long maxTotalBytes,
+        IEnumerable<string?> protectedNames)
+    {
+        var delete = SelectForDeletion(files, nowUtc, keepDays, maxTotalBytes, protectedNames).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var doomed = files.Where(f => delete.Contains(f.Path)).ToList();
+        return new LogStats(
+            files.Sum(f => f.Size),
+            files.Count,
+            files.Count == 0 ? null : files.Min(f => f.LastWriteUtc),
+            doomed.Count,
+            doomed.Sum(f => f.Size));
+    }
+
+    /// <summary>CSVs do Pitwall na pasta (sem subpastas). Pasta inexistente ou ilegível = lista vazia.</summary>
+    public static List<LogFileInfo> ListFiles(string folder)
+    {
+        try
+        {
+            if (!Directory.Exists(folder)) return [];
+            return new DirectoryInfo(folder).EnumerateFiles(Pattern, SearchOption.TopDirectoryOnly)
+                .Select(f => new LogFileInfo(f.FullName, f.LastWriteTimeUtc, f.Length))
+                .ToList();
+        }
+        catch { return []; }
+    }
+
     /// <summary>Aplica a retenção na pasta. Retorna quantos arquivos foram apagados.</summary>
     public static int Run(LogConfig cfg, IEnumerable<string?> protectedNames)
     {
         if (cfg.KeepDays <= 0 && cfg.MaxTotalMb <= 0) return 0;
-        if (!Directory.Exists(cfg.Folder)) return 0;
-        var files = new DirectoryInfo(cfg.Folder).EnumerateFiles(Pattern, SearchOption.TopDirectoryOnly)
-            .Select(f => new LogFileInfo(f.FullName, f.LastWriteTimeUtc, f.Length))
-            .ToList();
+        var files = ListFiles(cfg.Folder);
         var deleted = 0;
         foreach (var path in SelectForDeletion(files, DateTime.UtcNow, cfg.KeepDays, cfg.MaxTotalMb * 1024L * 1024L, protectedNames))
         {

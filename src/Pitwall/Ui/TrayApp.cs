@@ -37,7 +37,7 @@ public sealed class TrayApp : ApplicationContext
             if (e.Button == MouseButtons.Left) Toggle(c => c.Widget.Visible = !c.Widget.Visible);
         };
         _tray.MouseDoubleClick += (_, e) => { if (e.Button == MouseButtons.Left) OpenSettings(); };
-        _widget.SettingsRequested += OpenSettings;
+        _widget.SettingsRequested += (page, anchor) => OpenSettings(page, anchor);
         hub.PlaceTopRightRequested += layout => _ui.Post(_ => _widget.PlaceTopRight(layout), null);
 
         // "Iniciar com o Windows" pode ser alterado pela tela de configurações: sincroniza a tarefa agendada.
@@ -51,7 +51,7 @@ public sealed class TrayApp : ApplicationContext
                 if (Autostart.Set(want)) _autostartState = want;
                 else
                 {
-                    _tray.ShowBalloonTip(4000, "Pitwall", L.T("Não foi possível alterar o início automático.", "Could not change start with Windows."), ToolTipIcon.Warning);
+                    ShowBalloon(4000, "Pitwall", L.T("Não foi possível alterar o início automático.", "Could not change start with Windows."), ToolTipIcon.Warning, "app");
                     _config.Update(x => x.StartWithWindows = _autostartState);
                 }
             }, null);
@@ -64,16 +64,16 @@ public sealed class TrayApp : ApplicationContext
         };
 
         hub.QuitRequested += () => _ui.Post(_ => ExitThread(), null);
-        UpdateTray.Attach(_tray, _ui, hub.Updater, ExitThread, OpenSettings);
+        UpdateTray.Attach(_ui, hub.Updater, ExitThread, (timeout, title, text, icon) => ShowBalloon(timeout, title, text, icon, "app", "updates"));
 
         // Alerta de vermelho: balão da bandeja (o Windows 10/11 mostra como notificação). Sem dependência nova.
         hub.AlertRaised += (title, text) => _ui.Post(_ =>
         {
-            _tray.ShowBalloonTip(8000, title, text, ToolTipIcon.Warning);
+            ShowBalloon(8000, title, text, ToolTipIcon.Warning, "alerts");
             if (_config.Current.Alerts.Sound) System.Media.SystemSounds.Exclamation.Play();
         }, null);
-        // Clicar no balão (alerta ou relatório de crash) abre as configurações
-        _tray.BalloonTipClicked += (_, _) => OpenSettings();
+        // Clicar no balão abre as configurações na página dele (crash → sessions/crash, alerta → alerts, atualização → app/updates)
+        _tray.BalloonTipClicked += (_, _) => OpenSettings(_balloonTarget.Page, _balloonTarget.Anchor);
         // Instalação nova: abre as configurações, onde o assistente de primeira execução aparece
         if (!config.Current.FirstRunDone) _ui.Post(_ => OpenSettings(), null);
 
@@ -177,30 +177,45 @@ public sealed class TrayApp : ApplicationContext
                   $"Windows logged an unexpected shutdown (Kernel-Power 41) after {r.Session.Exe}. Click to see the report.")
             : L.T($"O PC desligou ou travou durante {r.Session.Exe} ({when}). Clique para ver os últimos 60 s.",
                   $"The PC shut down or froze during {r.Session.Exe} ({when}). Click to see the last 60 s.");
-        _tray.ShowBalloonTip(10000, L.T("Pitwall · relatório de crash", "Pitwall · crash report"), text, ToolTipIcon.Warning);
+        ShowBalloon(10000, L.T("Pitwall · relatório de crash", "Pitwall · crash report"), text, ToolTipIcon.Warning, "sessions", "crash");
+    }
+
+    /// <summary>Destino do último balão mostrado (o Windows mostra um por vez; clicar nele abre essa página).</summary>
+    (string? Page, string? Anchor) _balloonTarget;
+
+    void ShowBalloon(int timeoutMs, string title, string text, ToolTipIcon icon, string? page, string? anchor = null)
+    {
+        _balloonTarget = (page, anchor);
+        _tray.ShowBalloonTip(timeoutMs, title, text, icon);
     }
 
     void ToggleAutostart() => Toggle(c => c.StartWithWindows = !c.StartWithWindows);
 
-    void OpenSettings()
+    /// <summary>
+    /// Abre (ou traz para frente) as configurações. Com <paramref name="page"/>: janela nova vai direto para
+    /// #/settings/&lt;page&gt;/&lt;anchor&gt;; janela já aberta recebe a mensagem do host { type: "navigate", page, anchor }.
+    /// </summary>
+    public void OpenSettings(string? page = null, string? anchor = null)
     {
         if (_settings is { IsDisposed: false })
         {
             if (_settings.WindowState == FormWindowState.Minimized) _settings.WindowState = FormWindowState.Normal;
             _settings.Activate();
+            _settings.Navigate(page, anchor);
             return;
         }
         _settings = new SettingsForm(_config, _hub.Port, () => _hub.LogPath);
         _settings.ShowWidgetRequested += () => Toggle(c => c.Widget.Visible = true);
         // Fechar a janela libera o WebView2 dela (a RAM volta ao nível do widget sozinho)
         _settings.FormClosed += (_, _) => _settings = null;
+        _settings.Navigate(page, anchor);
         _settings.Show();
     }
 
-    /// <summary>Volta tutorialDone para false (igual à mensagem replayTutorial), abre as configurações e avisa a página.</summary>
+    /// <summary>Tour do começo (igual à mensagem replayTutorial), abre as configurações e avisa a página.</summary>
     void ReplayTutorial()
     {
-        _config.Update(c => c.TutorialDone = false);
+        _config.Update(ConfigStore.ResetTour);
         OpenSettings();
         _settings?.StartTutorial();
     }

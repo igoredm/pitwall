@@ -548,10 +548,14 @@ public sealed class TelemetryHub : IDisposable
                 defaultCrit = d.DefaultCrit,
             }),
         }, ConfigStore.Json)!.AsObject();
+        // Sobre: componente ausente vai como null explícito (o resto do catálogo omite nulls)
+        node["about"] = JsonSerializer.SerializeToNode(AboutInfo.Current, AboutJson);
         if (remote)
-            foreach (var key in new[] { "admin", "crashReport", "remote", "tuning", "tuningPresets", "monitors", "update" }) node.Remove(key);
+            foreach (var key in new[] { "admin", "crashReport", "remote", "tuning", "tuningPresets", "monitors", "update", "about" }) node.Remove(key);
         return node.ToJsonString(ConfigStore.Json);
     }
+
+    static readonly JsonSerializerOptions AboutJson = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     /// <summary>Config para a página local. Os hashes dos tokens dos celulares não saem do backend.</summary>
     string ConfigMessage()
@@ -600,6 +604,7 @@ public sealed class TelemetryHub : IDisposable
                 name = d.Name,
                 created = d.Created,
                 lastSeen = d.LastSeen,
+                kind = d.Kind,
                 online = online.Contains(d.Id),
             }),
         }, ConfigStore.Json);
@@ -618,7 +623,7 @@ public sealed class TelemetryHub : IDisposable
         if (ids.Count == 0) return;
         var now = DateTime.Now;
         _config.UpdateQuiet(c => c.Remote.PairedDevices = [.. c.Remote.PairedDevices.Select(d => ids.Contains(d.Id)
-            ? new PairedDevice { Id = d.Id, Name = d.Name, TokenHash = d.TokenHash, Created = d.Created, LastSeen = now }
+            ? new PairedDevice { Id = d.Id, Name = d.Name, TokenHash = d.TokenHash, Created = d.Created, LastSeen = now, Kind = d.Kind }
             : d)]);
     }
 
@@ -638,6 +643,52 @@ public sealed class TelemetryHub : IDisposable
     }
 
     string SessionsMessage() => JsonSerializer.Serialize(new { type = "sessions", sessions = _sessions.Recent }, ConfigStore.Json);
+
+    /// <summary>getSessions → sessionsPage (só para quem pediu).</summary>
+    string SessionsPageMessage(JsonNode node)
+    {
+        var offset = Int(node["offset"]) ?? 0;
+        var limit = Int(node["limit"]) ?? SessionStore.MaxPageSize;
+        string? exe = null;
+        try { exe = node["exe"]?.GetValue<string>(); } catch { }
+        var (total, sessions) = _sessions.Page(offset, limit, exe);
+        return JsonSerializer.Serialize(new { type = "sessionsPage", total, offset = Math.Max(0, offset), sessions }, ConfigStore.Json);
+    }
+
+    /// <summary>
+    /// getLogStats → logStats (só para quem pediu): uso da pasta de logs e o que a retenção apagaria com os valores dados
+    /// (ausentes = os da config). Nada é apagado aqui.
+    /// </summary>
+    string LogStatsMessage(JsonNode node)
+    {
+        var log = _config.Current.Log;
+        var keepDays = Int(node["keepDays"]) is { } k ? ConfigStore.SnapKeepDays(k) : log.KeepDays;
+        var maxTotalMb = Int(node["maxTotalMb"]) is { } m ? Math.Clamp(m, 0, 1_000_000) : log.MaxTotalMb;
+        var stats = LogRetention.Stats(LogRetention.ListFiles(log.Folder), DateTime.UtcNow, keepDays, maxTotalMb * 1024L * 1024L,
+            RetentionProtected());
+        return JsonSerializer.Serialize(new
+        {
+            type = "logStats",
+            totalBytes = stats.TotalBytes,
+            files = stats.Files,
+            oldest = stats.OldestUtc?.ToLocalTime(),
+            wouldDeleteFiles = stats.WouldDeleteFiles,
+            wouldDeleteBytes = stats.WouldDeleteBytes,
+        }); // sem ConfigStore.Json: oldest vai como null explícito
+    }
+
+    /// <summary>Número inteiro de um campo JSON (aceita 30 ou 30.0); ausente/inválido = null.</summary>
+    static int? Int(JsonNode? n)
+    {
+        try
+        {
+            if (n is not JsonValue v) return null;
+            if (v.TryGetValue<int>(out var i)) return i;
+            if (v.TryGetValue<double>(out var d) && double.IsFinite(d)) return (int)Math.Clamp(Math.Round(d), int.MinValue, int.MaxValue);
+        }
+        catch { }
+        return null;
+    }
 
     /// <summary>Mín/máx completos (cliente recém-conectado); depois disso vão só as mudanças no snapshot.</summary>
     string ExtremesMessage()
@@ -700,6 +751,8 @@ public sealed class TelemetryHub : IDisposable
                         if (!LogFolderAllowed(cfg.Log.Folder)) cfg.Log.Folder = _config.Current.Log.Folder;
                         // Celulares pareados só mudam por startPairing/revokeDevice, nunca pelo config da página.
                         cfg.Remote.PairedDevices = _config.Current.Remote.PairedDevices;
+                        // Tour: cliente antigo que só conhece tutorialDone continua funcionando (tutorialDone = tour.done)
+                        ConfigStore.SyncTour(cfg, _config.Current, node["config"]?["tour"] is JsonObject);
                         _config.Replace(cfg);
                     }
                     return null;
@@ -756,9 +809,13 @@ public sealed class TelemetryHub : IDisposable
                         L.T("É assim que o aviso aparece quando uma métrica fica no vermelho.", "This is how the alert looks when a metric stays in the red."));
                     return null;
                 case "replayTutorial":
-                    // A página recebe tutorialDone = false no config e abre o tutorial
-                    _config.Update(c => c.TutorialDone = false);
+                    // A página recebe tour = { step: 0, done: false, dismissed: false } (e tutorialDone = false) e abre o tour
+                    _config.Update(ConfigStore.ResetTour);
                     return null;
+                case "getSessions":
+                    return SessionsPageMessage(node);
+                case "getLogStats":
+                    return LogStatsMessage(node);
                 case "resetExtremes":
                     if (!_config.Current.Features.SessionPeaks) return null;
                     _extremes.Reset();

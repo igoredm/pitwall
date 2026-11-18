@@ -35,11 +35,21 @@ public sealed class GameSession
     public string? CsvFile { get; set; }
 }
 
-/// <summary>Sessões de jogo recentes (tela Jogos), persistidas em %APPDATA%\Pitwall\sessions.json.</summary>
+/// <summary>
+/// Histórico de sessões de jogo (tela Sessões), persistido em %APPDATA%\Pitwall\sessions.json, mais recente primeiro.
+/// Guarda até <see cref="Max"/>; a mensagem "sessions" leva só as <see cref="RecentCount"/> mais recentes e o resto vem
+/// paginado por getSessions.
+/// </summary>
 public sealed class SessionStore
 {
-    const int Max = 20;
+    public const int Max = 500;
+    /// <summary>Quantas vão no broadcast "sessions" (o tamanho antigo da lista, para compatibilidade).</summary>
+    public const int RecentCount = 20;
+    /// <summary>Teto de uma página de getSessions.</summary>
+    public const int MaxPageSize = 100;
     static readonly string FilePath = Path.Combine(ConfigStore.Dir, "sessions.json");
+    // Sem indentação: com 500 sessões o arquivo é regravado a cada ~30 s durante o jogo
+    static readonly JsonSerializerOptions FileJson = new(ConfigStore.Json) { WriteIndented = false };
 
     readonly Lock _gate = new();
     readonly List<GameSession> _sessions;
@@ -70,9 +80,30 @@ public sealed class SessionStore
         get { lock (_gate) return _open; }
     }
 
+    /// <summary>As <see cref="RecentCount"/> mais recentes (broadcast "sessions").</summary>
     public IReadOnlyList<GameSession> Recent
     {
-        get { lock (_gate) return [.. _sessions]; }
+        get { lock (_gate) return [.. _sessions.Take(RecentCount)]; }
+    }
+
+    /// <summary>Página do histórico (getSessions).</summary>
+    public (int Total, List<GameSession> Sessions) Page(int offset, int limit, string? exe)
+    {
+        lock (_gate) return Page(_sessions, offset, limit, exe);
+    }
+
+    /// <summary>
+    /// Regra pura: filtra por exe (igual, sem diferenciar maiúsculas; vazio = todos), mantém a ordem (mais recente primeiro)
+    /// e corta [offset, offset+limit). limit fica em 1–100 e offset ≥ 0. Total = depois do filtro.
+    /// </summary>
+    internal static (int Total, List<GameSession> Sessions) Page(IEnumerable<GameSession> all, int offset, int limit, string? exe)
+    {
+        offset = Math.Max(0, offset);
+        limit = Math.Clamp(limit, 1, MaxPageSize);
+        exe = exe?.Trim();
+        var filtered = string.IsNullOrEmpty(exe) ? all.ToList()
+            : all.Where(s => string.Equals(s.Exe, exe, StringComparison.OrdinalIgnoreCase)).ToList();
+        return (filtered.Count, filtered.Skip(offset).Take(limit).ToList());
     }
 
     /// <summary>Atualiza a sessão aberta (estatísticas) e salva.</summary>
@@ -118,7 +149,7 @@ public sealed class SessionStore
         {
             Directory.CreateDirectory(ConfigStore.Dir);
             var tmp = FilePath + ".tmp";
-            File.WriteAllText(tmp, JsonSerializer.Serialize(_sessions, ConfigStore.Json));
+            File.WriteAllText(tmp, JsonSerializer.Serialize(_sessions, FileJson));
             File.Move(tmp, FilePath, overwrite: true);
         }
         catch
