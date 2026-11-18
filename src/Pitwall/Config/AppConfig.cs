@@ -18,6 +18,12 @@ public sealed class AppConfig
     public string Language { get; set; } = "auto";
 
     public bool StartWithWindows { get; set; }
+
+    /// <summary>
+    /// O assistente de primeira execução já foi concluído (ou pulado). Instalação nova = false;
+    /// configs que já existiam viram true na migração v5, para quem já usa o app não ver o assistente.
+    /// </summary>
+    public bool FirstRunDone { get; set; }
     public bool AutoOpenWidgetOnGame { get; set; } = true;
 
     /// <summary>"auto" = GPU no slot PCIe principal (menor barramento); senão o identificador LHM.</summary>

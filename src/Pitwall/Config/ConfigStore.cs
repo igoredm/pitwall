@@ -59,11 +59,13 @@ public sealed class ConfigStore
         var fresh = new AppConfig { Version = CurrentVersion };
         // Mantém a posição do widget: restaurar padrão não deve jogar a janela para outro monitor.
         fresh.Widget = Current.Widget;
+        // Nem reabrir o assistente de primeira execução.
+        fresh.FirstRunDone = Current.FirstRunDone;
         Replace(fresh);
     }
 
     /// <summary>Versão atual do formato do config.json.</summary>
-    public const int CurrentVersion = 4;
+    public const int CurrentVersion = 5;
 
     static AppConfig Load()
     {
@@ -82,7 +84,9 @@ public sealed class ConfigStore
         AppConfig config;
         try
         {
-            config = json != null ? JsonSerializer.Deserialize<AppConfig>(json, Json) ?? new AppConfig() : new AppConfig();
+            // Sem arquivo = instalação nova: já nasce na versão atual (as migrações são para configs antigas)
+            // e com FirstRunDone = false, para o assistente de primeira execução aparecer.
+            config = json != null ? JsonSerializer.Deserialize<AppConfig>(json, Json) ?? new AppConfig() : new AppConfig { Version = CurrentVersion };
         }
         catch
         {
@@ -115,6 +119,12 @@ public sealed class ConfigStore
             // v0.7: alertas, retenção de logs, perfis por jogo, celular na rede local. Os padrões vêm dos
             // inicializadores; aqui só garante que nada ficou null (JSON antigo ou editado à mão).
             config.Version = 4;
+        }
+        if (config.Version < 5)
+        {
+            // v0.7: assistente de primeira execução. Quem já tinha config não precisa dele.
+            config.FirstRunDone = true;
+            config.Version = 5;
         }
     }
 
