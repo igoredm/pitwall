@@ -119,8 +119,17 @@ public sealed class TelemetryHub : IDisposable
     void Loop()
     {
         var cleanupAt = Environment.TickCount64 + 30_000;
+        // Retenção de logs: logo depois de abrir (o CSV atual já existe) e depois 1x por dia
+        var retentionAt = Environment.TickCount64 + 15_000;
         while (!_cts.IsCancellationRequested)
         {
+            if (Environment.TickCount64 > retentionAt)
+            {
+                retentionAt = Environment.TickCount64 + 24 * 3600_000L;
+                var logCfg = _config.Current.Log;
+                var keep = RetentionProtected();
+                _ = Task.Run(() => { try { LogRetention.Run(logCfg, keep); } catch { } });
+            }
             var started = Environment.TickCount64;
             var cfg = _config.Current;
             try
@@ -141,6 +150,9 @@ public sealed class TelemetryHub : IDisposable
         }
         EndSession();
     }
+
+    /// <summary>Arquivos que a retenção nunca apaga: o atual e o da sessão mais recente.</summary>
+    List<string?> RetentionProtected() => [_log.CurrentPath, _sessions.Recent.FirstOrDefault(s => s.CsvFile != null)?.CsvFile];
 
     /// <summary>Fecha a sessão aberta gravando as estatísticas finais.</summary>
     void EndSession()
