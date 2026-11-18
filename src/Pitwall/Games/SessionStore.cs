@@ -59,6 +59,12 @@ public sealed class SessionStore
     /// <summary>Sessão mais recente do arquivo, como estava ao abrir o app (base do relatório de crash).</summary>
     public GameSession? LastAtStartup { get; }
 
+    /// <summary>Sessão em andamento (null fora de jogo).</summary>
+    public GameSession? Open
+    {
+        get { lock (_gate) return _open; }
+    }
+
     public IReadOnlyList<GameSession> Recent
     {
         get { lock (_gate) return [.. _sessions]; }

@@ -45,6 +45,13 @@ public sealed class TelemetryHub : IDisposable
     long _extremesSentAt;
     long _sessionSavedAt;
 
+    // Relatório de crash: buffer dos últimos 60 s (em disco durante o jogo) e o relatório detectado ao abrir
+    readonly CrashRing _ring = new();
+    volatile CrashReport? _crashReport;
+    public CrashReport? PendingCrashReport => _crashReport;
+    /// <summary>Relatório de crash detectado ao abrir (thread de fundo).</summary>
+    public event Action<CrashReport>? CrashReportDetected;
+
     public event Action<GameInfo?>? GameChanged;
     /// <summary>Métrica no vermelho por 5 s ou mais (título, texto). Disparado na thread de telemetria.</summary>
     public event Action<string, string>? AlertRaised;
@@ -114,6 +121,24 @@ public sealed class TelemetryHub : IDisposable
     {
         _ws.Start();
         new Thread(Loop) { IsBackground = true, Name = "Telemetry", Priority = ThreadPriority.BelowNormal }.Start();
+        _ = Task.Run(DetectCrash);
+    }
+
+    /// <summary>A última sessão não terminou, ou o Windows registrou Kernel-Power 41 depois dela?</summary>
+    void DetectCrash()
+    {
+        try
+        {
+            var last = _sessions.LastAtStartup;
+            if (last == null) return;
+            var kp41 = CrashDetector.LastKernelPower41(last.Start);
+            var report = CrashDetector.Detect(last, CrashRing.Load(), kp41, CrashDetector.DismissedSessionStart());
+            if (report == null) return;
+            _crashReport = report;
+            _ws.Broadcast(CatalogMessage());
+            CrashReportDetected?.Invoke(report);
+        }
+        catch { }
     }
 
     void Loop()
@@ -152,7 +177,8 @@ public sealed class TelemetryHub : IDisposable
     }
 
     /// <summary>Arquivos que a retenção nunca apaga: o atual e o da sessão mais recente.</summary>
-    List<string?> RetentionProtected() => [_log.CurrentPath, _sessions.Recent.FirstOrDefault(s => s.CsvFile != null)?.CsvFile];
+    List<string?> RetentionProtected() =>
+        [_log.CurrentPath, _sessions.Recent.FirstOrDefault(s => s.CsvFile != null)?.CsvFile, _crashReport?.CsvFile];
 
     /// <summary>Fecha a sessão aberta gravando as estatísticas finais.</summary>
     void EndSession()
@@ -190,6 +216,7 @@ public sealed class TelemetryHub : IDisposable
             _stats = game != null ? new SessionStatsAccumulator() : null;
             _statsCursor = 0;
             _sessionSavedAt = now;
+            _ring.Reset();
             if (game != null)
             {
                 _extremes.Reset();
@@ -230,6 +257,12 @@ public sealed class TelemetryHub : IDisposable
             }
         }
         CheckAlerts(cfg, now);
+
+        if (game != null && _sessions.Open is { } open)
+        {
+            _ring.Sample(_values, now);
+            _ring.PersistIfDue(open, _log.CurrentPath is { } p ? Path.GetFileName(p) : null, now);
+        }
 
         var values = new JsonObject();
         foreach (var (k, v) in _values)
@@ -289,6 +322,7 @@ public sealed class TelemetryHub : IDisposable
             presentMon = _presentMon.Available,
             battery = _battery.Available,
             hardware = new { cpu = _sensors.CpuName, gpu = _sensors.GpuName, gpu2 = _sensors.Gpu2Name },
+            crashReport = _crashReport,
             tuning = _tuner.Caps,
             tuningPresets = new[] { "balanced", "cool" }.ToDictionary(p => p, p =>
             {
@@ -399,6 +433,14 @@ public sealed class TelemetryHub : IDisposable
                     return null;
                 case "getState":
                     return CatalogMessage();
+                case "dismissCrashReport":
+                    if (_crashReport is { } report)
+                    {
+                        CrashDetector.Dismiss(report.Session.Start);
+                        _crashReport = null;
+                        _ws.Broadcast(CatalogMessage());
+                    }
+                    return null;
                 case "resetExtremes":
                     _extremes.Reset();
                     _ws.Broadcast(ExtremesMessage());
