@@ -1,17 +1,28 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.WebSockets;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Pitwall.Server;
 
 /// <summary>
 /// WebSocket em localhost (HttpListener/http.sys, sem ASP.NET para manter o processo leve).
-/// Só aceita a origem do próprio app (WebView2) e o dev server do Angular.
+/// O app roda como administrador, então qualquer processo local que falasse com este socket poderia mudar a config
+/// (ajuste da GPU, pasta do log). Por isso cada conexão precisa de: Origin do próprio app (WebView2) e o token
+/// aleatório desta execução, que só vai na URL das páginas do WebView2. Em Debug o dev server do Angular
+/// (localhost:4200) também é aceito, com o token lido de %APPDATA%\Pitwall\dev-token.txt.
 /// </summary>
 public sealed class WsServer : IDisposable
 {
+#if DEBUG
     static readonly string[] AllowedOrigins = ["https://pitwall.local", "http://localhost:4200"];
+#else
+    static readonly string[] AllowedOrigins = ["https://pitwall.local"];
+#endif
+
+    /// <summary>Segredo desta execução (256 bits). Nunca é gravado em disco no Release.</summary>
+    public static readonly string SessionToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
 
     readonly HttpListener _listener = new();
     readonly ConcurrentDictionary<Guid, Client> _clients = new();
@@ -33,6 +44,9 @@ public sealed class WsServer : IDisposable
 
     public void Start()
     {
+#if DEBUG
+        try { File.WriteAllText(Path.Combine(Config.ConfigStore.Dir, "dev-token.txt"), SessionToken); } catch { }
+#endif
         _listener.Start();
         _ = AcceptLoop();
     }
@@ -45,9 +59,7 @@ public sealed class WsServer : IDisposable
             try { ctx = await _listener.GetContextAsync(); }
             catch { break; }
 
-            var origin = ctx.Request.Headers["Origin"];
-            if (!ctx.Request.IsWebSocketRequest || ctx.Request.Url?.AbsolutePath != "/ws" ||
-                (origin != null && !AllowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase)))
+            if (!Authorized(ctx.Request))
             {
                 ctx.Response.StatusCode = 403;
                 ctx.Response.Close();
@@ -55,6 +67,15 @@ public sealed class WsServer : IDisposable
             }
             _ = Handle(ctx);
         }
+    }
+
+    static bool Authorized(HttpListenerRequest req)
+    {
+        if (!req.IsWebSocketRequest || req.Url?.AbsolutePath != "/ws") return false;
+        var origin = req.Headers["Origin"];
+        if (origin == null || !AllowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase)) return false;
+        var token = req.QueryString["token"] ?? "";
+        return CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(token), Encoding.ASCII.GetBytes(SessionToken));
     }
 
     async Task Handle(HttpListenerContext ctx)

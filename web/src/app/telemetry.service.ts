@@ -59,6 +59,8 @@ export class TelemetryService {
   private ws?: WebSocket;
   private retryMs = 500;
   private readonly port = new URLSearchParams(location.search).get('port') ?? '48123';
+  // Token da execução atual do app (vai na URL do WebView2); sem ele o servidor recusa a conexão
+  private readonly token = new URLSearchParams(location.search).get('token') ?? '';
   private readonly hostListeners = new Set<(msg: any) => void>();
 
   constructor() {
@@ -97,7 +99,7 @@ export class TelemetryService {
   }
 
   private connect() {
-    const ws = new WebSocket(`ws://localhost:${this.port}/ws`);
+    const ws = new WebSocket(`ws://localhost:${this.port}/ws?token=${encodeURIComponent(this.token)}`);
     this.ws = ws;
     ws.onopen = () => {
       this.connected.set(true);

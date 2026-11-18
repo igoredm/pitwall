@@ -44,5 +44,5 @@ internal static class WebViewHost
         return core;
     }
 
-    public static string Url(int port, string route) => $"{Origin}/index.html?port={port}#/{route}";
+    public static string Url(int port, string route) => $"{Origin}/index.html?port={port}&token={Server.WsServer.SessionToken}#/{route}";
 }

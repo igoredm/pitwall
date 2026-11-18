@@ -250,6 +250,7 @@ public sealed class TelemetryHub : IDisposable
                         var cur = _config.Current.Widget;
                         if (cfg.Widget.Monitor == cur.Monitor)
                             (cfg.Widget.X, cfg.Widget.Y, cfg.Widget.Width, cfg.Widget.Height) = (cur.X, cur.Y, cur.Width, cur.Height);
+                        if (!LogFolderAllowed(cfg.Log.Folder)) cfg.Log.Folder = _config.Current.Log.Folder;
                         _config.Replace(cfg);
                     }
                     return null;
@@ -276,6 +277,21 @@ public sealed class TelemetryHub : IDisposable
             return JsonSerializer.Serialize(new { type = "error", message = ex.Message });
         }
         return null;
+    }
+
+    /// <summary>O processo é elevado: não deixa a config apontar o log para pastas do sistema ou de rede.</summary>
+    internal static bool LogFolderAllowed(string? folder)
+    {
+        if (string.IsNullOrWhiteSpace(folder) || !Path.IsPathFullyQualified(folder) || folder.StartsWith(@"\\")) return false;
+        var full = Path.GetFullPath(folder).TrimEnd('\\') + "\\";
+        string[] blocked =
+        [
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+        ];
+        return !blocked.Where(b => b.Length > 0).Any(b => full.StartsWith(b.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase));
     }
 
     public void Dispose()
