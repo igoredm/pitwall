@@ -82,9 +82,16 @@ static class Program
         battery.Start(() => config.Current.Battery.Enabled);
         config.Changed += c => { if (c.Battery.Enabled && battery.Devices.Count == 0) battery.RefreshNow(); };
         using var hub = new TelemetryHub(config, sensorService, presentMon, tuner, battery);
+        // Atualizador (docs/updater.md): antes do TrayApp, que liga o menu e os balões a ele
+        using var updater = new Pitwall.Update.UpdateService(config, hub);
+        hub.Updater = updater;
+        updater.Changed += _ => hub.Broadcast(updater.StateMessage());
         hub.Start();
+        updater.Start();
 
         Application.Run(new TrayApp(config, hub, sensorService.Dump));
+        // "Atualizar ao sair": o instalador espera este processo terminar (mutex) antes de copiar os arquivos
+        updater.InstallOnExitIfPending();
         return 0;
     }
 }

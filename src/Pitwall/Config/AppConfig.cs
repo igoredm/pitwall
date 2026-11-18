@@ -31,6 +31,7 @@ public sealed class AppConfig
     public BatteryConfig Battery { get; set; } = new();
     public LogConfig Log { get; set; } = new();
     public GamesConfig Games { get; set; } = new();
+    public UpdateConfig Update { get; set; } = new();
     public List<MetricSetting> Metrics { get; set; } = [];
 }
 

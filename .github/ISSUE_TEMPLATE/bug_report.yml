@@ -1,0 +1,83 @@
+name: Bug
+description: Algo não funciona como deveria · Something doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por reportar! Problemas de **segurança** não vão aqui: veja o [SECURITY.md](https://github.com/igoredm/pitwall/blob/main/SECURITY.md).
+        Thanks for reporting! **Security** issues don't go here: see [SECURITY.md](https://github.com/igoredm/pitwall/blob/main/SECURITY.md).
+
+  - type: input
+    id: version
+    attributes:
+      label: Versão do Pitwall · Pitwall version
+      description: Aparece na tela de Configurações, ou em "Adicionar ou remover programas" · Shown in Settings, or in "Add or remove programs"
+      placeholder: "0.7.0"
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows
+      placeholder: "Windows 11 24H2 (26100)"
+    validations:
+      required: true
+
+  - type: input
+    id: hardware
+    attributes:
+      label: CPU / GPU / placa-mãe · CPU / GPU / motherboard
+      placeholder: "i5-12600K / RTX 3080 / MSI Z690"
+
+  - type: textarea
+    id: what
+    attributes:
+      label: O que aconteceu · What happened
+      description: E o que você esperava · And what you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Como reproduzir · Steps to reproduce
+      placeholder: |
+        1. Abrir o jogo X em tela cheia / Open game X fullscreen
+        2. ...
+
+  - type: textarea
+    id: sensors
+    attributes:
+      label: Dump de sensores · Sensor dump
+      description: |
+        **Obrigatório para problemas de sensor, temperatura, GPU ou métrica faltando.**
+        Clique com o botão direito no ícone da bandeja → **Listar sensores detectados…** (abre `%APPDATA%\Pitwall\sensores.txt`
+        no Bloco de Notas) e cole o conteúdo aqui, ou arraste o arquivo. Pela linha de comando:
+        `"C:\Program Files\Pitwall\Pitwall.exe" --dump-sensors C:\temp\sensores.txt` (como administrador).
+
+        **Required for sensor, temperature, GPU or missing-metric issues.**
+        Right-click the tray icon → **List detected sensors…** (opens `%APPDATA%\Pitwall\sensores.txt` in Notepad) and paste it
+        here, or drag the file in. From the command line:
+        `"C:\Program Files\Pitwall\Pitwall.exe" --dump-sensors C:\temp\sensors.txt` (as administrator).
+
+        O dump lista nomes de hardware e leituras; revise antes de colar. · The dump lists hardware names and readings; review it before pasting.
+      render: text
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (opcional · optional)
+      description: |
+        Atualizador · updater: `%LOCALAPPDATA%\Pitwall\updates\updater.log`.
+        Log CSV da sessão do jogo, se o problema for de leitura · game-session CSV log, for reading issues: `%LOCALAPPDATA%\Pitwall\logs`.
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmações · Checks
+      options:
+        - label: Estou na versão mais recente · I'm on the latest version
+        - label: Procurei issues parecidas · I searched for similar issues
