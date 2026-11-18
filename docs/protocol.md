@@ -492,3 +492,12 @@ Os cinco campos sempre vêm: `string` com a versão ou `null` explícito (compon
 - `ClientMessage`: `getLogStats { keepDays?, maxTotalMb? }`, `getSessions { offset, limit, exe? }`.
 - `ServerMessage`: `logStats`, `sessionsPage`. Host → página: `navigate { page, anchor? }`.
 - Socket da rede: `paired` com erro ganha `attemptsLeft?`, `retryAfterSec?` e o erro `blocked`.
+
+## 9. Últimos ajustes da 1.0
+
+- `config.features.openSummaryOnGameEnd` (bool, padrão `false`): quando uma sessão de jogo termina e entra no histórico
+  (>= 30 s), o app espera 3 s e, se nenhum outro jogo começou, abre as configurações em `sessions` / `last`.
+- Mensagem do host (WebView2) `{ "type": "openLatestCsv" }`: seleciona no Explorer o CSV mais recente da pasta de logs
+  (os últimos dados gravados, úteis depois de um desligamento abrupto); sem CSV, abre a pasta.
+- Bandeja: "Resumo da última sessão…", "Abrir últimos dados gravados (CSV)" e, quando há relatório de queda pendente,
+  "Relatório da queda (últimos 60 s)…".

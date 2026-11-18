@@ -48,7 +48,7 @@ import { TelemetryService, urlParam } from './telemetry.service';
 function demoFeatures(): FeaturesConfig {
   const on = urlParam('features')?.split(',');
   const has = (k: keyof FeaturesConfig) => !on || on.includes(k);
-  return { crashReport: has('crashReport'), gameSuggestions: has('gameSuggestions'), sessionPeaks: has('sessionPeaks'), clockReason: has('clockReason') };
+  return { crashReport: has('crashReport'), gameSuggestions: has('gameSuggestions'), sessionPeaks: has('sessionPeaks'), clockReason: has('clockReason'), openSummaryOnGameEnd: !!on?.includes('openSummaryOnGameEnd') };
 }
 
 type Def = [id: string, group: MetricGroup, name: string, unit: string, on?: boolean, warn?: number, crit?: number, spark?: boolean];

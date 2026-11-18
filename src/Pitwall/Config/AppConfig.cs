@@ -94,6 +94,8 @@ public sealed class FeaturesConfig
     public bool SessionPeaks { get; set; } = true;
     /// <summary>Motivo do limite de clock (NVML): texts["gpu.perfcap"] e segundos por motivo na sessão.</summary>
     public bool ClockReason { get; set; } = true;
+    /// <summary>Ao terminar um jogo, abre as configurações direto no resumo da sessão.</summary>
+    public bool OpenSummaryOnGameEnd { get; set; }
 }
 
 /// <summary>Visualização no celular pela rede local (somente leitura). Desligada por padrão.</summary>

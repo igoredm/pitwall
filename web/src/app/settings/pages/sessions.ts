@@ -1,7 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { I18n } from '../../i18n';
-import { CrashSeriesId, GameSession, LOG_KEEP_DAYS, Level, LogKeepDays, LogStats, MetricSetting } from '../../models';
+import { AppConfig, CrashSeriesId, GameSession, LOG_KEEP_DAYS, Level, LogKeepDays, LogStats, MetricSetting } from '../../models';
 import { TelemetryService } from '../../telemetry.service';
 import { Icon } from '../../ui/icon';
 import { formatValue, level } from '../../widget/metric-views';
@@ -153,6 +153,15 @@ interface Pending {
             </div>
           </div>
         }
+        <div class="grp autoopen" style="margin-top: 12px">
+          <div class="row">
+            <div class="rl">
+              <div class="lb" id="l-autoopen">{{ sx.autoOpenTitle }}</div>
+              <div class="ht">{{ sx.autoOpenHint }}</div>
+            </div>
+            <button type="button" class="sw" role="switch" aria-labelledby="l-autoopen" [attr.aria-checked]="!!d.features?.openSummaryOnGameEnd" (click)="ctx.update(flipAutoOpen)"></button>
+          </div>
+        </div>
       </section>
 
       <!-- ================================================= histórico -->
@@ -221,6 +230,15 @@ interface Pending {
             </div>
             <button type="button" class="sw" role="switch" aria-labelledby="l-log" [attr.aria-checked]="d.log.enabled" (click)="ctx.update(flipLog)"></button>
           </div>
+          @if (t.inHost) {
+            <div class="row">
+              <div class="rl">
+                <div class="lb">{{ sx.latestTitle }}</div>
+                <div class="ht">{{ sx.latestHint }}</div>
+              </div>
+              <button type="button" class="btn sm" (click)="t.host({ type: 'openLatestCsv' })"><pw-icon name="file" [size]="14" />{{ sx.latestBtn }}</button>
+            </div>
+          }
           <div class="row">
             <div class="rl">
               <div class="lb">{{ sx.logFolder2 }}</div>
@@ -526,6 +544,8 @@ export class SessionsPage {
   protected readonly intervals = LOG_INTERVALS;
 
   protected readonly flipLog = (c: { log: { enabled: boolean } }) => (c.log.enabled = !c.log.enabled);
+  protected readonly flipAutoOpen = (c: AppConfig) =>
+    (c.features = { crashReport: true, gameSuggestions: true, sessionPeaks: true, clockReason: true, ...c.features, openSummaryOnGameEnd: !c.features?.openSummaryOnGameEnd });
 
   /** Sessão aberta no resumo (null = a mais recente). */
   private readonly picked = signal<GameSession | null>(null);

@@ -57,6 +57,8 @@ public sealed class TelemetryHub : IDisposable
     public event Action<CrashReport>? CrashReportDetected;
 
     public event Action<GameInfo?>? GameChanged;
+    /// <summary>Uma sessão de jogo terminou e entrou no histórico (>= 30 s).</summary>
+    public event Action<GameSession>? SessionEnded;
     /// <summary>Métrica no vermelho por 5 s ou mais (título, texto). Disparado na thread de telemetria.</summary>
     public event Action<string, string>? AlertRaised;
     /// <summary>"Compacto no canto superior direito" (tela de configurações).</summary>
@@ -303,7 +305,7 @@ public sealed class TelemetryHub : IDisposable
     {
         var stats = _stats;
         var csv = _log.CurrentPath;
-        _sessions.End(CurrentGame, s =>
+        var ended = _sessions.End(CurrentGame, s =>
         {
             try
             {
@@ -313,6 +315,7 @@ public sealed class TelemetryHub : IDisposable
             catch { }
         });
         RefreshLastReasons();
+        if (ended != null) SessionEnded?.Invoke(ended);
     }
 
     // Motivos do limite de clock da última sessão (mostrados fora de jogo); atualizado só quando uma sessão termina

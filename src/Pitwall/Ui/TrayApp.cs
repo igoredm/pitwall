@@ -79,6 +79,13 @@ public sealed class TrayApp : ApplicationContext
 
         // Relatório de crash: a detecção roda em segundo plano e pode terminar antes ou depois daqui
         hub.CrashReportDetected += r => _ui.Post(_ => ShowCrashBalloon(r), null);
+        // "Abrir resumo ao terminar o jogo": espera um pouco para não abrir se outro jogo começar logo em seguida
+        hub.SessionEnded += _ => _ui.Post(async _ =>
+        {
+            if (!_config.Current.Features.OpenSummaryOnGameEnd) return;
+            await Task.Delay(3000);
+            if (_hub.CurrentGame == null) OpenSettings("sessions", "last");
+        }, null);
         if (hub.PendingCrashReport is { } pending) ShowCrashBalloon(pending);
 
         // Sincroniza a flag com o Agendador (pode ter sido removida por fora)
@@ -99,6 +106,12 @@ public sealed class TrayApp : ApplicationContext
         menu.Items.Add(new ToolStripSeparator());
 
         menu.Items.Add(new ToolStripMenuItem(L.T("Configurações…", "Settings…"), null, (_, _) => OpenSettings()) { Font = new Font(menu.Font, FontStyle.Bold) });
+        // Atalhos para depois do jogo ou de um desligamento abrupto
+        if (_hub.PendingCrashReport != null)
+            menu.Items.Add(new ToolStripMenuItem(L.T("Relatório da queda (últimos 60 s)…", "Crash report (last 60 s)…"), null, (_, _) => OpenSettings("sessions", "crash")));
+        menu.Items.Add(new ToolStripMenuItem(L.T("Resumo da última sessão…", "Last session summary…"), null, (_, _) => OpenSettings("sessions", "last")));
+        menu.Items.Add(new ToolStripMenuItem(L.T("Abrir últimos dados gravados (CSV)", "Open latest recorded data (CSV)"), null, (_, _) =>
+            Pitwall.Logging.LatestLog.Reveal(_config.Current.Log.Folder)));
         menu.Items.Add(Check(L.T("Mostrar widget", "Show widget"), c.Widget.Visible, () => Toggle(x => x.Widget.Visible = !x.Widget.Visible)));
         menu.Items.Add(Check(L.T("Travar posição", "Lock position"), c.Widget.Locked, () => Toggle(x => x.Widget.Locked = !x.Widget.Locked)));
         menu.Items.Add(Check(L.T("Sempre no topo (exceto sobre tela cheia)", "Always on top (except over fullscreen)"), c.Widget.AlwaysOnTop, () => Toggle(x => x.Widget.AlwaysOnTop = !x.Widget.AlwaysOnTop)));

@@ -170,6 +170,9 @@ public sealed partial class SettingsForm : Form
                     }
                     break;
                 }
+                case "openLatestCsv":
+                    Pitwall.Logging.LatestLog.Reveal(_config.Current.Log.Folder);
+                    break;
                 case "showWidget":
                     ShowWidgetRequested?.Invoke();
                     break;

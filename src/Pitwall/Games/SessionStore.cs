@@ -129,17 +129,20 @@ public sealed class SessionStore
         }
     }
 
-    public void End(GameInfo? game, Action<GameSession>? final = null)
+    /// <returns>A sessão encerrada, ou null se não havia sessão ou ela foi curta demais para ficar no histórico.</returns>
+    public GameSession? End(GameInfo? game, Action<GameSession>? final = null)
     {
         lock (_gate)
         {
-            if (_open == null) return;
+            if (_open == null) return null;
             _open.End = DateTime.Now;
             final?.Invoke(_open);
             // Detecções de poucos segundos (alt+tab em algo em tela cheia) não viram sessão
-            if (_open.End - _open.Start < TimeSpan.FromSeconds(30)) _sessions.Remove(_open);
+            var kept = _open.End - _open.Start >= TimeSpan.FromSeconds(30) ? _open : null;
+            if (kept == null) _sessions.Remove(_open);
             _open = null;
             Save();
+            return kept;
         }
     }
 

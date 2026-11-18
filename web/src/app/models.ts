@@ -114,6 +114,8 @@ export interface FeaturesConfig {
   sessionPeaks: boolean;
   /** Motivo do limite de clock (NVML). Off: sem texts['gpu.perfcap'], snapshot.clockReasons nem session.clockReasonSec. */
   clockReason: boolean;
+  /** Ao terminar um jogo, abre as configurações no resumo da sessão (padrão: desligado). */
+  openSummaryOnGameEnd?: boolean;
 }
 
 /** v0.7: aviso do Windows quando uma métrica fica >= vermelho por 5 s. */
