@@ -91,12 +91,62 @@ public sealed class TelemetryHub : IDisposable
             OnConnect = () => [CatalogMessage(), ConfigMessage(), SessionsMessage(), ExtremesMessage()],
             OnMessage = HandleMessage,
         };
+        // Celular na rede local: servidor separado, somente leitura, com dados sanitizados
+        _remote = new RemoteServer(() => _config.Current.Remote.PairedDevices, _pairing)
+        {
+            OnAuthenticated = () => [CatalogMessage(remote: true), RemoteConfigMessage()],
+        };
+        _remote.Paired += d =>
+        {
+            // Lista nova em vez de Add: o servidor da rede pode estar lendo a antiga em outra thread
+            _config.Update(c => c.Remote.PairedDevices = [.. c.Remote.PairedDevices, d]);
+            _ws.Broadcast(DevicesMessage(d.Id));
+        };
+
         config.Changed += c =>
         {
             ApplyActive(c);
-            if (_lang != L.Lang) { _lang = L.Lang; _ws.Broadcast(CatalogMessage()); }
+            if (_lang != L.Lang)
+            {
+                _lang = L.Lang;
+                _ws.Broadcast(CatalogMessage());
+                _remote.Broadcast(CatalogMessage(remote: true));
+            }
             _ws.Broadcast(ConfigMessage());
+            _remote.Broadcast(RemoteConfigMessage());
+            ApplyRemote(c.Remote);
         };
+    }
+
+    readonly PairingManager _pairing = new();
+    readonly RemoteServer _remote;
+    readonly Lock _remoteGate = new();
+    int _remoteWanted = -1;
+
+    /// <summary>Liga/desliga o servidor da rede e a regra do firewall quando Remote.Enabled/Port mudam (netsh fora da thread de telemetria).</summary>
+    void ApplyRemote(RemoteConfig r)
+    {
+        var want = r.Enabled ? r.Port : 0;
+        lock (_remoteGate)
+        {
+            if (want == _remoteWanted) return;
+            _remoteWanted = want;
+        }
+        _ = Task.Run(() =>
+        {
+            lock (_remoteGate)
+            {
+                if (want != _remoteWanted) return; // mudou de novo enquanto esperava
+                if (want == 0)
+                {
+                    _remote.Stop();
+                    _pairing.Cancel();
+                    Firewall.Remove();
+                }
+                else if (_remote.Start(want)) Firewall.Add(want);
+            }
+            _ws.Broadcast(CatalogMessage());
+        });
     }
 
     string _lang = L.Lang;
@@ -123,6 +173,7 @@ public sealed class TelemetryHub : IDisposable
         _ws.Start();
         new Thread(Loop) { IsBackground = true, Name = "Telemetry", Priority = ThreadPriority.BelowNormal }.Start();
         _ = Task.Run(DetectCrash);
+        ApplyRemote(_config.Current.Remote);
     }
 
     /// <summary>A última sessão não terminou, ou o Windows registrou Kernel-Power 41 depois dela?</summary>
@@ -337,12 +388,23 @@ public sealed class TelemetryHub : IDisposable
         }
 
         _ws.Broadcast(msg.ToJsonString());
+
+        // Celular: o mesmo snapshot sem nome de arquivo, ajuste da GPU nem sugestão de jogo
+        if (_remote.HasClients)
+        {
+            msg.Remove("log");
+            msg.Remove("tuning");
+            msg.Remove("gameSuggestion");
+            (msg["profile"] as JsonObject)?.Remove("tuningPreset");
+            _remote.Broadcast(msg.ToJsonString());
+        }
     }
 
-    string CatalogMessage()
+    /// <param name="remote">Versão do celular: sem ajuste da GPU, monitores, relatório de crash nem estado do servidor.</param>
+    string CatalogMessage(bool remote = false)
     {
         var screens = Screen.AllScreens;
-        return JsonSerializer.Serialize(new
+        var node = JsonSerializer.SerializeToNode(new
         {
             type = "catalog",
             lang = L.Lang,
@@ -352,6 +414,7 @@ public sealed class TelemetryHub : IDisposable
             battery = _battery.Available,
             hardware = new { cpu = _sensors.CpuName, gpu = _sensors.GpuName, gpu2 = _sensors.Gpu2Name },
             crashReport = _crashReport,
+            remote = new { running = _remote.Running, port = _remote.Running ? _remote.Port : (int?)null, error = _remote.LastError },
             tuning = _tuner.Caps,
             tuningPresets = new[] { "balanced", "cool" }.ToDictionary(p => p, p =>
             {
@@ -382,10 +445,64 @@ public sealed class TelemetryHub : IDisposable
                 defaultWarn = d.DefaultWarn,
                 defaultCrit = d.DefaultCrit,
             }),
+        }, ConfigStore.Json)!.AsObject();
+        if (remote)
+            foreach (var key in new[] { "admin", "crashReport", "remote", "tuning", "tuningPresets", "monitors" }) node.Remove(key);
+        return node.ToJsonString(ConfigStore.Json);
+    }
+
+    /// <summary>Config para a página local. Os hashes dos tokens dos celulares não saem do backend.</summary>
+    string ConfigMessage()
+    {
+        var config = JsonSerializer.SerializeToNode(_config.Current, ConfigStore.Json)!;
+        if (config["remote"]?["pairedDevices"] is JsonArray devices)
+            foreach (var d in devices) (d as JsonObject)?.Remove("tokenHash");
+        return new JsonObject { ["type"] = "config", ["config"] = config }.ToJsonString(ConfigStore.Json);
+    }
+
+    /// <summary>Config sanitizada para o celular: só aparência e métricas (sem pastas, ajuste da GPU, jogos ou celulares).</summary>
+    string RemoteConfigMessage()
+    {
+        var c = _config.Current;
+        return JsonSerializer.Serialize(new
+        {
+            type = "config",
+            config = new
+            {
+                refreshMs = c.RefreshMs,
+                appTheme = c.AppTheme,
+                widgetTheme = c.WidgetTheme,
+                themeMode = c.ThemeMode,
+                accent = c.Accent,
+                language = c.Language,
+                groupLabels = c.GroupLabels,
+                widget = new { layout = c.Widget.Layout },
+                battery = new { enabled = c.Battery.Enabled, hidden = c.Battery.Hidden, lowPercent = c.Battery.LowPercent },
+                metrics = c.Metrics,
+            },
         }, ConfigStore.Json);
     }
 
-    string ConfigMessage() => JsonSerializer.Serialize(new { type = "config", config = _config.Current }, ConfigStore.Json);
+    /// <summary>Celulares pareados (sem hash). <paramref name="paired"/> = id do que acabou de parear.</summary>
+    string DevicesMessage(string? paired = null) => JsonSerializer.Serialize(new
+    {
+        type = "devices",
+        paired,
+        devices = _config.Current.Remote.PairedDevices.Select(d => new { id = d.Id, name = d.Name, created = d.Created }),
+    }, ConfigStore.Json);
+
+    string StartPairing()
+    {
+        var r = _config.Current.Remote;
+        string Fail(string error) => JsonSerializer.Serialize(new { type = "pairing", ok = false, error, message = _remote.LastError }, ConfigStore.Json);
+        if (!r.Enabled) return Fail("disabled");
+        if (!_remote.Running) return Fail("notRunning");
+        var ips = RemoteServer.LanAddresses();
+        if (ips.Count == 0) return Fail("noNetwork");
+        var (code, expires) = _pairing.Start(DateTime.UtcNow);
+        var urls = ips.Select(ip => $"http://{ip}:{_remote.Port}/index.html#/mobile?pair={code}").ToList();
+        return JsonSerializer.Serialize(new { type = "pairing", ok = true, url = urls[0], urls, expiresAt = expires }, ConfigStore.Json);
+    }
 
     string SessionsMessage() => JsonSerializer.Serialize(new { type = "sessions", sessions = _sessions.Recent }, ConfigStore.Json);
 
@@ -462,6 +579,19 @@ public sealed class TelemetryHub : IDisposable
                     return null;
                 case "getState":
                     return CatalogMessage();
+                case "startPairing":
+                    return StartPairing();
+                case "listDevices":
+                    return DevicesMessage();
+                case "revokeDevice":
+                {
+                    var id = node["id"]?.GetValue<string>();
+                    if (string.IsNullOrEmpty(id)) return null;
+                    _config.Update(c => c.Remote.PairedDevices = [.. c.Remote.PairedDevices.Where(d => d.Id != id)]);
+                    _remote.Disconnect(id);
+                    _ws.Broadcast(DevicesMessage());
+                    return null;
+                }
                 case "dismissCrashReport":
                     if (_crashReport is { } report)
                     {
@@ -524,6 +654,7 @@ public sealed class TelemetryHub : IDisposable
         _cts.Cancel();
         EndSession();
         _ws.Dispose();
+        _remote.Dispose(); // a regra do firewall fica enquanto o recurso estiver ligado; sai ao desligar ou desinstalar
         _log.Dispose();
     }
 }
