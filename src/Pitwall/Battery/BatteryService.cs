@@ -89,7 +89,7 @@ public sealed partial class BatteryService : IDisposable
 
     /// <summary>
     /// Formato de uma linha (src/main.cpp ListToConsole):
-    /// "{name}  [{via}]  {NN% | asleep | off / not connected | unknown | texto}[ ({detail})][, charging][, N mV]   ({key})"
+    /// "{name}  [{via}]  [{{Marca}}  ]{NN% | asleep | off / not connected | unknown | texto}[ ({detail})][, charging][, N mV]   ({key})"
     /// </summary>
     public static IReadOnlyList<WirelessDevice> Parse(string text)
     {
@@ -131,7 +131,7 @@ public sealed partial class BatteryService : IDisposable
         return "mouse";
     }
 
-    [GeneratedRegex(@"^(?<name>.+?)  \[(?<via>[^\]]*)\]  (?<status>.+?)   \((?<key>[^)]*)\)\s*$")]
+    [GeneratedRegex(@"^(?<name>.+?)  \[(?<via>[^\]]*)\]  (?:\{(?<brand>[^}]*)\}  )?(?<status>.+?)   \((?<key>[^)]*)\)\s*$")]
     private static partial Regex LineRegex();
     [GeneratedRegex(@"^(\d{1,3})%")]
     private static partial Regex PctRegex();
@@ -141,7 +141,7 @@ public sealed partial class BatteryService : IDisposable
     private static partial Regex DetailRegex();
     [GeneratedRegex(@"headset|headphone|head set|buds|airpods|cloud|arctis|kraken|blackshark|barracuda|nari|astro|a50|jabra|quantum|inzone|virtuoso|void|hs\d|g\d{3}x?\b.*(?:headset|lightspeed)|pulse|wh-|wf-|earbud|fone")]
     private static partial Regex HeadsetRegex();
-    [GeneratedRegex(@"controller|gamepad|dualsense|dualshock|xbox|8bitdo|gamesir|flydigi|joy-?con|pro controller")]
+    [GeneratedRegex(@"controller|gamepad|dualsense|dualshock|xbox|8bitdo|switch pro|gamesir|flydigi|joy-?con|pro controller")]
     private static partial Regex PadRegex();
     [GeneratedRegex(@"keyboard|teclado|keychron|\bkb\b|tkl|k\d{2,3}\b")]
     private static partial Regex KeyboardRegex();
