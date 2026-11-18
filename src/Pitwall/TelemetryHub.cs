@@ -9,6 +9,7 @@ using Pitwall.Games;
 using Pitwall.Gpu;
 using Pitwall.Logging;
 using Pitwall.Metrics;
+using Pitwall.Native;
 using Pitwall.Sensors;
 using Pitwall.Server;
 
@@ -176,6 +177,23 @@ public sealed class TelemetryHub : IDisposable
         EndSession();
     }
 
+    readonly GameSuggester _suggester = new();
+
+    /// <summary>"Marcar como jogo?": olha o processo em foco (em janela, apresentando frames).</summary>
+    void UpdateSuggestion(AppConfig cfg, GameInfo? game, long now)
+    {
+        var fg = Win32.GetForegroundWindow();
+        Win32.GetWindowThreadProcessId(fg, out var pid);
+        string? exe = null;
+        var ok = false;
+        if (pid != 0 && pid != Environment.ProcessId && _presentMon.Get((int)pid) is { } s)
+        {
+            exe = s.Application;
+            ok = !Win32.IsFullscreen(fg, out _) && s.CurrentFps() >= GameSuggester.MinFps;
+        }
+        _suggester.Update(exe, ok, game?.Exe, cfg.Games, now);
+    }
+
     /// <summary>Arquivos que a retenção nunca apaga: o atual e o da sessão mais recente.</summary>
     List<string?> RetentionProtected() =>
         [_log.CurrentPath, _sessions.Recent.FirstOrDefault(s => s.CsvFile != null)?.CsvFile, _crashReport?.CsvFile];
@@ -226,7 +244,11 @@ public sealed class TelemetryHub : IDisposable
             _ws.Broadcast(SessionsMessage());
         }
 
-        _tuner.Update(cfg.GpuTuning, game != null);
+        // Perfil do jogo: vale só enquanto ele roda; ao sair, volta a config geral (o GpuTuner desfaz com o marcador de crash)
+        var profile = game != null ? cfg.Games.ProfileFor(game.Exe) : null;
+        _tuner.Update(GameProfiles.EffectiveTuning(cfg.GpuTuning, profile, game != null), game != null);
+
+        UpdateSuggestion(cfg, game, now);
 
         var stats = game != null ? _presentMon.Get(game.Pid) : null;
         var fps = stats?.Snapshot();
@@ -277,6 +299,13 @@ public sealed class TelemetryHub : IDisposable
             ["game"] = game == null ? null : new JsonObject { ["exe"] = game.Exe, ["mode"] = game.Mode },
             ["values"] = values,
             ["texts"] = texts,
+            ["profile"] = profile == null ? null : new JsonObject
+            {
+                ["exe"] = game!.Exe,
+                ["tuningPreset"] = profile.TuningPreset,
+                ["layout"] = profile.Layout,
+            },
+            ["gameSuggestion"] = _suggester.Suggestion is { } sug ? new JsonObject { ["exe"] = sug } : null,
             ["presentMonError"] = _presentMon.Available ? null : _presentMon.LastError,
             ["fpsStatus"] = _presentMon.StatusText,
             ["batteries"] = cfg.Battery.Enabled ? JsonSerializer.SerializeToNode(_battery.Devices, ConfigStore.Json) : null,
@@ -441,6 +470,22 @@ public sealed class TelemetryHub : IDisposable
                         _ws.Broadcast(CatalogMessage());
                     }
                     return null;
+                case "acceptGameSuggestion":
+                case "dismissGameSuggestion":
+                {
+                    // Só vale para a sugestão atual (a página não escolhe um exe qualquer)
+                    if (_suggester.Suggestion is not { } exe) return null;
+                    var sent = node["exe"]?.GetValue<string>();
+                    if (sent != null && !string.Equals(sent, exe, StringComparison.OrdinalIgnoreCase)) return null;
+                    var accept = node["type"]!.GetValue<string>() == "acceptGameSuggestion";
+                    _suggester.Clear();
+                    _config.Update(c =>
+                    {
+                        var list = accept ? c.Games.Include : c.Games.DismissedSuggestions;
+                        if (!list.Contains(exe, StringComparer.OrdinalIgnoreCase)) list.Add(exe);
+                    });
+                    return null;
+                }
                 case "resetExtremes":
                     _extremes.Reset();
                     _ws.Broadcast(ExtremesMessage());

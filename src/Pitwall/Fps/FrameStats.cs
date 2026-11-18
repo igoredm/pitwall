@@ -93,6 +93,21 @@ public sealed class FrameStats
         lock (_gate) { SessionFrames = 0; SessionMs = 0; }
     }
 
+    /// <summary>Só o FPS do último ~1 s (sem ordenar a janela dos lows) — barato para olhar processos que não são o jogo.</summary>
+    public double CurrentFps()
+    {
+        lock (_gate)
+        {
+            double sum = 0; int n = 0;
+            for (int i = 0; i < _count && sum < CurrentWindowMs; i++)
+            {
+                sum += _ring[(_head - 1 - i + Capacity) % Capacity];
+                n++;
+            }
+            return sum > 0 ? n * 1000.0 / sum : 0;
+        }
+    }
+
     public FpsSnapshot Snapshot()
     {
         lock (_gate)
