@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Pitwall 1.0 · Sessões · reduzir a retenção</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Nunito:wght@200;300;700;800&amp;family=Orbitron:wght@600&amp;family=Rajdhani:wght@600;700&amp;family=Baloo+2:wght@800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.D{--bg:#0E1014;--side:#0A0C0F;--sf:#15181D;--sf2:#0F1216;--raise:#1D2128;--segon:#2A2F38;--hair:#23272E;--bd:#30353F;--tx:#ECEEF2;--tx2:#A3AAB6;--tx3:#848C99;--ac:#4C8DFF;--act:#82AEFF;--acs:rgba(76,141,255,.14);--y:#F2B33D;--ys:rgba(242,179,61,.12);--r:#FF6B70;--rs:rgba(255,97,102,.12);--g:#3DDC84;--gs:rgba(61,220,132,.12);--sh:none;--dim:rgba(4,6,9,.70);--knob:#F4F5F7;--pop:#1A1E24;--popsh:0 12px 32px rgba(0,0,0,.5),0 0 0 1px #30353F}
+.L{--bg:#F3F4F6;--side:#EAECEF;--sf:#FFFFFF;--sf2:#F0F2F5;--raise:#FFFFFF;--segon:#FFFFFF;--hair:#E3E6EA;--bd:#D2D7DE;--tx:#12151B;--tx2:#4D5562;--tx3:#5F6876;--ac:#2F6FEB;--act:#2257C4;--acs:rgba(47,111,235,.10);--y:#8A5800;--ys:rgba(242,179,61,.18);--r:#C42833;--rs:rgba(209,42,54,.08);--g:#1C8048;--gs:rgba(30,142,79,.10);--sh:0 1px 2px rgba(18,21,27,.07);--dim:rgba(18,21,27,.52);--knob:#FFFFFF;--pop:#FFFFFF;--popsh:0 12px 32px rgba(18,21,27,.16),0 0 0 1px #D2D7DE}
+.app{display:flex;position:relative;overflow:hidden;background:var(--bg);color:var(--tx);font-family:'Manrope',system-ui,sans-serif;font-size:14px;line-height:1.4;font-variant-numeric:tabular-nums}
+.side{width:232px;flex-shrink:0;box-sizing:border-box;background:var(--side);border-right:1px solid var(--hair);padding:14px 12px 12px;display:flex;flex-direction:column;gap:1px}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 6px 14px}
+.brand img{width:30px;height:30px;border-radius:7px;display:block}
+.bn{font-weight:800;font-size:15px;letter-spacing:-.01em;line-height:1.1}
+.bv{font-size:11.5px;color:var(--tx3);font-weight:500}
+.srch{display:flex;align-items:center;gap:8px;height:32px;padding:0 6px 0 10px;border-radius:8px;background:var(--sf);border:1px solid var(--hair);color:var(--tx3);font-size:13px;margin-bottom:6px;box-sizing:border-box}
+.srch.on{border-color:var(--ac);box-shadow:0 0 0 3px var(--acs);color:var(--tx)}
+.kbd{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:1px 5px;border:1px solid var(--bd);border-radius:4px;color:var(--tx3);line-height:1.4}
+.ng{font-size:11.5px;font-weight:700;color:var(--tx3);padding:14px 8px 4px}
+.ni{display:flex;align-items:center;gap:10px;height:34px;padding:0 8px;border-radius:7px;color:var(--tx2);text-decoration:none;font-weight:600;font-size:13.5px}
+.ni svg{color:var(--tx3);flex-shrink:0}
+.ni.on{background:var(--raise);color:var(--tx);box-shadow:var(--sh)}
+.ni.on svg{color:var(--ac)}
+.dot{margin-left:auto;width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sfoot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:12px}
+.upd{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;background:var(--acs);color:var(--tx);text-decoration:none;font-size:12.5px;font-weight:600}
+.live{display:flex;flex-direction:column;gap:2px;padding:10px;border-top:1px solid var(--hair);font-size:12px;color:var(--tx2)}
+.live b{color:var(--tx);font-weight:700;font-size:12.5px;display:flex;align-items:center;gap:6px}
+.main{flex:1;min-width:0;box-sizing:border-box;padding:28px 40px 40px;position:relative}
+.col{max-width:840px}
+.col.wide{max-width:none}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
+h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.pd{margin:4px 0 0;color:var(--tx2);font-size:13.5px;max-width:64ch}
+.saved{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--tx3);white-space:nowrap;padding-top:5px}
+h2{margin:0;font-size:14px;font-weight:700;letter-spacing:-.005em}
+.sec{margin-top:28px}
+.sh{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:8px}
+.sh .ht{margin-top:2px}
+.grp{background:var(--sf);border:1px solid var(--hair);border-radius:10px;box-shadow:var(--sh)}
+.row{display:flex;align-items:center;gap:24px;padding:12px 16px;min-height:32px}
+.row+.row,.spot+.row,.bt{border-top:1px solid var(--hair)}
+.rl{flex:1;min-width:0}
+.lb{font-weight:600;font-size:14px}
+.ht{font-size:12.5px;color:var(--tx2);margin-top:2px;line-height:1.45}
+.t3{color:var(--tx3)}
+.dimmed{opacity:.45}
+.sw{display:inline-block;width:36px;height:20px;border-radius:999px;background:var(--bd);position:relative;flex-shrink:0;border:0;padding:0;cursor:pointer}
+.sw::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--knob);box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.sw.on{background:var(--ac)}
+.sw.on::after{left:18px}
+.sw.dis{opacity:.4}
+.seg{display:inline-flex;padding:2px;border-radius:8px;background:var(--sf2);border:1px solid var(--hair);gap:2px;flex-shrink:0}
+.seg button{height:26px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--tx2);font:600 12.5px 'Manrope',sans-serif;white-space:nowrap;cursor:pointer}
+.seg button.on{background:var(--segon);color:var(--tx);box-shadow:0 1px 2px rgba(0,0,0,.22)}
+.btn{height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);font:600 13px 'Manrope',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;text-decoration:none;box-sizing:border-box;flex-shrink:0;cursor:pointer}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn.qt{border-color:transparent;background:transparent;color:var(--tx2)}
+.btn.dg{color:var(--r)}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.lnk{color:var(--act);font-weight:600;text-decoration:none;font-size:13px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12.5px}
+.in{height:32px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);padding:0 10px;font:500 13px 'Manrope',sans-serif;box-sizing:border-box}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-ac{background:var(--acs);color:var(--act)}
+.p-y{background:var(--ys);color:var(--y)}
+.p-r{background:var(--rs);color:var(--r)}
+.p-g{background:var(--gs);color:var(--g)}
+.p-n{background:var(--sf2);color:var(--tx2);border:1px solid var(--hair)}
+.note{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-radius:10px;font-size:13px;line-height:1.45}
+.n-y{background:var(--ys);border:1px solid rgba(242,179,61,.28)}
+.n-r{background:var(--rs);border:1px solid rgba(255,97,102,.30)}
+.n-ac{background:var(--acs);border:1px solid rgba(76,141,255,.28)}
+.th{font-size:11.5px;font-weight:700;color:var(--tx3)}
+.bar{height:6px;border-radius:999px;background:var(--hair);overflow:hidden;display:flex}
+.bar span{display:block;height:100%}
+.spot{position:relative;z-index:5;border-radius:10px;box-shadow:0 0 0 2px var(--ac),0 0 0 9999px var(--dim)}
+.coach{position:absolute;z-index:6;width:348px;box-sizing:border-box;background:var(--pop);box-shadow:var(--popsh);border-radius:12px;padding:16px 16px 12px;color:var(--tx);font-size:13.5px;line-height:1.5}
+.coach h3{margin:0 0 4px;font-size:15px;font-weight:800;letter-spacing:-.01em}
+.coach p{margin:0;color:var(--tx2)}
+.cfoot{display:flex;align-items:center;gap:8px;margin-top:14px}
+.steps{display:flex;gap:3px;margin-right:auto;align-items:center}
+.steps i{display:block;width:12px;height:3px;border-radius:2px;background:var(--bd)}
+.steps i.on{background:var(--ac)}
+.steps em{font-style:normal;white-space:nowrap;font-size:11.5px;color:var(--tx3);margin-left:6px;font-weight:600}
+.arrow{position:absolute;width:12px;height:12px;background:var(--pop);transform:rotate(45deg)}
+.mon{display:flex;align-items:center;justify-content:center;flex-direction:column;border-radius:6px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);font-weight:700;font-size:15px;box-sizing:border-box}
+.mon.on{border:2px solid var(--ac);background:var(--acs);color:var(--tx)}
+.tbl-r{display:grid;align-items:center;gap:12px;padding:0 16px;min-height:44px}
+.tbl-r+.tbl-r{border-top:1px solid var(--hair)}
+.cap{font-size:12px;color:var(--tx3)}
+</style>
+</helmet>
+<div class="app D" style="width: 1200px; height: 800px"><nav class="side" aria-label="Seções"><div class="brand"><img src="/_blob/49160597995803ba0c8dcd41880213e6" alt=""><div><div class="bn">Pitwall</div><div class="bv">1.0.0</div></div></div><div class="srch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><span>Buscar</span><span class="kbd">Ctrl K</span></div><a class="ni" href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16a8 8 0 0 1 16 0"/><path d="M12 16l4.5-4.5"/></svg><span>Visão geral</span></a><div class="ng">Widget</div><a class="ni" href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M9.5 6v12"/></svg><span>Aparência e posição</span></a><a class="ni" href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19v-8"/><path d="M12 19V5"/><path d="M19 19v-5"/></svg><span>Métricas</span></a><a class="ni" href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 16v-5a5.5 5.5 0 0 1 11 0v5l1.5 2h-14z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><span>Alertas</span></a><div class="ng">Jogo</div><a class="ni" href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 8.5h9a4.5 4.5 0 0 1 4.4 5.4l-.5 2.4a2.6 2.6 0 0 1-4.5 1.2L14.5 15h-5l-1.4 2.5a2.6 2.6 0 0 1-4.5-1.2l-.5-2.4a4.5 4.5 0 0 1 4.4-5.4z"/><path d="M8.5 10.5v3"/><path d="M7 12h3"/></svg><span>Jogos</span></a><a class="ni on" href="#" aria-current="page"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Sessões</span><i class="dot" style="background: var(--r)"></i></a><a class="ni" href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M10 3v3M14 3v3M10 18v3M14 18v3M3 10h3M3 14h3M18 10h3M18 14h3"/></svg><span>Ajuste da GPU</span></a><div class="ng">Pitwall</div><a class="ni" href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="13" height="10" rx="1.5"/><path d="M6.5 19h5"/><rect x="17" y="9" width="5" height="10" rx="1.2"/></svg><span>Celular e TV</span></a><a class="ni" href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2.4" fill="var(--side)"/><circle cx="15" cy="16" r="2.4" fill="var(--side)"/></svg><span>Recursos</span></a><a class="ni" href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><path d="M12 7.6v.1"/></svg><span>App e atualizações</span></a><div class="sfoot"><a class="upd" href="#"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color: var(--act)"><path d="M12 4v11"/><path d="M7 10.5l5 5 5-5"/><path d="M5 20h14"/></svg><span>Atualização 1.0.1 disponível</span></a><div class="live"><b><i class="dot" style="margin: 0; background: var(--g)"></i>Widget no monitor 2</b><span>FC25.exe · 12 min · 141 FPS</span></div></div></nav><main class="main"><div class="col"><header class="ph"><div><h1>Sessões</h1><p class="pd">Cada partida vira um resumo. O CSV com todos os sensores fica na pasta de gravação.</p></div><div style="display: flex; align-items: center; gap: 12px"><span class="saved"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4L19 7"/></svg>Salvo</span></div></header><div class="cap" style="margin-top: 20px">Rolado até o fim da página ↓</div><section class="sec" id="csv"><div class="sh"><div><h2>Gravação em CSV</h2><div class="ht">Também liga e desliga em Recursos › Log CSV.</div></div></div><div class="grp"><div class="row"><div class="rl"><div class="lb">Gravar CSV durante os jogos</div><div class="ht">Um arquivo por sessão, com todos os sensores, até os ocultos no widget.</div></div><button type="button" role="switch" aria-checked="true" class="sw on"></button></div><div class="row"><div class="rl"><div class="lb">Pasta</div><div class="mono" style="margin-top: 4px; color: var(--tx2)">C:\Users\igor\AppData\Local\Pitwall\logs</div></div><button type="button" class="btn sm">Alterar…</button><button type="button" class="btn sm qt"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7a1.5 1.5 0 0 1 1.5-1.5h4l2 2h8A1.5 1.5 0 0 1 20.5 9v8.5A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>Abrir</button></div><div class="row"><div class="rl"><div class="lb">Intervalo</div><div class="ht">Uma linha a cada…</div></div><span class="seg" role="group"><button type="button">0,5 s</button><button type="button" class="on" aria-pressed="true">1 s</button><button type="button">2 s</button><button type="button">5 s</button></span></div><div class="row" style="align-items: flex-start"><div class="rl"><div class="lb">Guardar por</div><div class="ht">CSVs mais velhos que isso são apagados ao abrir o Pitwall e uma vez por dia. O CSV da última sessão e o do relatório de queda nunca são apagados.</div></div><span class="seg" role="group"><button type="button">1 dia</button><button type="button" class="on" aria-pressed="true">5 dias</button><button type="button">15 dias</button><button type="button">30 dias</button><button type="button">90 dias</button><button type="button">Para sempre</button></span></div><div style="padding: 0 16px 14px"><div class="note n-y" role="status" style="align-items: center"><span style="color: var(--y); display: flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4.5"/><path d="M12 17.4v.1"/></svg></span><div class="rl">Com 5 dias, a próxima limpeza (hoje, ao fechar o jogo) apaga <b>168 arquivos · 1,1 GB</b>. O histórico de sessões também passa a mostrar só os últimos 5 dias.</div><button type="button" class="btn sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7L4.5 11.5 9 16"/><path d="M5 11.5h9.5a5 5 0 0 1 0 10H12"/></svg>Voltar para 30 dias</button></div></div><div class="row" style="align-items: flex-start"><div class="rl"><div class="lb">Limitar o tamanho total</div><div class="ht">Se passar disso, apaga os mais antigos primeiro, mesmo dentro do prazo.</div></div><button type="button" class="in" style="display: flex; align-items: center; gap: 8px">2 GB<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button><button type="button" role="switch" aria-checked="true" class="sw on"></button></div><div class="row" style="flex-direction: column; align-items: stretch; gap: 8px"><div style="display: flex; justify-content: space-between; font-size: 13px"><span><b>0,3 GB</b> <span style="color: var(--tx2)">de 2 GB · 44 arquivos</span></span><span class="cap">depois da limpeza</span></div><span class="bar" style="height: 8px"><span style="width: 15%; background: var(--ac)"></span><span style="width: 55%; background: repeating-linear-gradient(135deg, var(--ys) 0 4px, transparent 4px 8px)"></span></span></div></div></section></div></main></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

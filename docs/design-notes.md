@@ -141,3 +141,152 @@ O compacto fica como está: sem enfeite. Zerar picos fica sempre disponível no 
 - Tabela com as colunas Executável (mono) | Ajuste da GPU (250 px) | Layout do widget (170 px) | remover (44 px). As linhas têm 54 px e o botão é [Novo perfil].
 - Opções da GPU: Padrão (mostra o preset global) / Equilibrado · W · MHz / Frio · W · MHz / Personalizado… / Desligado neste jogo. Opções do layout: Padrão / Completo / Médio / Compacto.
 - "Padrão" aparece em text2 e peso 500; um override aparece em text/600. O perfil ativo agora recebe a dica "ativo agora". EN: "Per-game profiles", "GPU tuning", "Widget layout", "Default", "Off in this game", "New profile", "active now".
+
+## v1.0
+
+Os frames estão no mesmo canvas, nas linhas a partir de y=17500 (três títulos: Configurações, Assistente e tour, Parear por código). As cópias ficam em `docs/design/v10/` (33 arquivos `.dc.html`). Neles, o logo vem de `/_blob/…`, um upload no canvas; no app, use `assets/logo/pitwall-256.png`. A crítica que motivou as mudanças está em `docs/design/v10/CRITIQUE.md`.
+
+### Decisão: um visual só para o app
+- As configurações, o assistente, o tour e a página de parear do celular e da TV têm **um visual só**, com claro e escuro. Os 5 temas (Lumen, Mínimo, Neon, Terminal, Splash) passam a valer **só para o widget** (e para a página do celular depois de pareado, que espelha o widget).
+- Por quê: 5 temas de app eram 5 meio-sistemas ("cara de IA", Mínimo "quadradão"). Um visual bem acabado dá para manter, e o widget continua sendo a parte expressiva.
+- Fica em App e atualizações › "Aparência das configurações": Sistema (padrão) / Claro / Escuro. `config.appTheme` deixa de ser usado no app (manter no config para não quebrar; ignorar).
+- O seletor "Tema do widget" mostra **miniaturas reais do widget** em cada tema (150×94, horizontal, com os tokens do widget), seleção com anel accent de 2 px, e "só escuro" sob Neon e Terminal.
+- Sem gradiente decorativo, brilho, blob, `backdrop-filter` ou blur em lugar nenhum do app. As únicas cores fortes na tela são o logo e as miniaturas do widget.
+- Marca: `assets/logo/pitwall-256.png` (tile escuro, arco azul→violeta, ponteiro branco, quadriculado). Tamanhos: 30 px na sidebar (raio 7), 26 px no assistente, 40 px em Sobre (raio 9), 48 px no convite do tour (raio 11), 32 px no celular, 72 px na TV (raio 16). O SVG antigo do `settings.html` sai.
+
+### Tokens do app (substituem o uso dos tokens de tema nas configurações)
+Fonte: **Manrope** (já empacotada) 400/500/600/700/800 para tudo, com `font-variant-numeric: tabular-nums` na raiz. JetBrains Mono só para dados: executável, caminho, nome de arquivo e endereço IP. As outras fontes continuam só no widget.
+
+| token | escuro | claro | uso |
+|---|---|---|---|
+| `--bg` | #0E1014 | #F3F4F6 | área de conteúdo |
+| `--side` | #0A0C0F | #EAECEF | sidebar (segunda camada neutra) |
+| `--sf` | #15181D | #FFFFFF | containers de seção |
+| `--sf2` | #0F1216 | #F0F2F5 | fundo do segmentado, input, tile de stat |
+| `--raise` | #1D2128 | #FFFFFF | item ativo da nav |
+| `--segon` | #2A2F38 | #FFFFFF | opção ativa do segmentado |
+| `--hair` | #23272E | #E3E6EA | divisores, borda de container |
+| `--bd` | #30353F | #D2D7DE | borda de controle, trilho do switch desligado |
+| `--tx` / `--tx2` / `--tx3` | #ECEEF2 / #A3AAB6 / #848C99 | #12151B / #4D5562 / #5F6876 | texto (tx3 ≥ 4.5:1 nos dois) |
+| `--ac` / `--act` / `--acs` | #4C8DFF / #82AEFF / rgba(76,141,255,.14) | #2F6FEB / #2257C4 / rgba(47,111,235,.10) | ação e seleção / texto de link / fundo de seleção |
+| `--y` / `--ys` | #F2B33D / rgba(242,179,61,.12) | #8A5800 / rgba(242,179,61,.18) | atenção |
+| `--r` / `--rs` | #FF6B70 / rgba(255,97,102,.12) | #C42833 / rgba(209,42,54,.08) | erro, crítico, queda |
+| `--g` / `--gs` | #3DDC84 / rgba(61,220,132,.12) | #1C8048 / rgba(30,142,79,.10) | ao vivo, ok |
+| `--dim` | rgba(4,6,9,.70) | rgba(18,21,27,.52) | fundo do tour e de diálogos |
+| `--pop` + `--popsh` | #1A1E24 + `0 12px 32px rgba(0,0,0,.5), 0 0 0 1px #30353F` | #FFF + `0 12px 32px rgba(18,21,27,.16), 0 0 0 1px #D2D7DE` | popover, balão do tour, diálogo |
+| sombra de container | nenhuma | `0 1px 2px rgba(18,21,27,.07)` | |
+
+A cor de destaque escolhida pelo usuário (`config.accent`) vale **só para o widget**. O app usa sempre `--ac`, porque a cor da marca não pode virar amarelo.
+
+Raios: container 10, controle e botão 8, opção do segmentado 6, popover e balão 12, diálogo 14, pílula 999. Não existe raio 0 nem 30 no app.
+
+### Espaço e tipo
+- Base de 4 px. Escala: 4, 6, 8, 12, 16, 20, 24, 28, 40.
+- Janela: mínimo 960×640, padrão 1200×800. Sidebar de 232 px (200 px abaixo de 1040 de largura). Conteúdo com padding 28/40/40 e **uma coluna de no máximo 840 px**. Métricas e tabelas largas usam a largura toda.
+- Página: h1 22/800, tracking −.02em; descrição 13.5/400 tx2, até 64ch; "Salvo" com check à direita (12.5 tx3). Sem rótulo acima do título.
+- Seção: 28 px acima, h2 14/700, dica opcional 12.5 tx2, 8 px até o container. **Um container por seção.** Nada de card dentro de card nem de duas colunas de cards.
+- Linha: padding 12/16, altura mínima de ~56 px, divisor `--hair`. Rótulo 14/600, dica 12.5/1.45 tx2 e controle à direita, alinhado ao centro (ao topo quando a dica tem 2 linhas ou mais).
+- Grupos da nav: 11.5/700 tx3, sem caixa alta. Item da nav: altura 34, 13.5/600, ícone de traço 17 px. Ativo: `--raise`, ícone accent.
+- Controles: switch 36×20; segmentado com altura 26 dentro de um trilho de 2 px; botão 32 (sm 28); input 32. Pílulas 11.5/700. Foco do teclado: borda `--ac` + `0 0 0 3px var(--acs)` em tudo.
+- Ícones: um conjunto de traço só, autoral (viewBox 24, traço 1.7, pontas redondas). Nunca emoji nem glifo unicode como ícone.
+
+### IA (nav)
+| Grupo | Página | Conteúdo |
+|---|---|---|
+| — | **Visão geral** | miniatura do widget + estado e ações; "Agora" (jogo, GPU, alertas, celular/TV, CSV, bateria; cada linha leva à página dela); banner de queda; "Primeiros passos" (tour) até concluir |
+| Widget | **Aparência e posição** | Tema do widget (prévias), variante, cor de destaque; Layout (4 opções, com o atual explicado); Monitor; Janela (mostrar, travar, sempre por cima, mostrar ao abrir jogo, mandar para o canto) |
+| | **Métricas** | abas GPU · CPU · RAM · FPS · Outros · **Bateria**; legenda de prioridade; tabela (alça, exibir, nome, sensor, unidade, amarelo, vermelho, gráfico, aparece em); nome do grupo no widget |
+| | **Alertas** | aviso do Windows (switch, som, esperar, intervalo, testar); prévia do aviso; "Métricas que avisam" (tudo com limite vermelho → Editar leva à linha em Métricas) |
+| Jogo | **Jogos** | Detecção + sugestão "marcar como jogo" em linha; Regras (incluir/ignorar, filtro); Perfis por jogo |
+| | **Sessões** | banner e relatório de queda; Última sessão (4×2); Histórico (filtro por jogo, "Mostrar mais"); **Gravação em CSV** (gravar, pasta, intervalo, guardar por, limite de tamanho, uso) |
+| | **Ajuste da GPU** | ajuste, quando, perfil, limites; Agora (6 valores) + por que o clock caiu |
+| Pitwall | **Celular e TV** | ativar; aviso de rede local; parear (endereço + código de 6 dígitos + QR); aparelhos pareados |
+| | **Recursos** | 11 switches em 3 grupos, cada um com uma linha de explicação e link para o ajuste |
+| | **App e atualizações** | idioma, aparência das configurações, iniciar com o Windows, taxa; atualizações; Ajuda (Rever tutorial, atalhos, relatar problema); Sobre; Restaurar padrão |
+
+EN: Overview · Widget: Appearance & position, Metrics, Alerts · Game: Games, Sessions, GPU tuning · Pitwall: Phone & TV, Features, App & updates.
+
+Onde fica cada coisa: **alertas** em Alertas (os limites ficam em Métricas, com link nos dois sentidos); **bateria** em Métricas › aba Bateria (o switch geral fica em Recursos); **idioma** em App e atualizações; **log/CSV** em Sessões › Gravação em CSV. A página "Log" e a página "Geral" deixam de existir. Deep links: `#/settings/<pagina>[/<ancora>]`, com ids estáveis (`overview, widget, metrics, alerts, games, sessions, gpu, devices, features, app`). O balão de queda abre `sessions/crash`.
+
+**Busca (Ctrl K, ou clique no campo da sidebar):** um índice estático montado do i18n (rótulo, dica, sinônimos), com no máximo 8 resultados agrupados por página, trecho com o termo em `--act` 700, setas e Enter. Ao abrir um resultado: vai para a página, rola até a linha e a destaca com uma sobreposição `--acs` que some (opacity) em 240 ms depois de 1,2 s. Sem animação ao abrir ou fechar o popover (ação de teclado).
+
+### Recursos (switch → config → link)
+| Recurso | Linha (PT) | config | link |
+|---|---|---|---|
+| Detecção de jogo | Reconhece quando um jogo abre e começa a sessão, os picos e o CSV. | `games.autoDetect` | Jogos |
+| Sugestão "marcar como jogo" | Pergunta quando um app em janela desenha quadros por 1 min. | **novo** `features.gameSuggestion` | Jogos |
+| Picos da sessão | Mostra no widget o máximo de cada sensor desde o início do jogo. | **novo** `features.sessionPeaks` | Métricas |
+| Motivo do clock | Mostra no widget o que segura o clock: térmico, power, voltagem. | **novo** `features.clockReason` | Ajuste da GPU |
+| Relatório de queda | Guarda os últimos 60 s e mostra o relatório se o PC desligar no meio do jogo. | **novo** `features.crashReport` | Sessões |
+| Log CSV | Grava todos os sensores durante o jogo, um arquivo por sessão. | `log.enabled` | Sessões › Gravação |
+| Ajuste da GPU | Limita consumo e clock só enquanto o jogo roda. Desfaz sozinho. | `gpuTuning.enabled` | Ajuste da GPU |
+| Bateria sem fio | Mostra a bateria de mouse, fone e controle perto do FPS. | `battery.enabled` | Métricas › Bateria |
+| Alertas do Windows | Avisa pelo Windows quando uma métrica fica no vermelho. | `alerts.enabled` | Alertas |
+| Celular e TV | Mostra o widget num celular ou TV da mesma rede Wi-Fi. | `remote.enabled` | Celular e TV |
+| Atualização automática | Procura versão nova uma vez por dia. Nunca instala sem você pedir. | `update.autoCheck` | Atualizações |
+
+Estados da linha: dependência ("Sugestão" fica esmaecida, com "Precisa da Detecção de jogo", quando a detecção está desligada); falta de suporte (pílula amarela "leitor não encontrado" / "precisa de NVIDIA", switch desabilitado e link para o motivo). Desligar um recurso esconde a seção correspondente na página de detalhe e mostra no lugar uma linha "Desligado em Recursos · Ligar".
+
+### Sessões · Gravação em CSV (retenção)
+- "Guardar por": segmentado **1 dia / 5 dias / 15 dias / 30 dias / 90 dias / Para sempre** → `log.keepDays` = 1/5/15/30/90/0. Padrão 30. EN "Keep for": 1 day / 5 days / 15 days / 30 days / 90 days / Forever.
+- "Limitar o tamanho total": switch + seletor 500 MB / 1 GB / 2 GB / 5 GB / 10 GB → `log.maxTotalMb` (desligado = 0).
+- Linha de uso: "1,4 GB de 2 GB · 212 arquivos · o mais antigo é de 19/10", com barra de 8 px.
+- Ao **diminuir** o prazo ou o teto, aparece uma nota amarela na hora: "Com 5 dias, a próxima limpeza (hoje, ao fechar o jogo) apaga 168 arquivos · 1,1 GB." + [Voltar para 30 dias]. Nada é apagado na hora; a limpeza continua no ciclo normal. A barra mostra em hachura o que vai sair.
+- O histórico de sessões segue a mesma retenção ("Guardado por 30 dias, como a gravação em CSV.").
+
+### Parear por código (celular e TV)
+- PC: endereço `IP:porta` em mono 20 px com [Copiar]; código de **6 dígitos** em caixas de 42×54 (grupos de 3+3), "vale por 1:52" com barra e [Gerar outro]; QR de 132 px num quadro branco ao lado ("Ou aponte a câmera do celular"). Aparelhos com ícone de celular ou TV e a pílula "vendo agora".
+- Celular (`http://<ip>:48124/`, sem token salvo): "Digite o código" / "Ele aparece no PC em Configurações › Celular e TV."; 6 caixas de 46×58, `inputmode="numeric"`, `autocomplete="one-time-code"`, colar distribui os dígitos, o 6º dígito envia sozinho. [Conectar] fica desabilitado até 6 dígitos. O conteúdo fica no terço de cima porque o teclado numérico ocupa o resto.
+- Estados: Conferindo com o PC… / **Código não confere.** Confira no PC e tente de novo. Mais N tentativas antes de bloquear por 5 min. / **Esse código expirou.** Gere outro no PC. / **Muitas tentativas.** Tente de novo em 4:59. / **Pareado**: "No PC, este aparelho aparece como iPhone · Safari. Abrindo o widget…" e um esqueleto estático. EN: "Enter the code" / "It's shown on the PC in Settings › Phone & TV." / "Code doesn't match. Check the PC and try again." / "This code expired. Make a new one on the PC." / "Too many tries. Try again in 4:59." / "Paired".
+- TV 1920×1080: margem segura de 96/128 px; título 84/800; texto ≥ 26 px; caixas de 112×144 com dígito de 84 px; teclado na tela 3×4 (1–9, Apagar, 0, Conectar) com teclas de 116 px de altura. Foco: **contorno branco de 6 px com offset de 4 + fundo mais claro**, sempre visível e nunca só pela cor. Setas movem o foco no teclado (começa no "1"), os números do controle digitam direto, OK escolhe, Voltar apaga e, com tudo vazio, sai. Rodapé com a legenda dos botões do controle. Depois do erro, o foco vai para "Apagar".
+- A página de parear usa o visual do app (o tema do widget só chega depois do auth). Ela segue `prefers-color-scheme`, com o escuro como padrão.
+
+### Assistente + tour (primeira execução)
+- **Assistente** (diálogo de 880×600 sobre as configurações, 3 passos): (1) Onde o widget vai ficar? (monitores + Idioma); (2) Escolha o tema do widget (5 prévias, variante, layout); (3) Verificando o PC (GPU NVIDIA, PresentMon, PawnIO, Administrador + Iniciar com o Windows) → [Concluir]. "Pular configuração" em todos. EN: "Where should the widget go?", "Pick the widget theme", "Checking your PC", "Finish", "Skip setup".
+- **Convite** ao concluir: "Tudo pronto. Quer um tour de 2 minutos?" / "All set. Want a 2-minute tour?" [Agora não / Not now] [Começar tour / Start tour]. Abaixo: "Dá para rever quando quiser em App e atualizações › Rever tutorial, ou no menu da bandeja."
+- **Tour** = coach marks sobre a UI real, em 8 passos. O alvo fica em destaque (anel accent de 2 px + o resto escurecido com `--dim`), e o balão de 348 px tem título, texto, progresso "3 de 8", [Voltar] [Próximo] e × no canto. Cada passo navega para a página do alvo e rola até ele. Teclado: → / Enter avança, ← volta, Esc fecha.
+
+| # | Página › alvo | PT | EN |
+|---|---|---|---|
+| 1 | Visão geral › miniatura do widget | **Este é o widget.** Ele fica no monitor 2 e mostra GPU, FPS, CPU e RAM ao vivo. Clique com o botão direito nele para travar, esconder ou abrir estas configurações. | **This is the widget.** It lives on monitor 2 and shows GPU, FPS, CPU and RAM live. Right-click it to lock, hide or open these settings. |
+| 2 | Aparência e posição › Layout | **Três tamanhos, um widget.** Completo, Médio ou Compacto. No Automático, o Pitwall escolhe pelo tamanho da janela. Cada jogo pode ter o seu em Jogos › Perfis. | **Three sizes, one widget.** Full, Mid or Compact. On Auto, Pitwall picks by window size. Each game can have its own in Games › Profiles. |
+| 3 | Métricas › tabela | **A ordem é a prioridade.** Arraste pela alça para reordenar. O Compacto mostra as 4 primeiras da GPU, o Médio 6, o Completo tudo que couber. Os limites amarelo e vermelho ficam aqui também. | **Order is priority.** Drag the handle to reorder. Compact shows the first 4 GPU metrics, Mid 6, Full everything that fits. Yellow and red limits live here too. |
+| 4 | Jogos › Detecção | **Ele percebe quando você joga.** Ao detectar um jogo, começa uma sessão: picos, CSV e, no fim, um resumo em Sessões. Se um jogo não for reconhecido, adicione o .exe em Regras. | **It notices when you play.** When a game is detected, a session starts: peaks, a CSV and, at the end, a summary in Sessions. If a game isn't recognized, add its .exe under Rules. |
+| 5 | Ajuste da GPU › switch | **Ajuste seguro da GPU.** Limita o consumo e o clock pela API oficial da NVIDIA. Nada é gravado na placa: tudo volta ao normal quando o jogo ou o Pitwall fecha. | **Safe GPU tuning.** Caps power and clock through NVIDIA's official API. Nothing is written to the card: it all reverts when the game or Pitwall closes. |
+| 6 | Celular e TV › Parear | **Veja no celular ou na TV.** No aparelho, abra o endereço e digite o código de 6 dígitos. Só leitura, só na rede local. | **Watch on your phone or TV.** On the device, open the address and type the 6-digit code. Read-only, local network only. |
+| 7 | Alertas › Avisar no vermelho | **Avisos no vermelho.** O widget sempre muda de cor. Ligue isto para o Windows também avisar quando uma métrica ficar no vermelho. | **Alerts in the red.** The widget always changes color. Turn this on to also get a Windows notification when a metric stays in the red. |
+| 8 | (sem alvo; réplica do menu da bandeja) | **Tudo também pela bandeja.** Clique com o botão direito no ícone do Pitwall perto do relógio: mostrar ou esconder o widget, zerar picos, abrir as configurações e rever este tour. → [Concluir] | **Everything from the tray too.** Right-click the Pitwall icon by the clock: show or hide the widget, reset peaks, open settings and replay this tour. → [Finish] |
+
+- **Rever tutorial** (EN "Replay tutorial"): (1) item fixo no menu da bandeja, logo abaixo de "Configurações…": abre as configurações e começa no passo 1; (2) App e atualizações › Ajuda › [Começar tour]; (3) Visão geral › "Primeiros passos" com o progresso e [Retomar tour] até concluir ou dispensar; (4) logo depois de fechar no meio, um aviso no rodapé por 6 s (pausa com o mouse em cima): "Tour fechado no passo 3 de 8. Volta em App › Rever tutorial e na bandeja." [Retomar] (EN "Tour closed at step 3 of 8. Find it again in App › Replay tutorial or the tray." [Resume]). Também aparece na busca ("tutorial", "tour", "ajuda").
+- Estado: `config.tour = { step: 0–8, done: bool, dismissed: bool }`. Retomar volta ao último passo visto; Rever começa do 1.
+
+### Movimento (emil-design-eng + orçamento de jogo)
+- Curvas: `--ease-out: cubic-bezier(.23,1,.32,1)`; `--ease-in-out: cubic-bezier(.77,0,.175,1)`. Nunca `ease-in`. Duração máxima de 240 ms. Só `transform` e `opacity`; cor muda sem transição (ou ≤120 ms em hover, só com `@media (hover: hover)`).
+- Botão: `:active { transform: scale(.97) }` em 100 ms. Switch: o knob anda por `transform: translateX(16px)` em 160 ms ease-out, sem passar do alvo. Fundo do switch: troca instantânea.
+- Popover e menu: opacity + `scale(.98)` a partir do gatilho (`transform-origin` no gatilho), 160 ms; saída em 100 ms.
+- Diálogo (assistente, convite, restaurar): opacity + `scale(.98)` centralizado, 200 ms; saída em 140 ms; o `--dim` faz fade de opacity em 200 ms.
+- Tour: o anel do destaque **não voa** entre alvos (cada passo muda de página): fade-out de 100 ms → troca de página e rolagem instantâneas → fade-in de 160 ms do anel e do balão, com o balão em `translateY(4px)→0`.
+- Aviso "Salvo": troca de texto sem animação. Destaque da busca: overlay `--acs`, fade de opacity em 240 ms depois de 1,2 s.
+- **Nunca anima**: navegação da sidebar e troca de página, troca de aba, Ctrl K / Esc, digitação, valores ao vivo (números, barras e sparklines só trocam o valor), skeletons (estáticos, sem shimmer), nada em loop contínuo, nada enquanto a janela está oculta ou minimizada. O spinner do "Conectando…" do celular é a única rotação, e só enquanto espera a resposta (≤ 10 s). Arrastar na tabela de Métricas: o CDK move a linha por `transform`, e as outras abrem espaço em 160 ms ease-out.
+- `prefers-reduced-motion`: tira todo `transform`, mantém opacity ≤120 ms.
+
+### Decisões para o frontend
+- Trocar o shell do `settings.html`: nova sidebar (logo PNG, busca, 3 grupos, rodapé com atualização + "Widget no monitor N · jogo"), rotas por página com âncoras, e tirar o `.glow`, o `rootClass` por tema e os overrides `.t-*` de `settings.scss`/`_kit.scss`. O app usa `.app-dark|.app-light` com os tokens acima. Os tokens de tema em `styles.scss` continuam só para o widget e para a página do celular depois de pareado.
+- `_kit.scss`: `panel` vira `section + .grp` (um container por seção) e `field.row` vira `.row`. Switch, segmentado, botão e input seguem as medidas acima. Remover os `in-theme()` das configurações.
+- Métricas: a lista recolhível vira abas (a aba selecionada fica na URL). A bateria vai para a aba "Bateria" (a lista de aparelhos com switch por aparelho + "Atualizar agora").
+- "Restaurar padrão" sai da sidebar e vai para App › Restaurar padrão, com um diálogo de confirmação que lista o que é perdido.
+- O seletor "Tema do widget" usa o widget de verdade em escala (`pw-widget` com `previewTheme`, `transform: scale()`, `pointer-events: none`) com dados **congelados** (sem assinar o snapshot ao vivo, para não gastar CPU com 5 widgets), ou uma miniatura estática.
+- Tour: um `TourService` com a lista de passos (rota, seletor do alvo, chave i18n). O overlay é um `div` fixo com `box-shadow: 0 0 0 9999px var(--dim)` num recorte posicionado pelo `getBoundingClientRect()` do alvo, mais o anel. Sem blur. Recalcula no resize. O foco vai para o balão (`role="dialog"`, título em `aria-live`).
+- Página do celular e da TV: rota `/` sem token → tela de código. Detectar TV (largura ≥ 1280 e `pointer: none|coarse`, ou o user agent com "TV") → layout TV com o teclado na tela. Nada de `:hover` como estado único.
+
+### O que precisa do backend
+1. **Código numérico de 6 dígitos** no `startPairing` (hoje são 8 alfanuméricos no fragmento do QR). Manter a validade de 2 min, uso único e o "5 erros invalidam". O QR continua levando o código no fragmento. Devolver `code` no `pairing` para o PC exibir.
+2. **Parear digitando**: `{ type:"pair", code:"482913" }` vindo da página raiz sem fragmento. Responder `paired.error` com `invalidCode | expired | noPending | blocked`, mais `attemptsLeft` e `retryAfterSec`. Com 10⁶ combinações, manter o bloqueio por IP e acrescentar um teto global de erros por código.
+3. Tipo de aparelho em `devices` (`kind: "phone"|"tv"|"desktop"`, pelo user agent) para o ícone e o nome ("TV da sala · Android TV").
+4. **Novos flags**: `features.gameSuggestion`, `features.sessionPeaks`, `features.clockReason`, `features.crashReport` (padrão `true`). Desligado: não calcular nem enviar.
+5. **Retenção**: `log.keepDays` já existe (0 = para sempre); validar 1/5/15/30/90/0. Nova mensagem `getLogStats` → `logStats { totalBytes, files, oldest, wouldDelete?: { files, bytes } }`, aceitando `keepDays`/`maxTotalMb` hipotéticos para a prévia.
+6. **Histórico de sessões além de 20**: guardar até a retenção e paginar (`getSessions { before?, limit, exe? }`) com filtro por jogo.
+7. **Tour**: persistir `config.tour { step, done, dismissed }`. Item "Rever tutorial" no menu da bandeja → host message `startTour` para a página de configurações.
+8. Deep links: o host aceita `openSettings { page, anchor }` (do balão de queda → `sessions/crash`; do aviso de alerta → `sessions`).
+9. `catalog` com as versões dos componentes para "Sobre" (PresentMon, PawnIO, .NET).
+10. `config.appearance: "system"|"light"|"dark"` para as configurações (substitui o uso de `appTheme` no app).
