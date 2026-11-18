@@ -265,10 +265,10 @@ pw-settings,
   }
 }
 
-// Janela estreita: 208 (e não 200) para "Aparência e posição" caber sem reticências
+// Janela estreita: 214 (e não 200) para "Aparência e posição" e "Appearance & position" caberem sem reticências
 @media (max-width: 1040px) {
   .pw-app.st .st-side {
-    width: 208px;
+    width: 214px;
   }
   .pw-app.st .st-main {
     padding: 24px 28px 36px;

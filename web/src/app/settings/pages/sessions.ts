@@ -118,8 +118,8 @@ interface Pending {
             @if (v.live) {
               <div class="row">
                 <span class="pill p-g">{{ sx.inProgressShort(v.dur) }}</span>
-                <div class="rl"><span class="mono">{{ v.session.exe }}</span></div>
-                <span class="cap">{{ sx.fpsAtEnd2 }}</span>
+                <div class="rl ell"><span class="mono" [title]="v.session.exe">{{ v.session.exe }}</span></div>
+                <span class="cap nw">{{ sx.fpsAtEnd2 }}</span>
               </div>
             }
             <div class="stats" [class.live]="v.live">
@@ -176,14 +176,14 @@ interface Pending {
             </div>
             @for (r of histRows(); track r.key) {
               <button type="button" class="tbl-r hcols hrow" [class.sel]="r.selected" [attr.aria-current]="r.selected ? 'true' : null" (click)="pick(r.session)">
-                <span class="hexe ell"><span class="mono">{{ r.session.exe }}</span>
+                <span class="hexe"><span class="mono ell" [title]="r.session.exe">{{ r.session.exe }}</span>
                   @if (r.crashed) {
                     <span class="pill p-r">{{ sx.pcShutDown }}</span>
                   } @else if (r.live) {
                     <span class="pill p-g">{{ sx.inProgress }}</span>
                   }
                 </span>
-                <span class="t2 sm13">{{ r.when }}</span>
+                <span class="t2 sm13 nw">{{ r.when }}</span>
                 <span>{{ r.dur }}</span>
                 <span>{{ r.avg }}</span>
                 <span class="c-low">{{ r.low }}</span>
@@ -429,7 +429,8 @@ interface Pending {
       white-space: nowrap;
     }
     .hcols {
-      grid-template-columns: minmax(0, 1.4fr) 120px 80px 80px 70px 100px 20px;
+      // "Quando" cabe numa linha só ("yesterday, 10:00 PM" tem ~125 px)
+      grid-template-columns: minmax(0, 1.4fr) 136px 80px 80px 70px 100px 20px;
     }
     .hrow {
       width: 100%;
@@ -456,12 +457,21 @@ interface Pending {
       display: flex;
       align-items: center;
       gap: 6px;
+      min-width: 0;
+      // nome longo: reticências no exe, a pílula ("em andamento", "PC desligou") continua inteira
       .mono {
         font-size: 13px;
+        min-width: 0;
+      }
+      .pill {
+        flex-shrink: 0;
       }
     }
     .sm13 {
       font-size: 13px;
+    }
+    .nw {
+      white-space: nowrap;
     }
     .lv-warn {
       color: var(--y);
@@ -498,7 +508,7 @@ interface Pending {
     }
     @container (max-width: 700px) {
       .hcols {
-        grid-template-columns: minmax(0, 1.4fr) 104px 64px 70px 90px 16px;
+        grid-template-columns: minmax(0, 1.4fr) 132px 64px 64px 84px 16px;
         gap: 10px;
       }
       .c-low {

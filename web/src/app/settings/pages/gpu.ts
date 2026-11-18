@@ -206,6 +206,8 @@ const LIVE: [string, string][] = [
       min-width: 0;
     }
     .lvv {
+      // quando o rótulo quebra em 2 linhas (Δ hot spot − núcleo a 960 px), o valor fica na mesma base dos outros
+      margin-top: auto;
       font-size: 20px;
       font-weight: 500;
       letter-spacing: -0.01em;

@@ -91,19 +91,8 @@ const RATES = [250, 500, 1000, 2000];
                 @if (notesOpen()) {
                   <div class="notes" role="region" [attr.aria-label]="sx.updNotes">
                     @for (b of notes(); track $index) {
-                      <p [class]="'md-' + b.kind">
-                        @for (sp of b.spans; track $index) {
-                          @if (sp.code) {
-                            <code>{{ sp.t }}</code>
-                          } @else if (sp.b) {
-                            <b>{{ sp.t }}</b>
-                          } @else if (sp.i) {
-                            <i>{{ sp.t }}</i>
-                          } @else {
-                            {{ sp.t }}
-                          }
-                        }
-                      </p>
+                      <!-- numa linha só: a quebra de linha virava espaço antes de vírgula e ponto -->
+                      <p [class]="'md-' + b.kind">@for (sp of b.spans; track $index) {@if (sp.code) {<code>{{ sp.t }}</code>} @else if (sp.b) {<b>{{ sp.t }}</b>} @else if (sp.i) {<i>{{ sp.t }}</i>} @else {<span>{{ sp.t }}</span>}}</p>
                     }
                     @if (u.notesUrl) {
                       <div class="nurl">
@@ -255,6 +244,8 @@ const RATES = [250, 500, 1000, 2000];
     .sub {
       gap: 10px;
       padding-top: 0;
+      // alinha os links com o texto da linha de cima (16 de padding + ícone 18 + gap 24)
+      padding-left: 58px;
       border-top: 0 !important;
       font-size: 13px;
     }

@@ -153,24 +153,9 @@ function excerpt(text: string, q: string): string {
           <div class="opt" role="option" [id]="'sr-' + $index" [attr.aria-selected]="active() === $index" (mousemove)="active.set($index)" (click)="pick($index)">
             <span class="oico"><pw-icon [name]="r.icon" [size]="16" /></span>
             <span class="otx">
-              <span class="ol">
-                @for (g of r.label; track $index) {
-                  @if (g.hit) {
-                    <b>{{ g.t }}</b>
-                  } @else {
-                    {{ g.t }}
-                  }
-                }
-              </span>
-              <span class="os">
-                @for (g of r.sub; track $index) {
-                  @if (g.hit) {
-                    <b>{{ g.t }}</b>
-                  } @else {
-                    {{ g.t }}
-                  }
-                }
-              </span>
+              <!-- numa linha só: a quebra de linha virava espaço em volta do termo ("Game s") -->
+              <span class="ol">@for (g of r.label; track $index) {@if (g.hit) {<b>{{ g.t }}</b>} @else {<span>{{ g.t }}</span>}}</span>
+              <span class="os">@for (g of r.sub; track $index) {@if (g.hit) {<b>{{ g.t }}</b>} @else {<span>{{ g.t }}</span>}}</span>
             </span>
             @if (active() === $index) {
               <span class="oico"><pw-icon name="chevron" [size]="14" [stroke]="2" /></span>

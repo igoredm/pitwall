@@ -217,7 +217,8 @@ const LAYOUTS: WidgetLayout[] = ['auto', 'full', 'mid', 'compact'];
     .themes {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 8px;
+      // 8 px colava o ✓ / "só escuro" de uma miniatura no nome da seguinte ("só escuro Terminal")
+      gap: 8px 16px;
       padding: 16px;
       container-type: inline-size;
     }

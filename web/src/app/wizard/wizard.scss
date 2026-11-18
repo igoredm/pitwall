@@ -89,7 +89,8 @@
   .wz-themes {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px;
+    // 8 px colava o ✓ de uma miniatura no nome da seguinte ("Lumen ✓ Mínimo")
+    gap: 8px 16px;
   }
   .wz-th {
     all: unset;
