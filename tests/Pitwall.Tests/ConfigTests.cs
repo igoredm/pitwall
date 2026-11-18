@@ -23,6 +23,15 @@ public class ConfigMigrationTests
     }
 
     [Fact]
+    public void FirstRun_OnlyForNewInstalls()
+    {
+        Assert.False(ConfigStore.Parse(null).FirstRunDone);                 // instalação nova: mostra o assistente
+        Assert.True(ConfigStore.Parse("""{ "version": 4 }""").FirstRunDone); // config existente: não mostra
+        Assert.True(ConfigStore.Parse("{ not json").FirstRunDone);           // config quebrada também não
+        Assert.False(ConfigStore.Parse("""{ "version": 5, "firstRunDone": false }""").FirstRunDone);
+    }
+
+    [Fact]
     public void InvalidJson_GivesDefaults()
     {
         var c = ConfigStore.Parse("{ not json");
@@ -56,7 +65,7 @@ public class ConfigMigrationTests
         Assert.Equal(30, c.Log.KeepDays);           // campos novos com padrão
         Assert.NotNull(c.Alerts);
         Assert.NotNull(c.Remote);
-        Assert.Equal(4, c.Version);
+        Assert.Equal(ConfigStore.CurrentVersion, c.Version);
     }
 
     [Fact]

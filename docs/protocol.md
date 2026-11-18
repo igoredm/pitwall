@@ -66,6 +66,7 @@ Campos novos **[0.7]** (sempre presentes; o backend corrige `null` e valores for
   "games": { "autoDetect": true, "include": [], "ignore": ["explorer.exe", "..."],
              "profiles": { "FC25.exe": { "tuningPreset": "cool", "layout": "compact" } },
              "dismissedSuggestions": ["Slack.exe"] },
+  "firstRunDone": true,  // assistente de primeira execução concluído; instalação nova = false (config v5)
   "alerts": { "enabled": false, "sound": false, "minIntervalMin": 5 },   // 1–1440
   "remote": { "enabled": false, "port": 48124,
               "pairedDevices": [ { "id": "04388cc23d523135", "name": "Pixel 8", "created": "2026-11-18T21:04:05-03:00" } ] }

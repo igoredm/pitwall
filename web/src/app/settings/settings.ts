@@ -1,12 +1,20 @@
 import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, forwardRef, inject, signal, untracked } from '@angular/core';
 import { AppConfig, MetricDef, MetricGroup, MetricSetting, MonitorInfo, THEMES, ThemeName } from '../models';
 import { I18n, LANGUAGES } from '../i18n';
 import { TelemetryService } from '../telemetry.service';
 import { LIMITS, NOT_COUNTED, groupLabel, isDarkTheme, unitLabel } from '../widget/metric-views';
 import { Widget } from '../widget/widget';
+import { Wizard } from '../wizard/wizard';
+import { CrashReport } from './crash-report';
+import { GameProfiles } from './game-profiles';
+import { PerfcapRow } from './perfcap-row';
+import { PhoneSection } from './phone-section';
+import { SessionSummary } from './session-summary';
+import { SettingsCtx } from './settings-ctx';
+import { UpdateNotice, UpdatesCard } from './updates-card';
 
-type Section = 'metricas' | 'geral' | 'gpu' | 'log' | 'jogos';
+type Section = 'metricas' | 'geral' | 'gpu' | 'jogos' | 'log' | 'celular';
 
 interface Row {
   def: MetricDef;
@@ -40,22 +48,27 @@ export const ACCENTS = ['', '#4C8DFF', '#8B5CF6', '#FF2E88', '#FF7A1A', '#FFC53D
 
 @Component({
   selector: 'pw-settings',
-  imports: [CdkDropList, CdkDrag, CdkDragHandle, Widget],
+  imports: [CdkDropList, CdkDrag, CdkDragHandle, Widget, Wizard, CrashReport, GameProfiles, PerfcapRow, PhoneSection, SessionSummary, UpdatesCard],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: SettingsCtx, useExisting: forwardRef(() => Settings) }],
 })
-export class Settings {
+export class Settings implements SettingsCtx {
   protected readonly t = inject(TelemetryService);
   protected readonly s = inject(I18n).s;
   protected readonly languages = LANGUAGES;
-  protected readonly navItems: Section[] = ['metricas', 'geral', 'gpu', 'log', 'jogos'];
+  protected readonly navItems: Section[] = ['metricas', 'geral', 'gpu', 'jogos', 'log', 'celular'];
+  protected readonly updateNotice = inject(UpdateNotice);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  /** Intervalos do aviso do Windows (minutos). */
+  protected readonly alertIntervals = [1, 5, 15, 30];
   protected readonly themes = THEMES;
   protected readonly accents = ACCENTS;
   protected readonly refreshRates = [250, 500, 1000, 2000];
   protected readonly logIntervals = [500, 1000, 2000, 5000];
 
-  protected readonly section = signal<Section>('metricas');
+  protected readonly section = signal<Section>((new URLSearchParams(location.search).get('section') as Section) || 'metricas');
   protected readonly search = signal('');
   protected readonly collapsed = signal<Set<MetricGroup>>(new Set(['ram', 'fps', 'other']));
   protected readonly confirmReset = signal(false);
@@ -65,7 +78,9 @@ export class Settings {
   protected readonly ruleFilter = signal<'all' | 'include' | 'ignore'>('all');
 
   /** Cópia local editável; salva com debounce. Sincroniza com o servidor quando não há edição pendente. */
-  protected readonly draft = signal<AppConfig | null>(null);
+  readonly draft = signal<AppConfig | null>(null);
+  /** Assistente de primeira execução: config que nunca concluiu (firstRunDone === false). */
+  protected readonly showWizard = computed(() => this.t.config()?.firstRunDone === false);
   private saveTimer?: ReturnType<typeof setTimeout>;
   private readonly systemDark = signal(matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -111,7 +126,7 @@ export class Settings {
     const rank = new Map<string, number>();
     for (const s of [...d.metrics].sort((a, b) => a.order - b.order)) {
       const def = defs.get(s.id);
-      if (!def || !s.enabled || !def.available || NOT_COUNTED.has(s.id)) continue;
+      if (!def || !s.enabled || !def.available || NOT_COUNTED.has(s.id) || def.unit === 'text') continue;
       const i = rank.get(def.group) ?? 0;
       rank.set(def.group, i + 1);
       out.set(
@@ -185,7 +200,16 @@ export class Settings {
 
   // ------------------------------------------------------------------ edição
 
-  protected update(mutate: (c: AppConfig) => void) {
+  /** Vai para uma seção (e rola até um card dela, se houver âncora). */
+  go(section: string, anchor?: string) {
+    this.section.set(section as Section);
+    if (anchor)
+      requestAnimationFrame(() =>
+        this.host.nativeElement.querySelector(`#${anchor}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      );
+  }
+
+  update(mutate: (c: AppConfig) => void) {
     const d = this.draft();
     if (!d) return;
     const next = structuredClone(d);
@@ -213,6 +237,12 @@ export class Settings {
     let obj: any = this.draft();
     for (const k of path.split('.')) obj = obj?.[k];
     this.patch(path, !obj);
+  }
+
+  protected patchAlerts(patch: Partial<NonNullable<AppConfig['alerts']>>) {
+    this.update((c) => {
+      c.alerts = { enabled: false, sound: false, minIntervalMin: 5, ...c.alerts, ...patch };
+    });
   }
 
   protected isCustomAccent(accent: string | undefined) {

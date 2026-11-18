@@ -9,7 +9,7 @@ import { Sparkline } from './sparkline';
 import { SplashBlobs } from './splash-blobs';
 import { FitScale } from './fit-scale';
 import { FitTiles } from './fit-tiles';
-import { LIMITS, LayoutSize, NOT_COUNTED, buildViews, groupLabel, isDarkTheme } from './metric-views';
+import { LIMITS, LayoutSize, NOT_COUNTED, buildViews, groupLabel, hasChipPeak, isDarkTheme } from './metric-views';
 
 interface Block {
   key: MetricGroup;
@@ -75,7 +75,8 @@ export class Widget {
    * (compacto = retângulo pequenininho, médio = ~300 px, completo = o resto).
    */
   protected readonly mode = computed<LayoutSize>(() => {
-    const pref = this.previewLayout() ?? this.urlLayout ?? this.config()?.widget.layout ?? 'auto';
+    // Perfil do jogo atual (v0.7) vale no lugar do layout da config enquanto o jogo roda
+    const pref = this.previewLayout() ?? this.urlLayout ?? this.t.profile()?.layout ?? this.config()?.widget.layout ?? 'auto';
     if (pref === 'compact' || pref === 'mid' || pref === 'full') return pref;
     const { w, h } = this.size();
     if (w < 340 && h < 260) return 'compact';
@@ -142,6 +143,51 @@ export class Widget {
     return n;
   });
 
+  /**
+   * Chip "Limite: …" ao lado do nome da GPU (completo e médio). O motivo já vem filtrado do serviço
+   * (2 s para aparecer, 3 s no mínimo, prioridade). Sem limite = sem chip. Na pré-visualização não aparece.
+   */
+  protected readonly limit = computed(() => {
+    const reason = this.t.perfcap().reason;
+    if (!reason || this.previewTheme() || !this.t.defs().get('gpu.perfcap')?.available) return null;
+    const s = this.s();
+    return {
+      reason,
+      label: s.perfcapLabel[reason],
+      /** Mínimo e Neon: "Limite · térmico" (texto, sem pílula no Mínimo). */
+      dotted: s.perfcapLabel[reason].replace(': ', ' · '),
+      word: s.perfcapWord[reason],
+      // Térmico em amarelo; power/voltagem no accent; ocioso/sincronia neutros. Nunca vermelho: limite não é alarme.
+      tone: reason === 'thermal' ? 'warn' : reason === 'power' || reason === 'voltage' ? 'accent' : 'neutral',
+      title: reason === 'voltage' ? `${s.perfcapWhy} · ${s.perfcapVoltageHint}` : s.perfcapWhy,
+    };
+  });
+
+  /** Picos (v0.7): só com jogo; o pill de zerar aparece no hover com o widget destravado. */
+  protected readonly resetDone = signal(false);
+  private resetTimer?: ReturnType<typeof setTimeout>;
+  protected readonly peaksSince = computed(() => {
+    const s = this.s();
+    let since = this.t.extremesSince();
+    if (since == null) {
+      const game = this.t.game();
+      const cur = this.t.sessions().find((x) => !x.end && x.exe === game?.exe);
+      since = cur ? new Date(cur.start).getTime() : null;
+    }
+    if (since == null) return s.peaksSession;
+    return s.peaksSince(new Date(since).toLocaleTimeString(s.locale, { hour: 'numeric', minute: '2-digit' }));
+  });
+
+  protected resetPeaks() {
+    this.t.send({ type: 'resetExtremes' });
+    this.resetDone.set(true);
+    clearTimeout(this.resetTimer);
+    this.resetTimer = setTimeout(() => this.resetDone.set(false), 2000);
+  }
+
+  /** Médio: pico no chip só para temperatura, power e clock. */
+  protected chipPeak = hasChipPeak;
+
   /** Jogo detectado sem captura de FPS (anti-cheat bloqueou o PresentMon). */
   protected readonly fpsBlocked = computed(() => !!this.t.game() && !!this.t.fpsStatus() && this.t.values()['fps.current'] == null);
 
@@ -177,6 +223,7 @@ export class Widget {
       window.removeEventListener('resize', onResize);
       mq.removeEventListener('change', onScheme);
       clearTimeout(timer);
+      clearTimeout(this.resetTimer);
     });
   }
 
@@ -282,6 +329,8 @@ export class Widget {
   }
 
   private views(group: MetricGroup): MetricView[] {
-    return buildViews(this.config() as AppConfig | null, this.t.defs(), this.t.values(), group);
+    // No ocioso não há pico (o tile esconde o "máx"); na pré-visualização também não
+    const ext = this.t.game() && !this.previewTheme() && this.mode() !== 'compact' ? this.t.extremes() : null;
+    return buildViews(this.config() as AppConfig | null, this.t.defs(), this.t.values(), group, ext);
   }
 }

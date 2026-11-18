@@ -1,0 +1,102 @@
+@use 'kit' with ($child: true);
+
+@include kit.panel;
+@include kit.text;
+@include kit.buttons;
+
+:host { display: block; }
+
+.panel { padding-bottom: 6px; }
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  h2 { margin: 0; }
+  p { margin: 2px 0 0; }
+}
+.min0 { min-width: 0; }
+.ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.csv { flex-shrink: 1; min-width: 0; .mono { font-size: 12px; overflow: hidden; text-overflow: ellipsis; } }
+.csv-text { font-size: 12px; color: var(--text2); }
+
+// Grade 4×2 de stats (raio 14, valor 24/300). Cada pico recebe o tint do nível que alcançou.
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.st {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--input);
+  transition: background 600ms ease;
+  .k { font-size: 12px; font-weight: 600; color: var(--text2); }
+  b {
+    font-family: var(--font-num);
+    font-size: 24px;
+    font-weight: var(--val-weight);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    transition: color 600ms ease;
+    small { font-size: 13px; font-weight: 500; color: var(--text2); }
+  }
+  .note { font-size: 11px; color: var(--text3); }
+  &.warn { background: var(--warn-tint); b { color: var(--yellow); } }
+  &.crit { background: var(--crit-tint); b { color: var(--red); } }
+  :host-context(.t-minimo) &, :host-context(.t-neon) &, :host-context(.t-terminal) & { border-radius: 0; }
+  :host-context(.t-minimo) &.warn, :host-context(.t-neon) &.warn { box-shadow: inset 2px 0 0 var(--yellow); }
+  :host-context(.t-minimo) &.crit, :host-context(.t-neon) &.crit { box-shadow: inset 2px 0 0 var(--red); }
+}
+.yr { gap: 6px; }
+.yr-vals {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  .y { color: var(--yellow); }
+  .r { color: var(--red); }
+}
+.yr-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--track);
+  .y { background: var(--yellow); }
+  .r { background: var(--red); }
+}
+
+// Sessões anteriores
+.ses {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 90px 90px 90px 60px;
+  gap: 12px;
+  align-items: center;
+  margin: 0 -20px;
+  padding: 11px 20px;
+  border-top: 1px solid var(--hair);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  &.th { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); }
+  &.sel { background: var(--input); }
+  .right { justify-self: end; }
+  .lv-warn { color: var(--yellow); }
+  .lv-crit { color: var(--red); }
+}
+.crash {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  background: color-mix(in srgb, var(--red) 16%, transparent);
+  color: var(--red);
+}

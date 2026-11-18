@@ -23,6 +23,10 @@ Nunito (fonte) — The Nunito Project Authors
 Angular — Google LLC
   Licença: MIT — https://angular.dev
 
+qrcode-generator 2.0.4 — Kazuhiko Arase
+  Licença: MIT — https://github.com/kazuhikoarase/qrcode-generator
+  Desenha o QR code de pareamento do celular (Configurações → Celular), sem rede e sem imagem externa.
+
 WirelessBattery (Wireless Device Battery Monitor) — krisgfx9
   Licença: GPL-3.0 — https://github.com/krisgfx9/Wireless-Device-Battery-Monitor
   Programa separado em tools\battery\, executado como "WirelessBattery.exe --list" para ler a bateria
