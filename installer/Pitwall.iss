@@ -33,7 +33,14 @@ UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 Compression=lzma2/max
 SolidCompression=yes
-WizardStyle=modern
+; Visual com a identidade do Pitwall (requer Inno Setup 6.7+): estilo escuro, sem linhas divisórias,
+; fundo no azul-noite do app e imagens com a logo (installer\art\make_art.py)
+WizardStyle=modern dark hidebevels includetitlebar
+WizardBackColor=#0A0D13
+WizardImageFile=art\wizard-100.png,art\wizard-125.png,art\wizard-150.png,art\wizard-200.png
+WizardSmallImageFile=art\wizard-small-100.png,art\wizard-small-125.png,art\wizard-small-150.png,art\wizard-small-200.png
+WizardImageBackColor=#0A0D13
+WizardSmallImageBackColor=#0A0D13
 ShowLanguageDialog=auto
 LanguageDetectionMethod=uilanguage
 CloseApplications=no
@@ -78,6 +85,7 @@ Filename: "{app}\{#AppExe}"; Flags: nowait; Check: RestartAfterSilentUpdate
 
 [UninstallRun]
 Filename: "{sys}\taskkill.exe"; Parameters: "/IM {#AppExe} /F"; Flags: runhidden waituntilterminated; RunOnceId: "KillApp"
+Filename: "{sys}\taskkill.exe"; Parameters: "/IM WirelessBattery.exe /IM headsetcontrol.exe /F"; Flags: runhidden waituntilterminated; RunOnceId: "KillHelpers"
 Filename: "{app}\{#AppExe}"; Parameters: "--set-autostart off"; Flags: runhidden waituntilterminated; RunOnceId: "RemoveAutostart"
 Filename: "{app}\tools\PresentMon.exe"; Parameters: "--terminate_existing_session --session_name PitwallPresentMon"; Flags: runhidden waituntilterminated; RunOnceId: "StopEtw"
 ; Regra do firewall da visualização no celular (Remote.Enabled); some mesmo que o recurso tenha ficado ligado
@@ -111,6 +119,24 @@ end;
 // Atualização por cima: fecha a instância em execução antes de copiar os arquivos.
 // Em modo silencioso quem chamou costuma ser o atualizador do app, que já está saindo sozinho (e restaura o
 // ajuste da GPU), então espera até 15 s o mutex de instância única sumir antes de recorrer ao taskkill.
+// Fecha WirelessBattery/headsetcontrol/PresentMon iniciados da pasta do app (não mexe em cópias de outros lugares).
+// Se algum sobrar rodando, o arquivo fica travado ("DeleteFile falhou; código 5").
+procedure KillHelpers;
+var
+  Code, I: Integer;
+  Cmd: String;
+begin
+  Cmd := '-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$d = ''' + ExpandConstant('{app}') + '''; ' +
+    'Get-Process WirelessBattery, headsetcontrol, PresentMon -ErrorAction SilentlyContinue | ' +
+    'Where-Object { $_.Path -and $_.Path.StartsWith($d, [StringComparison]::OrdinalIgnoreCase) } | ' +
+    'Stop-Process -Force -ErrorAction SilentlyContinue"';
+  for I := 1 to 3 do
+  begin
+    Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), Cmd, '', SW_HIDE, ewWaitUntilTerminated, Code);
+    Sleep(300);
+  end;
+end;
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   Code, I: Integer;
@@ -122,6 +148,8 @@ begin
       Sleep(200);
     end;
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM {#AppExe} /F', '', SW_HIDE, ewWaitUntilTerminated, Code);
-  Sleep(800);
+  // Os auxiliares (bateria a cada minuto, FPS) podem sobrar depois do taskkill do app
+  KillHelpers();
+  Sleep(500);
   Result := '';
 end;

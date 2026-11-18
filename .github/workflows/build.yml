@@ -34,7 +34,7 @@ jobs:
           path-type: inherit
 
       - name: Inno Setup
-        run: choco install innosetup --no-progress -y
+        run: choco install innosetup --version 6.7.1 --no-progress -y
 
       - name: Version
         id: ver
