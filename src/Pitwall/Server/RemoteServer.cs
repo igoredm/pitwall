@@ -130,7 +130,7 @@ public sealed class RemoteServer : IDisposable
                     Close(res, 503);
                     return;
                 }
-                try { await HandleSocket(ctx, ip, ct); }
+                try { await HandleSocket(ctx, ip, req.UserAgent, ct); }
                 finally { Interlocked.Decrement(ref _connections); }
                 return;
             }
@@ -176,7 +176,7 @@ public sealed class RemoteServer : IDisposable
         return origin != null && host != null && origin.Equals("http://" + host, StringComparison.OrdinalIgnoreCase);
     }
 
-    async Task HandleSocket(HttpListenerContext ctx, string ip, CancellationToken ct)
+    async Task HandleSocket(HttpListenerContext ctx, string ip, string? userAgent, CancellationToken ct)
     {
         WebSocket ws;
         try { ws = (await ctx.AcceptWebSocketAsync(null)).WebSocket; }
@@ -193,7 +193,7 @@ public sealed class RemoteServer : IDisposable
                 timeout.CancelAfter(AuthTimeout);
                 first = await Receive(ws, timeout.Token);
             }
-            var (device, justPaired) = first == null ? (null, false) : await Authenticate(first, client, ip);
+            var (device, justPaired) = first == null ? (null, false) : await Authenticate(first, client, ip, userAgent);
             if (device == null)
             {
                 await CloseSocket(ws, WebSocketCloseStatus.PolicyViolation, "unauthorized");
@@ -226,7 +226,7 @@ public sealed class RemoteServer : IDisposable
     }
 
     /// <returns>Dispositivo autenticado (null = recusado) e se ele acabou de parear.</returns>
-    async Task<(PairedDevice? Device, bool Paired)> Authenticate(string raw, WsClient client, string ip)
+    async Task<(PairedDevice? Device, bool Paired)> Authenticate(string raw, WsClient client, string ip, string? userAgent)
     {
         var now = DateTime.UtcNow;
         JsonNode? node;
@@ -247,16 +247,17 @@ public sealed class RemoteServer : IDisposable
         }
         if (type == "pair")
         {
-            var err = _pairing.Redeem(Str(node, "code"), Str(node, "name"), now, out var device, out var token);
+            // IP bloqueado no meio do caminho (a checagem HTTP foi antes do upgrade): nem olha o código, não gasta tentativa dele
+            if (_limiter.RetryAfterSec(ip, now) is { } wait)
+            {
+                await client.SendAsync(PairFailure(PairError.None, 0, wait));
+                return (null, false);
+            }
+            var err = _pairing.Redeem(Str(node, "code"), Str(node, "name"), now, out var device, out var token, userAgent);
             if (err != PairError.None || device == null)
             {
                 _limiter.Fail(ip, now);
-                await client.SendAsync(JsonSerializer.Serialize(new
-                {
-                    type = "paired",
-                    ok = false,
-                    error = err switch { PairError.Expired => "expired", PairError.NoPending => "noPending", _ => "invalidCode" },
-                }));
+                await client.SendAsync(PairFailure(err, _limiter.AttemptsLeft(ip, now), _limiter.RetryAfterSec(ip, now)));
                 return (null, false);
             }
             _limiter.Succeed(ip);
@@ -266,6 +267,18 @@ public sealed class RemoteServer : IDisposable
         }
         _limiter.Fail(ip, now);
         return (null, false);
+    }
+
+    /// <summary>
+    /// Resposta de pareamento recusado. Com <paramref name="retryAfterSec"/> (IP bloqueado) o erro é "blocked", seja qual for
+    /// o motivo do erro que bloqueou; senão vai o motivo e quantas tentativas o IP ainda tem.
+    /// </summary>
+    internal static string PairFailure(PairError err, int attemptsLeft, int? retryAfterSec)
+    {
+        if (retryAfterSec is { } wait)
+            return JsonSerializer.Serialize(new { type = "paired", ok = false, error = "blocked", retryAfterSec = wait });
+        var error = err switch { PairError.Expired => "expired", PairError.NoPending => "noPending", _ => "invalidCode" };
+        return JsonSerializer.Serialize(new { type = "paired", ok = false, error, attemptsLeft });
     }
 
     static string? Str(JsonNode? node, string key)

@@ -29,6 +29,16 @@ public sealed class AppConfig
     /// na migração v6. "Rever tutorial" (bandeja ou mensagem replayTutorial) volta para false.
     /// </summary>
     public bool TutorialDone { get; set; }
+    /// <summary>
+    /// 1.0 (config v7): estado do tour das configurações. Fonte da verdade; <see cref="TutorialDone"/> é só um apelido
+    /// mantido igual a <c>Tour.Done</c> para quem ainda lê o campo antigo.
+    /// </summary>
+    public TourConfig Tour { get; set; } = new();
+    /// <summary>
+    /// 1.0 (config v7): aparência das configurações (e da barra de título nativa delas): system | light | dark.
+    /// <see cref="ThemeMode"/> continua valendo só para o widget.
+    /// </summary>
+    public string Appearance { get; set; } = "system";
     public bool AutoOpenWidgetOnGame { get; set; } = true;
 
     /// <summary>"auto" = GPU no slot PCIe principal (menor barramento); senão o identificador LHM.</summary>
@@ -47,6 +57,14 @@ public sealed class AppConfig
     public RemoteConfig Remote { get; set; } = new();
     public FeaturesConfig Features { get; set; } = new();
     public List<MetricSetting> Metrics { get; set; } = [];
+}
+
+/// <summary>Tour das configurações: passo atual, concluído e dispensado ("agora não").</summary>
+public sealed class TourConfig
+{
+    public int Step { get; set; }
+    public bool Done { get; set; }
+    public bool Dismissed { get; set; }
 }
 
 /// <summary>Aviso do Windows quando uma métrica fica no vermelho por 5 s ou mais. Desligado por padrão.</summary>
@@ -96,6 +114,8 @@ public sealed class PairedDevice
     public DateTime Created { get; set; }
     /// <summary>Última vez que o dispositivo autenticou ou esteve conectado (atualizado no máximo 1x/min). null = nunca.</summary>
     public DateTime? LastSeen { get; set; }
+    /// <summary>phone | tv | desktop | unknown — deduzido do user agent ao parear. Pareados antes da 1.0 = unknown.</summary>
+    public string Kind { get; set; } = "unknown";
 }
 
 /// <summary>Perfil por jogo: aplicado quando o jogo começa e desfeito quando ele termina (nada fica salvo no meio).</summary>

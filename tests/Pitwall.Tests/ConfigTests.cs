@@ -128,7 +128,7 @@ public class ConfigV6Tests
     public void NewInstall_TutorialPendingAndFeaturesOn()
     {
         var c = ConfigStore.Parse(null);
-        Assert.Equal(6, ConfigStore.CurrentVersion);
+        Assert.Equal(7, ConfigStore.CurrentVersion); // v7: tour e appearance (rodada 2)
         Assert.False(c.TutorialDone);
         Assert.False(c.FirstRunDone);
         Assert.True(c.Features.CrashReport);
@@ -145,7 +145,7 @@ public class ConfigV6Tests
         Assert.False(c.FirstRunDone);      // semântica do assistente não muda
         Assert.Equal(15, c.Log.KeepDays);  // 7 não é mais opção: sobe para 15
         Assert.True(c.Features.CrashReport);
-        Assert.Equal(6, c.Version);
+        Assert.Equal(ConfigStore.CurrentVersion, c.Version);
 
         Assert.True(ConfigStore.Parse("""{ "version": 2 }""").TutorialDone);
         Assert.True(ConfigStore.Parse("{ not json").TutorialDone);

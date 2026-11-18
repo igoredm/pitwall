@@ -45,8 +45,12 @@ public sealed class PairingManager
         lock (_gate) _code = null;
     }
 
-    /// <summary>Troca o código por um dispositivo novo. O código vale uma vez só.</summary>
-    public PairError Redeem(string? code, string? deviceName, DateTime nowUtc, out PairedDevice? device, out string? token)
+    /// <summary>
+    /// Troca o código por um dispositivo novo. O código vale uma vez só.
+    /// <paramref name="userAgent"/> só define o tipo (ícone): phone | tv | desktop | unknown.
+    /// </summary>
+    public PairError Redeem(string? code, string? deviceName, DateTime nowUtc, out PairedDevice? device, out string? token,
+        string? userAgent = null)
     {
         device = null;
         token = null;
@@ -75,6 +79,7 @@ public sealed class PairingManager
             TokenHash = Hash(token),
             Created = DateTime.Now,
             LastSeen = DateTime.Now,
+            Kind = DeviceKind.FromUserAgent(userAgent),
         };
         return PairError.None;
     }
@@ -171,6 +176,27 @@ public sealed class AttemptLimiter
             if (_state.Count > 1024)
                 foreach (var k in _state.Where(kv => kv.Value.BlockedUntil < nowUtc && kv.Value.Failures.Count == 0).Select(kv => kv.Key).ToList())
                     _state.Remove(k);
+        }
+    }
+
+    /// <summary>Quantos erros ainda cabem antes de bloquear esta chave (0 = bloqueada agora).</summary>
+    public int AttemptsLeft(string key, DateTime nowUtc)
+    {
+        lock (_gate)
+        {
+            if (!_state.TryGetValue(key, out var s)) return MaxFailures;
+            if (s.BlockedUntil > nowUtc) return 0;
+            return Math.Max(0, MaxFailures - s.Failures.Count(t => nowUtc - t <= Window));
+        }
+    }
+
+    /// <summary>Segundos até desbloquear (arredondado para cima); null = não está bloqueada.</summary>
+    public int? RetryAfterSec(string key, DateTime nowUtc)
+    {
+        lock (_gate)
+        {
+            if (!_state.TryGetValue(key, out var s) || s.BlockedUntil <= nowUtc) return null;
+            return (int)Math.Ceiling((s.BlockedUntil - nowUtc).TotalSeconds);
         }
     }
 
