@@ -1,704 +1,196 @@
-<div [class]="rootClass()" [style.--accent]="draft()?.accent || null">
-  <div class="glow" aria-hidden="true"></div>
-
-  <nav class="sidebar" [attr.aria-label]="s().sections">
-    <div class="brand">
-      <svg viewBox="0 0 64 64" class="logo" aria-hidden="true">
-        <circle cx="32" cy="32" r="30" class="logo-bg" />
-        <path d="M17 47 A21 21 0 1 1 47 47" class="logo-ring" />
-        <path d="M32 32 L45 20" class="logo-needle" />
-      </svg>
+@let sx = s();
+<div class="pw-app st" [class]="appearance.cls()">
+  <nav class="st-side" [attr.aria-label]="sx.sections">
+    <div class="st-brand">
+      <img src="pitwall-logo.png" alt="" width="30" height="30" />
       <div>
-        <div class="brand-name">Pitwall</div>
-        <div class="brand-sub">{{ s().settingsTitle }}</div>
+        <div class="st-bn">Pitwall</div>
+        <div class="st-bv">{{ t.catalog()?.version ?? '' }}</div>
       </div>
     </div>
 
-    @for (n of navItems; track n) {
-      <button class="nav" [class.sel]="section() === n" [attr.aria-current]="section() === n ? 'page' : null" (click)="section.set(n)">
-        {{ s().nav[n] }}
-        @if (n === 'jogos' && t.catalog()?.crashReport) {
-          <i class="nav-dot crit" [title]="s().crashTitle(t.catalog()!.crashReport!.session.exe)"></i>
-        }
-        @if (n === 'geral' && updateNotice.pending()) {
-          <i class="nav-dot"></i>
-        }
-      </button>
-    }
+    <pw-search (navigate)="onSearch($event)" />
 
-    <div class="grow"></div>
-
-    @if (updateNotice.pending(); as u) {
-      <button class="update-card" (click)="go('geral', 'updates')">
-        <i aria-hidden="true"></i>
-        <span>
-          <span class="u-title">{{ s().updateNavTitle(u.version ?? '') }}</span>
-          <span class="u-sub">{{ u.status === 'downloading' ? s().updDownloading(u.progress ?? 0) : s().updateNavSub }}</span>
-        </span>
-      </button>
-    }
-
-    <div class="status-card">
-      <div class="status-title"><i [class.on]="draft()?.widget?.visible"></i>{{ status().title }}</div>
-      <div>{{ status().line1 }}</div>
-      <div>{{ status().line2 }}</div>
-    </div>
-    <button class="btn ghost reset" [class.danger]="confirmReset()" (click)="restoreDefaults()">
-      {{ confirmReset() ? s().confirmAgain : s().restoreDefaults }}
-    </button>
-    <div class="foot">
-      v{{ t.catalog()?.version ?? '—' }}{{ t.catalog()?.admin ? s().runningAdmin : '' }}
-      @if (!t.connected()) {
-        <br /><span class="err">{{ s().disconnected }}</span>
+    @for (g of navGroups; track $index) {
+      @if (g.group) {
+        <div class="st-ng" [id]="'ng-' + g.group">{{ sx.navGroups[g.group] }}</div>
       }
+      <div class="st-nlist" [attr.role]="g.group ? 'group' : null" [attr.aria-labelledby]="g.group ? 'ng-' + g.group : null">
+        @for (p of g.pages; track p) {
+          <a
+            class="st-ni"
+            [class.on]="nav.page() === p"
+            [attr.aria-current]="nav.page() === p ? 'page' : null"
+            [href]="nav.href(p)"
+            (click)="navTo($event, p)"
+          >
+            <pw-icon [name]="icons[p]" [size]="17" />
+            <span class="ell">{{ sx.pages[p] }}</span>
+            @if (p === 'sessions' && t.catalog()?.crashReport) {
+              <i class="dot st-ndot" style="background: var(--r)" [title]="sx.crashTitle(t.catalog()!.crashReport!.session.exe)"></i>
+            }
+          </a>
+        }
+      </div>
+    }
+
+    <div class="st-sfoot">
+      @if (notice.pending(); as u) {
+        <a class="st-upd" href="#/settings/app/updates" (click)="$event.preventDefault(); go('app', 'updates')">
+          <pw-icon name="download" [size]="15" [stroke]="2" />
+          <span>{{ u.status === 'ready' ? sx.sideUpdateReady(u.version ?? '') : u.status === 'downloading' ? sx.updDownloading(u.progress ?? 0) : sx.sideUpdate(u.version ?? '') }}</span>
+        </a>
+      }
+      <div class="st-live">
+        <b><i class="dot" [style.background]="side().visible ? 'var(--g)' : 'var(--tx3)'"></i>{{ side().title }}</b>
+        <span class="ell">{{ side().line }}</span>
+      </div>
     </div>
   </nav>
 
-  <main>
-    @if (draft(); as d) {
-      @switch (section()) {
-        <!-- ======================================================= MÉTRICAS -->
-        @case ('metricas') {
-          <header class="page-head">
-            <div>
-              <h1>{{ s().metricsTitle }}</h1>
-              @let mi = s().metricsIntro;
-              <p>{{ mi[0] }}<b>{{ mi[1] }}</b>{{ mi[2] }}<b>{{ mi[3] }}</b>{{ mi[4] }}<b>{{ mi[5] }}</b>{{ mi[6] }}</p>
-            </div>
-            <div class="head-actions">
-              <input class="input search" type="search" [placeholder]="s().searchMetric" [value]="search()" (input)="search.set($any($event.target).value)" />
-              <button class="btn" (click)="preview.set(true)">{{ s().previewWidget }}</button>
-            </div>
-          </header>
-
-          @for (g of groups(); track g.key) {
-            <section class="panel group">
-              <div class="group-head">
-                <button class="collapse" (click)="toggleGroup(g.key)" [attr.aria-expanded]="!collapsed().has(g.key) || !!search()">
-                  <span class="chev" [class.open]="!collapsed().has(g.key) || !!search()">›</span>
-                  <span class="g-name">{{ g.name }}</span>
-                  <span class="g-count">{{ s().activeOf(g.active, g.total) }}</span>
-                </button>
-                @if (g.key !== 'fps') {
-                  <label class="g-label">
-                    {{ s().nameInWidget }}
-                    <input class="input small" [value]="d.groupLabels?.[g.key] ?? ''" [placeholder]="g.label" (change)="setGroupLabel(g.key, $any($event.target).value)" />
-                  </label>
-                }
-              </div>
-
-              @if (!collapsed().has(g.key) || search()) {
-                <div class="table">
-                  <div class="tr th">
-                    <span></span><span>{{ s().colShow }}</span><span>{{ s().colLabel }}</span><span>{{ s().colSensor }}</span><span>{{ s().colUnit }}</span><span>{{ s().colWarn }}</span><span>{{ s().colCrit }}</span><span>{{ s().colGraph }}</span><span>{{ s().colWhere }}</span>
-                  </div>
-                  <div cdkDropList [cdkDropListData]="g.rows" (cdkDropListDropped)="drop(g, $event)" [cdkDropListDisabled]="!!search()">
-                    @for (r of g.rows; track r.s.id) {
-                      <div class="tr" cdkDrag cdkDragLockAxis="y" [class.na]="!r.def.available" [class.off]="!r.s.enabled">
-                        <span class="handle" cdkDragHandle [title]="s().drag">⋮⋮</span>
-                        <span>
-                          <button class="switch" role="switch" [attr.aria-checked]="r.s.enabled" [disabled]="!r.def.available" [class.on]="r.s.enabled && r.def.available" (click)="setMetric(r.s.id, { enabled: !r.s.enabled })"><i></i></button>
-                        </span>
-                        <span>
-                          <input class="input small" [value]="r.s.label ?? ''" [placeholder]="r.def.name" [disabled]="!r.def.available" (change)="setMetric(r.s.id, { label: $any($event.target).value || undefined })" />
-                        </span>
-                        <span class="sensor">
-                          @if (r.def.available) {
-                            <span [title]="r.def.source ?? ''">{{ r.def.source ?? r.def.name }}</span>
-                          } @else {
-                            <span class="na-tag">{{ s().notAvailable }}</span>
-                          }
-                        </span>
-                        <span>
-                          @if (r.def.isTemperature) {
-                            <span class="seg tiny">
-                              <button [class.sel]="r.s.unit !== 'F'" (click)="setMetric(r.s.id, { unit: 'C' })">°C</button>
-                              <button [class.sel]="r.s.unit === 'F'" (click)="setMetric(r.s.id, { unit: 'F' })">°F</button>
-                            </span>
-                          } @else {
-                            <span class="muted">{{ unitOf(r.def) || '—' }}</span>
-                          }
-                        </span>
-                        @if (r.def.unit !== 'graph' && r.def.unit !== 'text' && r.def.group !== 'fps') {
-                          <span class="thr">
-                            <i class="dot y"></i>
-                            <input class="input small num" inputmode="decimal" [value]="r.s.warn ?? ''" placeholder="—" [disabled]="!r.def.available" (change)="setMetric(r.s.id, { warn: numberOrNull($any($event.target).value) })" />
-                          </span>
-                          <span class="thr">
-                            <i class="dot r"></i>
-                            <input class="input small num" inputmode="decimal" [value]="r.s.crit ?? ''" placeholder="—" [disabled]="!r.def.available" (change)="setMetric(r.s.id, { crit: numberOrNull($any($event.target).value) })" />
-                          </span>
-                        } @else {
-                          <span class="muted">—</span><span class="muted">—</span>
-                        }
-                        <span>
-                          @if (r.def.isTemperature) {
-                            <button class="switch" role="switch" [attr.aria-checked]="r.s.sparkline" [disabled]="!r.def.available" [class.on]="r.s.sparkline && r.def.available" (click)="setMetric(r.s.id, { sparkline: !r.s.sparkline })"><i></i></button>
-                          } @else {
-                            <span class="muted">—</span>
-                          }
-                        </span>
-                        <span class="where">
-                          @switch (placement().get(r.s.id)) {
-                            @case ('compact') {
-                              <span class="pill-c">{{ s().layoutCompact }}</span><span class="pill-m">{{ s().layoutMid }}</span>
-                            }
-                            @case ('mid') {
-                              <span class="pill-m">{{ s().layoutMid }}</span>
-                            }
-                            @case ('full') {
-                              <span class="muted">{{ s().layoutFull }}</span>
-                            }
-                            @default {
-                              <span class="muted">—</span>
-                            }
-                          }
-                        </span>
-                      </div>
-                    }
-                  </div>
-                </div>
-              }
-            </section>
-          }
+  <main class="st-main" #main>
+    @if (!t.connected() && draft()) {
+      <div class="st-offline note n-r mid" role="alert">
+        <span class="ico"><pw-icon name="warn" [size]="16" [stroke]="2" /></span>
+        <span class="grow"><b>{{ sx.offlineTitle }}</b> {{ sx.offlineBody }}</span>
+        @if (!t.demo) {
+          <button type="button" class="btn sm" (click)="t.reconnectNow()">{{ sx.offlineRetry }}</button>
         }
-
-        <!-- ======================================================= GERAL -->
-        @case ('geral') {
-          <header class="page-head">
-            <div>
-              <h1>{{ s().generalTitle }}</h1>
-              <p>{{ s().generalIntro }}</p>
-            </div>
-            <div class="head-actions">
-              <button class="btn" (click)="preview.set(true)">{{ s().previewWidget }}</button>
-            </div>
-          </header>
-
-          <div class="cols">
-            <div class="col">
-              <section class="panel">
-                <h2>{{ s().appearance }}</h2>
-                <div class="field row">
-                  <div>
-                    <div class="f-label">{{ s().language }} <span class="hint">· {{ s().locale === 'en-US' ? 'Idioma' : 'Language' }}</span></div>
-                    <div class="hint">{{ s().languageHint }}</div>
-                  </div>
-                  <div class="seg tiny">
-                    <button [class.sel]="(d.language ?? 'auto') === 'auto'" (click)="patch('language', 'auto')">{{ s().languageAuto }}</button>
-                    @for (l of languages; track l.id) {
-                      <button [class.sel]="d.language === l.id" [attr.lang]="l.id" (click)="patch('language', l.id)">{{ l.name }}</button>
-                    }
-                  </div>
-                </div>
-                <div class="field">
-                  <div class="f-label">{{ s().appTheme }}</div>
-                  <div class="seg wide">
-                    @for (th of themes; track th.id) {
-                      <button [class.sel]="d.appTheme === th.id" (click)="patch('appTheme', th.id)">{{ s().themeNames[th.id] }}</button>
-                    }
-                  </div>
-                </div>
-                <div class="field">
-                  <div class="f-label">{{ s().widgetTheme }} <span class="hint">{{ s().widgetThemeHint }}</span></div>
-                  <div class="seg wide">
-                    @for (th of themes; track th.id) {
-                      <button [class.sel]="d.widgetTheme === th.id" (click)="patch('widgetTheme', th.id)">{{ s().themeNames[th.id] }}</button>
-                    }
-                  </div>
-                </div>
-                <div class="field row">
-                  <div>
-                    <div class="f-label">{{ s().variant }}</div>
-                    @if (isDarkOnly(d.widgetTheme) && isDarkOnly(d.appTheme)) {
-                      <div class="hint">{{ s().darkOnlyHint }}</div>
-                    }
-                  </div>
-                  <div class="seg">
-                    <button [class.sel]="d.themeMode === 'light'" (click)="patch('themeMode', 'light')">{{ s().light }}</button>
-                    <button [class.sel]="d.themeMode === 'dark'" (click)="patch('themeMode', 'dark')">{{ s().dark }}</button>
-                    <button [class.sel]="d.themeMode === 'system'" (click)="patch('themeMode', 'system')">{{ s().system }}</button>
-                  </div>
-                </div>
-                <div class="field">
-                  <div class="f-label">{{ s().accent }}</div>
-                  <div class="swatches">
-                    @for (a of accents; track a) {
-                      <button class="swatch" [class.sel]="(d.accent || '') === a" [class.theme-default]="!a" [style.background]="a || null" [title]="s().accents[a]" (click)="patch('accent', a)"></button>
-                    }
-                    <label class="swatch custom" [title]="s().accentCustom" [class.sel]="isCustomAccent(d.accent)">
-                      +
-                      <input type="color" [value]="d.accent || '#4c8dff'" (change)="patch('accent', $any($event.target).value.toUpperCase())" />
-                    </label>
-                    <span class="hint">{{ d.accent || s().accentThemeDefault }}</span>
-                  </div>
-                </div>
-              </section>
-
-              <section class="panel">
-                <h2>{{ s().behavior }}</h2>
-                <div class="field row">
-                  <div>
-                    <div class="f-label">{{ s().refreshRate }}</div>
-                    <div class="hint">{{ s().refreshRateHint }}</div>
-                  </div>
-                  <div class="seg">
-                    @for (r of refreshRates; track r) {
-                      <button [class.sel]="d.refreshMs === r" (click)="patch('refreshMs', r)">{{ fmtMs(r) }}</button>
-                    }
-                  </div>
-                </div>
-                <div class="field row">
-                  <div>
-                    <div class="f-label">{{ s().startWithWindows }}</div>
-                    <div class="hint">{{ s().startWithWindowsHint }}</div>
-                  </div>
-                  <button class="switch" role="switch" [attr.aria-checked]="d.startWithWindows" [class.on]="d.startWithWindows" (click)="flip('startWithWindows')"><i></i></button>
-                </div>
-                <div class="field row">
-                  <div>
-                    <div class="f-label">{{ s().autoOpen }}</div>
-                    <div class="hint">{{ s().autoOpenHint }}</div>
-                  </div>
-                  <button class="switch" role="switch" [attr.aria-checked]="d.autoOpenWidgetOnGame" [class.on]="d.autoOpenWidgetOnGame" (click)="flip('autoOpenWidgetOnGame')"><i></i></button>
-                </div>
-              </section>
-
-              <section class="panel">
-                <h2>{{ s().alertsTitle }}</h2>
-                <p class="hint panel-hint">{{ s().alertsHint }}</p>
-                <div class="field row">
-                  <div>
-                    <div class="f-label">{{ s().alertsEnable }}</div>
-                    <div class="hint">{{ s().alertsEnableHint }}</div>
-                  </div>
-                  <button class="switch" role="switch" [attr.aria-checked]="!!d.alerts?.enabled" [attr.aria-label]="s().alertsEnable" [class.on]="d.alerts?.enabled" (click)="patchAlerts({ enabled: !d.alerts?.enabled })"><i></i></button>
-                </div>
-                <div class="field row" [class.dim]="!d.alerts?.enabled">
-                  <div>
-                    <div class="f-label">{{ s().alertsSound }}</div>
-                    <div class="hint">{{ s().alertsSoundHint }}</div>
-                  </div>
-                  <button class="switch" role="switch" [attr.aria-checked]="!!d.alerts?.sound" [attr.aria-label]="s().alertsSound" [class.on]="d.alerts?.sound" [disabled]="!d.alerts?.enabled" (click)="patchAlerts({ sound: !d.alerts?.sound })"><i></i></button>
-                </div>
-                <div class="field row" [class.dim]="!d.alerts?.enabled">
-                  <div>
-                    <div class="f-label">{{ s().alertsInterval }}</div>
-                    <div class="hint">{{ s().alertsIntervalHint }}</div>
-                  </div>
-                  <div class="seg" role="group" [attr.aria-label]="s().alertsInterval">
-                    @for (m of alertIntervals; track m) {
-                      <button [class.sel]="(d.alerts?.minIntervalMin ?? 5) === m" [attr.aria-pressed]="(d.alerts?.minIntervalMin ?? 5) === m" [disabled]="!d.alerts?.enabled" (click)="patchAlerts({ minIntervalMin: m })">{{ m }} min</button>
-                    }
-                  </div>
-                </div>
-                <div class="field row" [class.dim]="!d.alerts?.enabled">
-                  <div>
-                    <div class="f-label">{{ s().alertsSustain }}</div>
-                    <div class="hint">{{ s().alertsSustainHint }}</div>
-                  </div>
-                  <div class="seg" role="group" [attr.aria-label]="s().alertsSustain">
-                    @for (sec of alertSustains; track sec) {
-                      <button [class.sel]="(d.alerts?.sustainSec ?? 10) === sec" [attr.aria-pressed]="(d.alerts?.sustainSec ?? 10) === sec" [disabled]="!d.alerts?.enabled" (click)="patchAlerts({ sustainSec: sec })">{{ sec }} s</button>
-                    }
-                  </div>
-                </div>
-                <div class="field row" [class.dim]="!d.alerts?.enabled">
-                  <div class="hint">{{ s().alertsTestHint }}</div>
-                  <button class="btn" [disabled]="!d.alerts?.enabled" (click)="t.send({ type: 'testAlert' })">{{ s().alertsTest }}</button>
-                </div>
-              </section>
-            </div>
-
-            <div class="col">
-              <section class="panel">
-                <h2>{{ s().wireless }}</h2>
-                <div class="field row">
-                  <div>
-                    <div class="f-label">{{ s().battShow }}</div>
-                    <div class="hint">{{ s().battHint[0] }}<span class="mono">WirelessBattery</span>{{ s().battHint[1] }}</div>
-                  </div>
-                  <button class="switch" role="switch" [attr.aria-checked]="d.battery.enabled" [class.on]="d.battery.enabled" (click)="flip('battery.enabled')"><i></i></button>
-                </div>
-                @if (d.battery.enabled) {
-                  <div class="field">
-                    @for (dev of t.batteries(); track dev.key) {
-                      <div class="dev-row">
-                        <div>
-                          <div class="strong">{{ dev.name }}</div>
-                          <div class="hint">
-                            {{ dev.via }} ·
-                            {{ !dev.connected ? s().battOff : dev.asleep ? s().battAsleep : dev.percent != null ? dev.percent + '%' : (dev.levelText ?? '—') }}{{ dev.charging ? ' · ' + s().battCharging : '' }}
-                          </div>
-                        </div>
-                        <button class="switch" role="switch" [attr.aria-checked]="!d.battery.hidden.includes(dev.key)" [class.on]="!d.battery.hidden.includes(dev.key)" (click)="toggleBatteryDevice(dev.key)"><i></i></button>
-                      </div>
-                    } @empty {
-                      <div class="muted">
-                        {{ s().battNone }}
-                        <a class="link" href="https://github.com/krisgfx9/Wireless-Device-Battery-Monitor#supported-devices" target="_blank" rel="noopener">{{ s().battSupported }}</a>
-                      </div>
-                    }
-                    <button class="link" style="margin-top: 8px" (click)="t.send({ type: 'refreshBatteries' })">{{ s().refreshNow }}</button>
-                  </div>
-                }
-              </section>
-
-              <section class="panel">
-                <h2>Widget</h2>
-                <div class="field">
-                  <div class="f-label">{{ s().widgetMonitor }}</div>
-                  <div class="monitors" [style]="monitorsBoxStyle()">
-                    @for (m of monitors().list; track m.device) {
-                      <button class="mon" [class.sel]="selectedMonitor()?.device === m.device" [style]="monitorStyle(m)" (click)="setMonitor(m)" [title]="monitorLabel(m)">
-                        {{ m.index }}
-                      </button>
-                    }
-                  </div>
-                  <div class="mon-foot">
-                    <span class="hint">{{ monitorLabel(selectedMonitor()) }}</span>
-                    @if (t.inHost) {
-                      <button class="link" (click)="t.host({ type: 'identifyMonitors' })">{{ s().identifyMonitors }}</button>
-                    }
-                  </div>
-                </div>
-                <div class="field row">
-                  <div>
-                    <div class="f-label">{{ s().layout }}</div>
-                    <div class="hint">{{ s().layoutHint }}</div>
-                  </div>
-                  <div class="seg tiny">
-                    <button [class.sel]="(d.widget.layout ?? 'auto') === 'auto'" (click)="patch('widget.layout', 'auto')">{{ s().layoutAutoBtn }}</button>
-                    <button [class.sel]="d.widget.layout === 'full'" (click)="patch('widget.layout', 'full')">{{ s().layoutFullBtn }}</button>
-                    <button [class.sel]="d.widget.layout === 'mid'" (click)="patch('widget.layout', 'mid')">{{ s().layoutMidBtn }}</button>
-                    <button [class.sel]="d.widget.layout === 'compact'" (click)="patch('widget.layout', 'compact')">{{ s().layoutCompactBtn }}</button>
-                  </div>
-                </div>
-                <div class="field row">
-                  <div>
-                    <div class="f-label">{{ s().corner }}</div>
-                    <div class="hint">{{ s().cornerHint }}</div>
-                  </div>
-                  <div class="btn-pair">
-                    <button class="btn" (click)="t.send({ type: 'placeTopRight', layout: 'compact' })">{{ s().layoutCompactBtn }}</button>
-                    <button class="btn" (click)="t.send({ type: 'placeTopRight', layout: 'mid' })">{{ s().layoutMidBtn }}</button>
-                  </div>
-                </div>
-                <div class="field row">
-                  <div>
-                    <div class="f-label">{{ s().showWidget }}</div>
-                  </div>
-                  <button class="switch" role="switch" [attr.aria-checked]="d.widget.visible" [class.on]="d.widget.visible" (click)="flip('widget.visible')"><i></i></button>
-                </div>
-                <div class="field row">
-                  <div>
-                    <div class="f-label">{{ s().lockWidget }}</div>
-                    <div class="hint">{{ s().lockWidgetHint }}</div>
-                  </div>
-                  <button class="switch" role="switch" [attr.aria-checked]="d.widget.locked" [class.on]="d.widget.locked" (click)="flip('widget.locked')"><i></i></button>
-                </div>
-                <div class="field row">
-                  <div>
-                    <div class="f-label">{{ s().alwaysOnTop }}</div>
-                    <div class="hint">{{ s().alwaysOnTopHint }}</div>
-                  </div>
-                  <button class="switch" role="switch" [attr.aria-checked]="d.widget.alwaysOnTop" [class.on]="d.widget.alwaysOnTop" (click)="flip('widget.alwaysOnTop')"><i></i></button>
-                </div>
-              </section>
-            </div>
-          </div>
-
-          <pw-updates-card />
-        }
-
-        <!-- ======================================================= GPU -->
-        @case ('gpu') {
-          <header class="page-head">
-            <div>
-              <h1>{{ s().gpuTitle }}</h1>
-              <p>{{ s().gpuIntro }}</p>
-            </div>
-          </header>
-
-          @if (t.catalog()?.tuning; as caps) {
-            @if (!caps.supported) {
-              <section class="panel narrow">
-                <div class="muted">{{ s().gpuUnavailable(caps.error || s().gpuNeedsNvidia) }}</div>
-                <pw-perfcap-row />
-              </section>
-            } @else {
-              <div class="cols">
-                <div class="col">
-                  <section class="panel">
-                    <div class="field row">
-                      <div>
-                        <div class="f-label">{{ s().gpuEnable }}</div>
-                        <div class="hint">{{ s().gpuCaps(caps.gpu ?? 'GPU', caps.powerDefaultW, caps.maxClockMhz) }}</div>
-                      </div>
-                      <button class="switch" role="switch" [attr.aria-checked]="d.gpuTuning.enabled" [class.on]="d.gpuTuning.enabled" (click)="flip('gpuTuning.enabled')"><i></i></button>
-                    </div>
-                    <div class="field row">
-                      <div>
-                        <div class="f-label">{{ s().gpuWhen }}</div>
-                        <div class="hint">{{ s().gpuWhenHint }}</div>
-                      </div>
-                      <div class="seg">
-                        <button [class.sel]="d.gpuTuning.onlyInGames" (click)="patch('gpuTuning.onlyInGames', true)">{{ s().gpuOnlyGames }}</button>
-                        <button [class.sel]="!d.gpuTuning.onlyInGames" (click)="patch('gpuTuning.onlyInGames', false)">{{ s().gpuAlways }}</button>
-                      </div>
-                    </div>
-                    <div class="field">
-                      <div class="f-label">{{ s().gpuProfile }}</div>
-                      <div class="seg wide">
-                        <button [class.sel]="d.gpuTuning.preset === 'balanced'" (click)="patch('gpuTuning.preset', 'balanced')">
-                          {{ s().gpuBalanced }} · {{ t.catalog()?.tuningPresets?.['balanced']?.powerW }} W · {{ t.catalog()?.tuningPresets?.['balanced']?.clockMhz }} MHz
-                        </button>
-                        <button [class.sel]="d.gpuTuning.preset === 'cool'" (click)="patch('gpuTuning.preset', 'cool')">
-                          {{ s().gpuCool }} · {{ t.catalog()?.tuningPresets?.['cool']?.powerW }} W · {{ t.catalog()?.tuningPresets?.['cool']?.clockMhz }} MHz
-                        </button>
-                        <button [class.sel]="d.gpuTuning.preset === 'custom'" (click)="patch('gpuTuning.preset', 'custom')">{{ s().gpuCustom }}</button>
-                      </div>
-                      <div class="hint" style="margin-top: 6px">
-                        {{ s().gpuProfileHint }}
-                      </div>
-                    </div>
-                    @if (tuningTarget(); as tg) {
-                      <div class="field">
-                        <div class="f-label">{{ s().gpuPowerLimit(tg.powerW, pctOfDefault(tg.powerW)) }}</div>
-                        <input class="range" type="range" [min]="caps.powerMinW" [max]="caps.powerMaxW" step="1" [value]="tg.powerW" (change)="setCustom({ powerLimitW: +$any($event.target).value })" />
-                      </div>
-                      <div class="field">
-                        <div class="f-label">{{ s().gpuMaxClock(tg.clockMhz) }}</div>
-                        <input class="range" type="range" min="1200" [max]="caps.maxClockMhz" step="15" [value]="tg.clockMhz || caps.maxClockMhz" (change)="setCustom({ maxClockMhz: +$any($event.target).value >= caps.maxClockMhz ? 0 : +$any($event.target).value })" />
-                        <div class="hint">{{ s().gpuMaxClockHint }}</div>
-                      </div>
-                    }
-                  </section>
-                </div>
-                <div class="col">
-                  <section class="panel">
-                    <h2>{{ s().gpuNow }}</h2>
-                    <div class="focus-now">
-                      <div>
-                        @if (t.tuning()?.active) {
-                          <div class="strong">{{ s().gpuActive(t.tuning()?.powerLimitW, t.tuning()?.clockMaxMhz) }}</div>
-                        } @else if (d.gpuTuning.enabled && d.gpuTuning.onlyInGames) {
-                          <div class="muted">{{ s().gpuWaiting }}</div>
-                        } @else {
-                          <div class="muted">{{ s().gpuOff(caps.powerStartW) }}</div>
-                        }
-                        @if (t.tuning()?.error; as err) {
-                          <div class="err" style="font-size: 12px">{{ err }}</div>
-                        }
-                      </div>
-                      <span class="badge" [class.on]="!!t.tuning()?.active">{{ t.tuning()?.active ? s().gpuApplied : s().gpuInactive }}</span>
-                    </div>
-                    <div class="live">
-                      @for (k of [['gpu.hotspot', '°C'], ['gpu.hotspotDelta', '°C'], ['gpu.temp', '°C'], ['gpu.power', 'W'], ['gpu.clock', 'MHz'], ['gpu.fan', '%']]; track k[0]) {
-                        <div class="live-item">
-                          <div class="hint">{{ s().gpuLive[k[0]] }}</div>
-                          <div class="strong mono">{{ t.values()[k[0]] != null ? round(t.values()[k[0]]!) : '—' }} {{ k[1] }}</div>
-                        </div>
-                      }
-                    </div>
-                    <pw-perfcap-row />
-                    <p class="hint">{{ s().gpuCompareHint }}</p>
-                  </section>
-                </div>
-              </div>
-            }
-          } @else {
-            <section class="panel narrow"><div class="muted">{{ s().loading }}</div></section>
-          }
-        }
-
-        @case ('log') {
-          <header class="page-head">
-            <div>
-              <h1>{{ s().logTitle }}</h1>
-              <p>{{ s().logIntro }}</p>
-            </div>
-          </header>
-          <section class="panel narrow">
-            <div class="field row">
-              <div>
-                <div class="f-label">{{ s().logEnable }}</div>
-                <div class="hint">{{ s().logEnableHint }}</div>
-              </div>
-              <button class="switch" role="switch" [attr.aria-checked]="d.log.enabled" [class.on]="d.log.enabled" (click)="flip('log.enabled')"><i></i></button>
-            </div>
-            <div class="field">
-              <div class="f-label">{{ s().logFolder }}</div>
-              <div class="path-row">
-                <input class="input mono" [value]="d.log.folder" (change)="patch('log.folder', $any($event.target).value)" />
-                @if (t.inHost) {
-                  <button class="btn" (click)="t.host({ type: 'pickFolder' })">{{ s().change }}</button>
-                  <button class="btn ghost" (click)="t.host({ type: 'openLogFolder' })">{{ s().open }}</button>
-                }
-              </div>
-            </div>
-            <div class="field row">
-              <div>
-                <div class="f-label">{{ s().interval }}</div>
-              </div>
-              <div class="seg">
-                @for (i of logIntervals; track i) {
-                  <button [class.sel]="d.log.intervalMs === i" (click)="patch('log.intervalMs', i)">{{ fmtMs(i) }}</button>
-                }
-              </div>
-            </div>
-            <div class="field">
-              <div class="hint">
-                @if (t.log(); as l) {
-                  {{ s().currentFile }}
-                  @if (t.inHost) {
-                    <button class="link mono" (click)="t.host({ type: 'openLogFile' })">{{ l.file }}</button>
-                  } @else {
-                    <span class="mono">{{ l.file }}</span>
-                  }
-                  · {{ fmtSize(l.size) }}
-                } @else {
-                  {{ d.log.enabled ? s().logWaiting : s().logOff }}
-                }
-              </div>
-            </div>
-          </section>
-        }
-
-        <!-- ======================================================= JOGOS -->
-        @case ('jogos') {
-          <header class="page-head">
-            <div>
-              <h1>{{ s().gamesTitle }}</h1>
-              <p>{{ s().gamesIntroV7 }}</p>
-            </div>
-          </header>
-
-          <pw-crash-report />
-
-          <section class="panel">
-            <h2>{{ s().autoDetection }}</h2>
-            <div class="field row">
-              <div>
-                <div class="f-label">{{ s().autoDetect }}</div>
-                <div class="hint">{{ s().autoDetectHint }}</div>
-              </div>
-              <button class="switch" role="switch" [attr.aria-checked]="d.games.autoDetect" [class.on]="d.games.autoDetect" (click)="flip('games.autoDetect')"><i></i></button>
-            </div>
-            @if (t.gameSuggestion(); as sug) {
-              <!-- "Marcar como jogo?": processo fora das regras desenhando quadros numa janela por 60 s -->
-              <div class="suggest">
-                <span class="s-dot" aria-hidden="true"></span>
-                <span class="s-text">
-                  <span class="s-k">{{ s().suggestFocus }}</span>
-                  <span class="s-line"><span class="mono">{{ sug.exe }}</span>{{ s().suggestLine('') }}</span>
-                </span>
-                <span class="s-ask">{{ s().suggestAsk }}</span>
-                <button class="btn" (click)="t.send({ type: 'dismissGameSuggestion', exe: sug.exe })">{{ s().suggestIgnore }}</button>
-                <button class="btn primary" (click)="t.send({ type: 'acceptGameSuggestion', exe: sug.exe })">{{ s().suggestMark }}</button>
-              </div>
-              <p class="hint">{{ s().suggestHint }}</p>
-            } @else {
-              <div class="focus-now">
-                <div>
-                  <div class="hint">{{ s().focusedNow }}</div>
-                  @if (t.game(); as g) {
-                    <div class="mono strong">{{ g.exe }} · {{ g.mode }}@if (t.values()['fps.current'] != null) { · {{ round(t.values()['fps.current']!) }} FPS}</div>
-                  } @else {
-                    <div class="muted">{{ s().noGameDetected }}</div>
-                  }
-                </div>
-                <span class="badge" [class.on]="!!t.game()">{{ t.game() ? s().gameDetected : s().idle }}</span>
-              </div>
-            }
-            @if (t.fpsStatus(); as st) {
-              <div class="fps-warn">{{ st }}</div>
-            }
-          </section>
-
-          <pw-session-summary />
-
-          <pw-game-profiles />
-
-          <section class="panel">
-            <div class="panel-head">
-              <div>
-                <h2>{{ s().executables }}</h2>
-                <p class="hint">{{ s().executablesHint }}</p>
-              </div>
-              <div class="seg tiny">
-                <button [class.sel]="ruleFilter() === 'all'" (click)="ruleFilter.set('all')">{{ s().all }} · {{ ruleCounts().include + ruleCounts().ignore }}</button>
-                <button [class.sel]="ruleFilter() === 'include'" (click)="ruleFilter.set('include')">{{ s().include }} · {{ ruleCounts().include }}</button>
-                <button [class.sel]="ruleFilter() === 'ignore'" (click)="ruleFilter.set('ignore')">{{ s().ignore }} · {{ ruleCounts().ignore }}</button>
-              </div>
-            </div>
-            <div class="add-row">
-              <input class="input mono" [placeholder]="s().exePlaceholder" [value]="newExe()" (input)="newExe.set($any($event.target).value)" (keydown.enter)="addRule()" />
-              <span class="seg tiny">
-                <button [class.sel]="newRule() === 'include'" (click)="newRule.set('include')">{{ s().include }}</button>
-                <button [class.sel]="newRule() === 'ignore'" (click)="newRule.set('ignore')">{{ s().ignore }}</button>
-              </span>
-              @if (t.inHost) {
-                <button class="btn ghost" (click)="t.host({ type: 'pickExe' })">{{ s().browse }}</button>
-              }
-              <button class="btn primary" (click)="addRule()">{{ s().add }}</button>
-            </div>
-            <div class="rules">
-              <div class="rule th"><span>{{ s().colExe }}</span><span>{{ s().colRule }}</span><span>{{ s().colOrigin }}</span><span></span></div>
-              @for (r of rules(); track r.exe) {
-                <div class="rule">
-                  <span class="mono" [title]="r.exe">{{ r.exe }}</span>
-                  <span class="seg tiny">
-                    <button [class.sel]="r.rule === 'include'" [disabled]="r.fixed" (click)="setRule(r.exe, 'include')">{{ s().include }}</button>
-                    <button [class.sel]="r.rule === 'ignore'" [disabled]="r.fixed" (click)="setRule(r.exe, 'ignore')">{{ s().ignore }}</button>
-                  </span>
-                  <span class="muted">{{ r.origin }}</span>
-                  <span>
-                    @if (!r.fixed) {
-                      <button class="icon-btn" [title]="s().remove" (click)="removeRule(r.exe)">×</button>
-                    }
-                  </span>
-                </div>
-              }
-            </div>
-          </section>
-        }
-
-        <!-- ======================================================= CELULAR -->
-        @case ('celular') {
-          <header class="page-head">
-            <div>
-              <h1>{{ s().phoneTitle }}</h1>
-              <p>{{ s().phoneIntro }}</p>
-            </div>
-          </header>
-          <pw-phone-section />
-        }
-      }
-    } @else {
-      <div class="loading">{{ s().connectingPitwall }}</div>
+      </div>
     }
+    <div class="st-col" [class.wide]="wide()">
+      @if (draft()) {
+        @switch (nav.page()) {
+          @case ('overview') {
+            <pw-page-overview />
+          }
+          @case ('widget') {
+            <pw-page-appearance />
+          }
+          @case ('metrics') {
+            <pw-page-metrics />
+          }
+          @case ('alerts') {
+            <pw-page-alerts />
+          }
+          @case ('games') {
+            <pw-page-games />
+          }
+          @case ('sessions') {
+            <pw-page-sessions />
+          }
+          @case ('gpu') {
+            <pw-page-gpu />
+          }
+          @case ('devices') {
+            <pw-page-devices />
+          }
+          @case ('features') {
+            <pw-page-features />
+          }
+          @case ('app') {
+            <pw-page-app />
+          }
+        }
+      } @else {
+        <!-- Esqueleto estático na forma das linhas: sem shimmer, sem spinner -->
+        <div class="st-loading" [attr.aria-label]="sx.connectingPitwall" role="status">
+          <span class="skel" style="width: 180px; height: 24px"></span>
+          <span class="skel" style="width: 420px; height: 14px; margin-top: 10px"></span>
+          <div class="grp" style="margin-top: 32px">
+            <div class="row"><span class="skel" style="width: 38%; height: 14px"></span></div>
+            <div class="row"><span class="skel" style="width: 52%; height: 14px"></span></div>
+            <div class="row"><span class="skel" style="width: 30%; height: 14px"></span></div>
+          </div>
+        </div>
+      }
+    </div>
   </main>
 
-  @if (showWizard()) {
-    <div class="wizard-scrim">
-      <pw-wizard class="wizard-box" />
+  <!-- Assistente e convite dividem o mesmo fundo: o fundo não pisca ao trocar de um para o outro -->
+  @if (showWizard() || invite()) {
+    <div class="scrim" animate.enter="fade-in" animate.leave="fade-out" (click)="!showWizard() && inviteLater()">
+      @if (showWizard()) {
+        <pw-wizard animate.enter="dlg-in" animate.leave="dlg-out" (done)="wizardDone($event)" (click)="$event.stopPropagation()" />
+      } @else {
+      <div class="dialog st-invite" role="dialog" aria-modal="true" aria-labelledby="inv-t" animate.enter="dlg-in" animate.leave="dlg-out" (click)="$event.stopPropagation()" (keydown)="trapTab($event)">
+        <img src="pitwall-logo.png" alt="" width="48" height="48" />
+        <h1 id="inv-t">{{ sx.inviteTitle }}</h1>
+        <p class="pd">{{ sx.inviteBody }}</p>
+        <ul class="st-topics">
+          @for (tp of sx.inviteTopics; track $index) {
+            <li><pw-icon [name]="['widget', 'widget', 'metrics', 'games', 'gpu', 'devices', 'alerts', 'tray'][$index]" [size]="16" />{{ tp }}</li>
+          }
+        </ul>
+        <div class="st-iacts">
+          <button type="button" class="btn qt" (click)="inviteLater()">{{ sx.notNow }}</button>
+          <button type="button" class="btn pri" (click)="startTour()"><pw-icon name="play" [size]="13" [stroke]="2" />{{ sx.startTour }}</button>
+        </div>
+        <p class="ht st-ifoot">{{ sx.inviteFoot }}</p>
+      </div>
+      }
     </div>
   }
 
-  @if (preview()) {
-    <div class="modal" (click)="preview.set(false)">
-      <div class="modal-body" (click)="$event.stopPropagation()">
-        <div class="modal-head">
-          <h2>{{ s().preview }} · {{ monitorLabel(selectedMonitor()) }}</h2>
-          <button class="icon-btn" [title]="s().close" [attr.aria-label]="s().close" (click)="preview.set(false)">×</button>
-        </div>
-        @let vert = (selectedMonitor()?.height ?? 0) > (selectedMonitor()?.width ?? 1);
-        @let lay = draft()?.widget?.layout ?? 'auto';
-        <div class="preview-box" [class.vertical]="vert && (lay === 'auto' || lay === 'full')" [class.square]="lay === 'mid'" [class.small]="lay === 'compact'">
-          <pw-widget [previewTheme]="$any(draft()?.widgetTheme)" [previewVertical]="vert" [previewLayout]="lay === 'auto' ? 'full' : $any(lay)" />
+  @if (dialog(); as dlg) {
+    <div class="scrim" animate.enter="fade-in" animate.leave="fade-out" (click)="closeDialog(false)">
+      <div class="dialog st-confirm" role="alertdialog" aria-modal="true" aria-labelledby="dlg-t" animate.enter="dlg-in" animate.leave="dlg-out" (click)="$event.stopPropagation()" (keydown)="trapTab($event)">
+        <h2 id="dlg-t">{{ dlg.title }}</h2>
+        @if (dlg.body) {
+          <p class="ht">{{ dlg.body }}</p>
+        }
+        @if (dlg.items?.length) {
+          <p class="ht st-ltitle">{{ dlg.listTitle }}</p>
+          <ul class="st-dlist">
+            @for (it of dlg.items; track $index) {
+              <li>{{ it }}</li>
+            }
+          </ul>
+        }
+        @if (dlg.foot) {
+          <p class="ht">{{ dlg.foot }}</p>
+        }
+        <div class="st-dacts">
+          <button #confirmCancel type="button" class="btn" (click)="closeDialog(false)">{{ sx.cancel }}</button>
+          <button type="button" class="btn" [class.dgf]="dlg.danger" [class.pri]="!dlg.danger" (click)="closeDialog(true)">{{ dlg.confirm }}</button>
         </div>
       </div>
     </div>
   }
+
+  @if (toastMsg(); as tm) {
+    <div class="st-toast pop" role="status" animate.enter="toast-in" animate.leave="toast-out" (mouseenter)="pauseToast()" (mouseleave)="resumeToast()" (focusin)="pauseToast()" (focusout)="resumeToast()">
+      <span class="grow">
+        <b>{{ tm.title }}</b>
+        @if (tm.body) {
+          <br /><span class="t2">{{ tm.body }}</span>
+        }
+      </span>
+      @if (tm.action; as a) {
+        <button type="button" class="btn sm" (click)="toastAction()">{{ a.label }}</button>
+      }
+    </div>
+  }
+
+  <pw-tour />
 </div>
+
+@if (preview()) {
+  <!-- Fora de .pw-app: o widget da prévia não pode herdar os controles do app -->
+  <div class="pw-prev" [class]="appearance.cls()" (click)="preview.set(false)">
+    <div class="pw-prev-body" role="dialog" aria-modal="true" [attr.aria-label]="sx.preview" (click)="$event.stopPropagation()">
+      <div class="pw-prev-head">
+        <span>{{ sx.preview }}</span>
+        <button type="button" class="pw-prev-x" [attr.aria-label]="sx.close" [title]="sx.close" (click)="preview.set(false)">
+          <pw-icon name="x" [size]="16" [stroke]="2" />
+        </button>
+      </div>
+      @let m = previewMon();
+      @let lay = draft()?.widget?.layout ?? 'auto';
+      @let vert = (m?.height ?? 0) > (m?.width ?? 1);
+      <div class="pw-prev-box" [class.vertical]="vert && (lay === 'auto' || lay === 'full')" [class.square]="lay === 'mid'" [class.small]="lay === 'compact'">
+        <pw-widget [previewTheme]="$any(draft()?.widgetTheme || 'lumen')" [previewVertical]="vert" [previewLayout]="lay === 'auto' ? 'full' : $any(lay)" />
+      </div>
+    </div>
+  </div>
+}

@@ -1,5 +1,5 @@
 /**
- * ?demo=v07 — simulador da 0.7 para testar layout sem o backend (ng serve / pré-visualização).
+ * ?demo=1 (ou ?demo=v07) — simulador para testar layout sem o backend (ng serve / pré-visualização).
  * Gera catálogo, config, snapshots a cada 1 s (com perfcap, picos, bateria), sessões com estatísticas,
  * relatório de queda, "Marcar como jogo?", atualização e pareamento; responde às mensagens da página.
  *
@@ -11,7 +11,17 @@
  *   features=crashReport,sessionPeaks   1.0: só esses recursos ligados (sem o parâmetro, todos ligados)
  *   scene=reconnect  celular: para de receber depois de 3 s (banner "Sem conexão")
  *   scene=revoked    celular: acesso revogado
- *   scene=nopair     celular: aberto sem código de pareamento
+ *   scene=nopair     celular/TV: tela de código. 482913 pareia; outro código = "não confere" (4, 3… tentativas e
+ *                    depois bloqueio de 5 min). pair=expired|blocked|nopending força a resposta. tv=1 força o layout de TV.
+ *   tour=<0–8>       1.0: passo do tour já visto (Visão geral mostra "Primeiros passos" com o progresso)
+ *   appearance=light|dark|system   1.0: visual das configurações
+ *   gpu=amd          1.0: sem NVIDIA (ajuste da GPU e motivo do clock sem suporte)
+ *   battery=none     1.0: leitor de bateria não encontrado
+ *   remote=busy      1.0: porta do celular ocupada
+ *   logs=empty       1.0: pasta de CSV vazia
+ *   offline=1        1.0: perde a conexão com o Pitwall depois de 4 s (aviso "Sem conexão")
+ * Mensagens do host (bandeja) no console: pitwallHost({ type: 'startTutorial' }) ou
+ *   pitwallHost({ type: 'navigate', page: 'sessions', anchor: 'crash' }).
  *   game=<exe>       nome do jogo (ex.: RocketLeague.exe usa o perfil com layout compacto)
  *   update=checking|downloading|ready|error|idle   estado do atualizador
  *   perfcap=thermal|power|voltage|sync|idle|none|na  motivo fixo (na = sem suporte)
@@ -23,6 +33,7 @@ import {
   CrashReport,
   FeaturesConfig,
   GameSession,
+  LogKeepDays,
   MetricDef,
   MetricGroup,
   MetricSetting,
@@ -86,7 +97,7 @@ const NOTES = `## Novidades
 - Ver pelo celular na rede local.
 - Correções: a bateria não corta mais no compacto.
 
-Detalhes em [GitHub](https://github.com/igoredm/pitwall/releases/tag/v0.7.1).
+Detalhes em [GitHub](https://github.com/igoredm/pitwall/releases/tag/v1.0.1).
 <script>alert('isto não pode rodar')</script> <img src=x onerror="alert(1)">`;
 
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -159,9 +170,9 @@ export function startDemo(t: TelemetryService) {
   const updateStatus = (urlParam('update') ?? (empty ? 'idle' : 'available')) as UpdateState['status'];
   let update: UpdateState = {
     status: updateStatus,
-    current: '0.7.0',
-    version: updateStatus === 'idle' || updateStatus === 'checking' ? undefined : '0.7.1',
-    notesUrl: 'https://github.com/igoredm/pitwall/releases/tag/v0.7.1',
+    current: '1.0.0',
+    version: updateStatus === 'idle' || updateStatus === 'checking' ? undefined : '1.0.1',
+    notesUrl: 'https://github.com/igoredm/pitwall/releases/tag/v1.0.1',
     notes: NOTES,
     channel: 'stable',
     progress: updateStatus === 'downloading' ? 62 : undefined,
@@ -171,25 +182,30 @@ export function startDemo(t: TelemetryService) {
     lastCheck: iso(now - 2 * 3600_000),
   };
 
+  const amd = urlParam('gpu') === 'amd';
   const catalog: Catalog = {
     type: 'catalog',
-    version: '0.9.0',
+    version: '1.0.0',
     lang: 'pt-BR',
     admin: true,
     presentMon: true,
-    battery: true,
-    hardware: { cpu: '12th Gen Intel Core i5-12600K', gpu: 'NVIDIA GeForce RTX 3080' },
+    battery: urlParam('battery') !== 'none',
+    hardware: { cpu: '12th Gen Intel Core i5-12600K', gpu: amd ? 'AMD Radeon RX 7800 XT' : 'NVIDIA GeForce RTX 3080' },
     monitors: [
       { device: '\\\\.\\DISPLAY1', index: 1, x: 0, y: 0, width: 2560, height: 1440, primary: true },
       { device: '\\\\.\\DISPLAY2', index: 2, x: 2560, y: 180, width: 1920, height: 1080, primary: false },
     ],
     metrics,
-    tuning: { supported: true, gpu: 'NVIDIA GeForce RTX 3080', powerMinW: 100, powerMaxW: 370, powerDefaultW: 320, powerStartW: 320, maxClockMhz: 2100 },
+    tuning: amd
+      ? { supported: false, powerMinW: 0, powerMaxW: 0, powerDefaultW: 0, powerStartW: 0, maxClockMhz: 0, error: 'Precisa de uma GPU NVIDIA.' }
+      : { supported: true, gpu: 'NVIDIA GeForce RTX 3080', powerMinW: 100, powerMaxW: 370, powerDefaultW: 320, powerStartW: 320, maxClockMhz: 2100 },
     tuningPresets: { balanced: { powerW: 300, clockMhz: 1800 }, cool: { powerW: 260, clockMhz: 1700 } },
     update,
     crashReport,
-    remote: { running: true, port: 48124 },
+    remote: urlParam('remote') === 'busy' ? { running: false, port: 48124, error: 'portInUse' } : { running: true, port: 48124 },
+    about: { app: '1.0.0', dotnet: '10.0.1', webView2: '142.0.3595.53', presentMon: '2.3.1', pawnIO: '2.0.1' },
   };
+  if (amd) for (const m of metrics) if (m.id === 'gpu.perfcap') m.available = false;
 
   // ------------------------------------------------------------------ config
   const settings: MetricSetting[] = DEFS.map(([id, , , unit, on, warn, crit, spark], i) => ({
@@ -204,13 +220,13 @@ export function startDemo(t: TelemetryService) {
   const devices: PairedDevice[] = empty
     ? []
     : [
-        { id: '04388cc23d523135', name: 'iPhone · Safari', created: iso(now - 6 * 86_400_000), lastSeen: iso(now - 30_000) },
-        { id: '9a1f0c77e2b04d11', name: 'Android · Chrome', created: iso(now - 16 * 86_400_000), lastSeen: iso(now - 3 * 86_400_000) },
-        { id: '5be2c0a9d14f7e30', name: 'TV da sala', created: iso(now - 2 * 86_400_000) },
+        { id: '5be2c0a9d14f7e30', name: 'TV da sala · Android TV', kind: 'tv', created: iso(now - 4 * 3600_000), lastSeen: iso(now - 20_000) },
+        { id: '04388cc23d523135', name: 'iPhone · Safari', kind: 'phone', created: iso(now - 6 * 86_400_000), lastSeen: iso(now - 3 * 86_400_000) },
+        { id: '9a1f0c77e2b04d11', name: 'Android · Chrome', kind: 'phone', created: iso(now - 16 * 86_400_000), lastSeen: iso(now - 15 * 86_400_000) },
       ];
-  /** 1.0: a mensagem devices traz online (só o iPhone está "vendo agora" na demo). */
+  /** 1.0: a mensagem devices traz online (só a TV está "vendo agora" na demo). */
   const devicesWithStatus = (): PairedDevice[] =>
-    config.remote!.pairedDevices.map((d) => ({ ...d, online: d.id === '04388cc23d523135' }));
+    config.remote!.pairedDevices.map((d) => ({ ...d, online: d.id === '5be2c0a9d14f7e30' }));
   let config: AppConfig = {
     refreshMs: 1000,
     webSocketPort: 48123,
@@ -221,12 +237,18 @@ export function startDemo(t: TelemetryService) {
     language: 'auto',
     startWithWindows: true,
     firstRunDone: scene !== 'firstrun',
-    tutorialDone: scene !== 'firstrun' && scene !== 'tutorial',
+    tutorialDone: scene !== 'firstrun' && scene !== 'tutorial' && !urlParam('tour'),
+    tour: {
+      step: Number(urlParam('tour') ?? (scene === 'firstrun' || scene === 'tutorial' ? 0 : 8)) || 0,
+      done: scene !== 'firstrun' && scene !== 'tutorial' && !urlParam('tour'),
+      dismissed: false,
+    },
+    appearance: (urlParam('appearance') as AppConfig['appearance']) ?? 'system',
     autoOpenWidgetOnGame: true,
     primaryGpu: 'auto',
     groupLabels: {},
     widget: { visible: true, monitor: '\\\\.\\DISPLAY2', x: 40, y: 40, width: 1280, height: 400, alwaysOnTop: false, locked: false, layout: 'auto' },
-    log: { enabled: true, folder: 'C:\\Users\\demo\\AppData\\Local\\Pitwall\\logs', intervalMs: 1000, keepDays: 30, maxTotalMb: 500 },
+    log: { enabled: true, folder: 'C:\\Users\\demo\\AppData\\Local\\Pitwall\\logs', intervalMs: 1000, keepDays: 30, maxTotalMb: 2048 },
     gpuTuning: { enabled: true, preset: 'balanced', powerLimitW: 280, maxClockMhz: 1800, onlyInGames: true },
     battery: { enabled: true, hidden: [], lowPercent: 15 },
     games: {
@@ -240,7 +262,7 @@ export function startDemo(t: TelemetryService) {
       },
       dismissedSuggestions: [],
     },
-    alerts: { enabled: true, sound: false, minIntervalMin: 5 },
+    alerts: { enabled: true, sound: false, minIntervalMin: 5, sustainSec: 10 },
     remote: { enabled: !empty, port: 48124, pairedDevices: devices },
     update: { autoCheck: true, channel: 'stable' },
     features: demoFeatures(),
@@ -284,6 +306,51 @@ export function startDemo(t: TelemetryService) {
   const gameStart = now - 12 * min;
   const current: GameSession = { exe, start: iso(gameStart) };
   const sessions: GameSession[] = empty ? [] : [...(idle ? [] : [current]), finished, crashSession, rocket];
+  // 1.0: histórico guardado pela retenção (~140 sessões em 30 dias), para getSessions paginar e filtrar
+  const history: GameSession[] = [...sessions];
+  if (!empty) {
+    const games = ['FC25.exe', 'Cyberpunk2077.exe', 'RocketLeague.exe', 'eafc25.exe', 'Valorant.exe'];
+    let at = sunday.getTime() - 20 * 3600_000;
+    for (let i = 0; i < 139; i++) {
+      const g = games[(i * 7 + (i >> 2)) % games.length];
+      const dur = Math.round(20 + ((i * 37) % 120)) * 60;
+      const fpsAvg = g === 'Cyberpunk2077.exe' ? 70 + (i % 9) : g === 'RocketLeague.exe' ? undefined : 130 + (i % 15);
+      history.push({
+        exe: g,
+        start: iso(at),
+        end: iso(at + dur * 1000),
+        durationSec: dur,
+        avgFps: fpsAvg,
+        low1: fpsAvg != null ? Math.round(fpsAvg * 0.78) : undefined,
+        peakGpuTemp: 70 + (i % 10),
+        peakHotspot: 86 + ((i * 3) % 19),
+        csvFile: `pitwall_${new Date(at).toISOString().slice(0, 10)}_${g.replace('.exe', '')}.csv`,
+      });
+      at -= (3 + (i % 5) * 2) * 3600_000;
+    }
+  }
+
+  // 1.0: arquivos da pasta de CSV (um por sessão + alguns soltos), para getLogStats e a prévia da retenção
+  const logFiles: { t: number; bytes: number }[] =
+    empty || urlParam('logs') === 'empty' ? [] : Array.from({ length: 212 }, (_, i) => ({ t: now - i * 3.4 * 3600_000 - 600_000, bytes: Math.round((4.2 + ((i * 13) % 9)) * 1024 * 1024) }));
+  const logStats = (keepDays?: LogKeepDays, maxTotalMb?: number) => {
+    const totalBytes = logFiles.reduce((a, f) => a + f.bytes, 0);
+    const oldest = logFiles.length ? iso(logFiles[logFiles.length - 1].t) : null;
+    // A mais nova nunca sai (é a da sessão mais recente); depois o prazo; depois o teto, das mais velhas para as novas
+    const days = keepDays ?? config.log.keepDays ?? 30;
+    const cap = (maxTotalMb ?? config.log.maxTotalMb ?? 0) * 1024 * 1024;
+    const keep = logFiles.filter((f, i) => i === 0 || !days || now - f.t <= days * 86_400_000);
+    let sum = keep.reduce((a, f) => a + f.bytes, 0);
+    while (cap && sum > cap && keep.length > 1) sum -= keep.pop()!.bytes;
+    return {
+      type: 'logStats',
+      totalBytes,
+      files: logFiles.length,
+      oldest,
+      wouldDeleteFiles: logFiles.length - keep.length,
+      wouldDeleteBytes: totalBytes - sum,
+    };
+  };
 
   // ------------------------------------------------------------------ respostas às mensagens da página
   const ext: Record<string, [number, number]> = {};
@@ -292,10 +359,13 @@ export function startDemo(t: TelemetryService) {
   let stopped = false;
   const send = (m: any) => t.receive(m);
 
+  let pairErrors = 0;
   t.attachDemo((msg: any) => {
     switch (msg.type) {
       case 'setConfig':
         config = structuredClone(msg.config);
+        // tutorialDone é apelido de tour.done (como no backend)
+        if (config.tour) config.tutorialDone = config.tour.done;
         if (!config.remote?.enabled) catalog.remote = { running: false };
         else catalog.remote = { running: true, port: config.remote.port };
         send({ ...catalog });
@@ -341,13 +411,40 @@ export function startDemo(t: TelemetryService) {
         break;
       case 'replayTutorial':
         config.tutorialDone = false;
+        config.tour = { step: 0, done: false, dismissed: false };
         send({ type: 'config', config: structuredClone(config) });
         break;
+      case 'getLogStats':
+        setTimeout(() => send(logStats(msg.keepDays, msg.maxTotalMb) as any), 120);
+        break;
+      case 'getSessions': {
+        const list = msg.exe ? history.filter((x) => x.exe.toLowerCase() === String(msg.exe).toLowerCase()) : history;
+        const limit = Math.min(100, msg.limit ?? 20);
+        setTimeout(() => send({ type: 'sessionsPage', total: list.length, offset: msg.offset, sessions: list.slice(msg.offset, msg.offset + limit) }), 150);
+        break;
+      }
+      case 'pair': {
+        // Celular/TV: código digitado (482913 pareia)
+        const forced = urlParam('pair');
+        setTimeout(() => {
+          if (forced === 'expired' || forced === 'nopending') send({ type: 'paired', ok: false, error: forced === 'expired' ? 'expired' : 'noPending' });
+          else if (forced === 'blocked' || pairErrors >= 5) send({ type: 'paired', ok: false, error: 'blocked', retryAfterSec: 299 });
+          else if (String(msg.code).replace(/\D/g, '') === '482913') {
+            send({ type: 'paired', ok: true, deviceId: 'demo', name: msg.name || 'Celular', token: 'demo-token' });
+            // o widget só chega depois do "Pareado"
+            setTimeout(() => startFeed(), 1600);
+          } else {
+            pairErrors++;
+            send({ type: 'paired', ok: false, error: pairErrors >= 5 ? 'blocked' : 'invalidCode', attemptsLeft: 5 - pairErrors, retryAfterSec: pairErrors >= 5 ? 300 : undefined });
+          }
+        }, 700);
+        break;
+      }
       case 'checkUpdate':
         update = { ...update, status: 'checking' };
         send({ type: 'update', update });
         setTimeout(() => {
-          update = { ...update, status: 'available', version: '0.7.1', lastCheck: iso(Date.now()) };
+          update = { ...update, status: 'available', version: '1.0.1', lastCheck: iso(Date.now()) };
           send({ type: 'update', update });
         }, 1500);
         break;
@@ -381,19 +478,34 @@ export function startDemo(t: TelemetryService) {
     }
   });
 
+  // Console: pitwallHost({ type: 'startTutorial' }) simula a bandeja
+  (window as any).pitwallHost = (m: unknown) => t.emitHost(m);
+
   // ------------------------------------------------------------------ início
+  let fed = false;
+  const startFeed = () => {
+    if (fed) return;
+    fed = true;
+    t.connected.set(true);
+    send({ ...catalog });
+    send({ type: 'config', config: structuredClone(config) });
+    if (!t.remoteMode) send({ type: 'sessions', sessions });
+    if (config.features?.sessionPeaks !== false) send({ type: 'extremes', epoch, values: {} });
+    tick();
+    setInterval(tick, 1000);
+  };
+  let autoFeed = true;
   if (t.remoteMode) {
     if (scene === 'revoked' || scene === 'nopair') {
       t.remote.set(scene === 'revoked' ? 'revoked' : 'needPair');
-      return;
-    }
-    t.remote.set('live');
+      autoFeed = false;
+    } else t.remote.set('live');
   }
-  t.connected.set(true);
-  send({ ...catalog });
-  send({ type: 'config', config: structuredClone(config) });
-  if (!t.remoteMode) send({ type: 'sessions', sessions });
-  if (config.features?.sessionPeaks !== false) send({ type: 'extremes', epoch, values: {} });
+  if (urlParam('offline') === '1')
+    setTimeout(() => {
+      stopped = true;
+      t.connected.set(false);
+    }, 4000);
 
   // ------------------------------------------------------------------ snapshots
   const reasonSec: Partial<Record<PerfCapReason, number>> = { voltage: 410, power: 205, thermal: 38, none: 22 };
@@ -503,8 +615,7 @@ export function startDemo(t: TelemetryService) {
       fpsStatus: null,
     });
   };
-  tick();
-  setInterval(tick, 1000);
+  if (autoFeed) startFeed();
 
   if (t.remoteMode && scene === 'reconnect') {
     setTimeout(() => {

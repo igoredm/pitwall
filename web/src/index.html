@@ -6,6 +6,12 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <script>
+    // Configurações, assistente e tela do celular: fundo do app já no primeiro quadro (sem clarão branco antes do
+    // código carregar). A janela do widget (#/widget ou sem hash) não é tocada.
+    if (/^#\/?(settings|wizard|mobile)/.test(location.hash))
+      document.documentElement.style.background = matchMedia('(prefers-color-scheme: light)').matches ? '#f3f4f6' : '#0e1014';
+  </script>
 </head>
 <body>
   <app-root></app-root>
