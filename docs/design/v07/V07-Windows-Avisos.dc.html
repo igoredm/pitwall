@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>v0.7 Avisos do Windows, bandeja e atualização</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.toast{width:364px;box-sizing:border-box;background:#2C2C2C;border:1px solid rgba(255,255,255,.08);border-radius:8px;box-shadow:0 16px 40px rgba(0,0,0,.5);padding:14px 16px;display:flex;flex-direction:column;gap:8px;font-family:'Segoe UI Variable','Segoe UI',system-ui,sans-serif;color:#FFFFFF}
+.app{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(255,255,255,.78)}
+.ico{width:16px;height:16px;border-radius:4px;background:#4C8DFF;display:flex;align-items:center;justify-content:center}
+.tt{font-size:14px;font-weight:600}
+.tb{font-size:13px;line-height:1.4;color:rgba(255,255,255,.78)}
+.wbtn{flex:1 1 0;height:32px;border-radius:4px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.08);color:#FFF;font-family:inherit;font-size:13px;cursor:pointer}
+.cap{font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(228,233,242,.5)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border-radius:11px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.mi{display:flex;align-items:center;gap:10px;height:34px;padding:0 12px;border-radius:6px;font-size:13px;color:#FFF}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; position: relative; overflow: hidden; background: linear-gradient(160deg, #1B2233 0%, #0D1018 70%); font-family: 'Nunito', sans-serif; color: #F4F6FA">
+
+<div style="position: absolute; left: 40px; top: 36px; display: flex; flex-direction: column; gap: 14px">
+<span class="cap">6 · Alerta vermelho (opcional, só texto)</span>
+<div class="toast">
+<div class="app"><span class="ico"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 16a7 7 0 0 1 14 0"></path><path d="M12 16l3.5-4.5"></path></svg></span>Pitwall<span style="margin-left: auto">agora</span></div>
+<span class="tt">Hot spot da GPU em 101 °C</span>
+<span class="tb">Acima do vermelho (95 °C) há 10 s · FC25.exe</span>
+</div>
+<span style="font-size: 12px; color: rgba(228,233,242,.6); max-width: 364px; line-height: 1.5">EN: "GPU hot spot at 101 °C" · "Above red (95 °C) for 10 s · FC25.exe". Sem botões, sem ícone de alerta, sem som por padrão.</span>
+</div>
+
+<div style="position: absolute; left: 40px; top: 260px; display: flex; flex-direction: column; gap: 14px">
+<span class="cap">4 · O PC caiu (balão da bandeja, no próximo login)</span>
+<div class="toast">
+<div class="app"><span class="ico"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 16a7 7 0 0 1 14 0"></path><path d="M12 16l3.5-4.5"></path></svg></span>Pitwall</div>
+<span class="tt">O PC desligou durante FC25.exe</span>
+<span class="tb">Ontem, 22:41. Os últimos 60 s foram salvos. Clique para ver.</span>
+</div>
+<span style="font-size: 12px; color: rgba(228,233,242,.6); max-width: 364px; line-height: 1.5">EN: "Your PC shut down during FC25.exe" · "Yesterday, 10:41 PM. The last 60 s were saved. Click to view." Clique abre Configurações → Jogos no relatório.</span>
+</div>
+
+<div style="position: absolute; left: 40px; top: 486px; display: flex; flex-direction: column; gap: 14px">
+<span class="cap">9 · Marcar como jogo?</span>
+<div class="toast">
+<div class="app"><span class="ico"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 16a7 7 0 0 1 14 0"></path><path d="M12 16l3.5-4.5"></path></svg></span>Pitwall</div>
+<span class="tt">Marcar eldenring.exe como jogo?</span>
+<span class="tb">Está desenhando quadros numa janela há 1 min (60 FPS).</span>
+<div style="display: flex; gap: 8px; margin-top: 4px"><button type="button" class="wbtn" style="background: #4C8DFF; border-color: #4C8DFF">Marcar como jogo</button><button type="button" class="wbtn">Ignorar este app</button></div>
+</div>
+<span style="font-size: 12px; color: rgba(228,233,242,.6); max-width: 364px; line-height: 1.5">EN: "Mark eldenring.exe as a game?" · "It has been drawing frames in a window for 1 min (60 FPS)." · [Mark as game] [Ignore this app]</span>
+</div>
+
+<div style="position: absolute; left: 470px; top: 36px; display: flex; flex-direction: column; gap: 14px">
+<span class="cap">8 · Painel de atualização (Lumen escuro)</span>
+<div style="width: 420px; box-sizing: border-box; background: #121722; border: 1px solid rgba(255,255,255,.10); border-radius: 22px; box-shadow: 0 24px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06); padding: 22px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 12px"><span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; background: rgba(76,141,255,.16); color: #4C8DFF"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"></path><path d="M7 10l5 5 5-5"></path><path d="M5 20h14"></path></svg></span><div style="display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 800">Pitwall 0.7.1 disponível</span><span style="font-size: 12px; color: rgba(228,233,242,.68)">Você usa a 0.7.0 · canal estável · 14 MB</span></div></div>
+<ul style="margin: 0; padding: 12px 14px 12px 30px; border-radius: 14px; background: rgba(255,255,255,.05); font-size: 13px; line-height: 1.6; color: rgba(228,233,242,.8)"><li>Correção do relatório de queda em monitores 4K</li><li>Chip de limite de clock mais estável</li></ul>
+<div style="display: flex; gap: 8px; align-items: center"><button type="button" class="btn" style="background: #4C8DFF; color: #FFF; border: 0; box-shadow: 0 4px 12px rgba(76,141,255,.28)">Atualizar agora</button><button type="button" class="btn" style="background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.10); color: #F4F6FA">Depois</button><a href="#" style="margin-left: auto; font-size: 13px; font-weight: 700; color: #4C8DFF; text-decoration: none">Notas da versão</a></div>
+<span style="font-size: 11px; color: rgba(228,233,242,.5)">O Pitwall reinicia sozinho. O widget some por ~5 s.</span>
+</div>
+<div style="display: flex; gap: 10px">
+<div style="flex: 1 1 0; background: #121722; border: 1px solid rgba(255,255,255,.10); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px"><span style="font-size: 12px; font-weight: 800">Baixando… 62%</span><div style="height: 6px; border-radius: 999px; background: rgba(255,255,255,.10)"><div style="width: 62%; height: 100%; border-radius: 999px; background: #4C8DFF"></div></div></div>
+<div style="flex: 1 1 0; background: #121722; border: 1px solid rgba(255,97,102,.35); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 800; color: #FF6166">Falha ao baixar</span><a href="#" style="font-size: 12px; font-weight: 700; color: #4C8DFF; text-decoration: none">Tentar de novo</a></div>
+</div>
+<span style="font-size: 12px; color: rgba(228,233,242,.6); max-width: 420px; line-height: 1.5">EN: "Pitwall 0.7.1 available" · "You're on 0.7.0 · stable channel" · [Update now] [Later] · "Release notes" · "Downloading… 62%" · "Download failed" · "Try again". Botão "Depois" oculta até a próxima versão ou 24 h.</span>
+</div>
+
+<div style="position: absolute; left: 940px; top: 36px; display: flex; flex-direction: column; gap: 14px">
+<span class="cap">8 · Menu da bandeja</span>
+<div style="width: 290px; box-sizing: border-box; background: #2C2C2C; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; box-shadow: 0 16px 40px rgba(0,0,0,.5); padding: 4px; font-family: 'Segoe UI Variable','Segoe UI',system-ui,sans-serif">
+<div class="mi" style="background: rgba(76,141,255,.18)"><span style="width: 8px; height: 8px; border-radius: 50%; background: #4C8DFF"></span>Atualização disponível · 0.7.1</div>
+<div style="height: 1px; margin: 4px 8px; background: rgba(255,255,255,.08)"></div>
+<div class="mi"><span style="width: 8px"></span>Mostrar widget</div>
+<div class="mi"><span style="width: 8px"></span>Zerar picos da sessão</div>
+<div class="mi"><span style="width: 8px"></span>Configurações</div>
+<div style="height: 1px; margin: 4px 8px; background: rgba(255,255,255,.08)"></div>
+<div class="mi"><span style="width: 8px"></span>Sair</div>
+</div>
+<span style="font-size: 12px; color: rgba(228,233,242,.6); max-width: 290px; line-height: 1.5">EN: "Update available · 0.7.1" · "Show widget" · "Reset session peaks" · "Settings" · "Quit".</span>
+<span class="cap" style="margin-top: 8px">Ícone da bandeja</span>
+<div style="display: flex; gap: 18px; align-items: center">
+<span style="position: relative; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; background: rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4F6FA" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 16a7 7 0 0 1 14 0"></path><path d="M12 16l3.5-4.5"></path></svg></span>
+<span style="position: relative; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; background: rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4F6FA" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 16a7 7 0 0 1 14 0"></path><path d="M12 16l3.5-4.5"></path></svg><span style="position: absolute; right: 3px; top: 3px; width: 8px; height: 8px; border-radius: 50%; background: #4C8DFF; box-shadow: 0 0 0 2px #1B2233"></span></span>
+<span style="font-size: 12px; color: rgba(228,233,242,.6)">normal · com atualização</span>
+</div>
+</div>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 0; height: 48px; background: rgba(32,32,32,.92); border-top: 1px solid rgba(255,255,255,.06); display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding: 0 18px; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 12px; color: #FFF">
+<span style="position: relative; display: flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 16a7 7 0 0 1 14 0"></path><path d="M12 16l3.5-4.5"></path></svg><span style="position: absolute; right: -3px; top: -2px; width: 7px; height: 7px; border-radius: 50%; background: #4C8DFF"></span></span>
+<span style="display: flex; flex-direction: column; align-items: flex-end; line-height: 1.3"><span>21:47</span><span>18/11/2026</span></span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

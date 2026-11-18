@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>v0.7 Widget compacto — Lumen escuro</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.cell{display:flex;flex-direction:column;align-items:center;min-width:0}
+.cv{font-size:24px;font-weight:300;line-height:1;font-variant-numeric:tabular-nums}
+.cv small{font-size:12px;color:rgba(228,233,242,.66)}
+.ck{font-size:11px;font-weight:700;color:rgba(228,233,242,.5)}
+</style>
+</helmet>
+<div style="width: 260px; height: 180px; position: relative; overflow: hidden; box-sizing: border-box; background: #0A0D13; color: #F4F6FA; font-family: 'Nunito', ui-rounded, system-ui, sans-serif; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px">
+<section style="display: flex; align-items: baseline; gap: 8px">
+<span style="font-size: 56px; font-weight: 300; line-height: .9; letter-spacing: -.04em; font-variant-numeric: tabular-nums">144</span>
+<span style="font-size: 12px; font-weight: 800; letter-spacing: .16em; color: rgba(228,233,242,.5)">FPS</span>
+<span style="margin-left: auto; font-size: 12px; font-weight: 600; color: rgba(228,233,242,.66)"><b style="color: #F4F6FA">118</b> 1%</span>
+</section>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+<div class="cell"><span class="cv">97<small>%</small></span><span class="ck">GPU</span></div>
+<div class="cell"><span class="cv">74<small>°</small></span><span class="ck">núcleo</span></div>
+<div class="cell" style="background: rgba(255,197,61,.14); border-radius: 10px"><span class="cv" style="color: #FFC53D">97<small>°</small></span><span class="ck">hot spot</span></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+<div class="cell"><span class="cv">41<small>%</small></span><span class="ck">CPU</span></div>
+<div class="cell"><span class="cv">71<small>°</small></span><span class="ck">pkg</span></div>
+<div class="cell"><span class="cv">58<small>%</small></span><span class="ck">RAM</span></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":260,"height":180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

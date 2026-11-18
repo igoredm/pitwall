@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>v0.7 Widget médio — Lumen escuro</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:22px;box-shadow:0 14px 34px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.08);backdrop-filter:blur(28px) saturate(175%);-webkit-backdrop-filter:blur(28px) saturate(175%);box-sizing:border-box;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.kind{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(228,233,242,.44)}
+.nm{font-size:15px;font-weight:700}
+.hv{margin-left:auto;font-size:20px;font-weight:300;font-variant-numeric:tabular-nums}
+.hv small{font-size:12px;color:rgba(228,233,242,.66)}
+.bar{height:6px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:baseline;gap:5px;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.05);font-size:12px;font-weight:600;color:rgba(228,233,242,.66);white-space:nowrap}
+.chip b{font-size:15px;font-weight:500;color:#F4F6FA;font-variant-numeric:tabular-nums}
+.chip i{font-style:normal;font-size:11px;font-weight:600;color:rgba(228,233,242,.44);font-variant-numeric:tabular-nums}
+.lim{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 7px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(76,141,255,.16);color:#4C8DFF}
+</style>
+</helmet>
+<div style="width: 320px; height: 620px; position: relative; overflow: hidden; box-sizing: border-box; background: #0A0D13; color: #F4F6FA; font-family: 'Nunito', ui-rounded, system-ui, sans-serif;">
+<div style="position: absolute; left: -120px; top: -60px; width: 380px; height: 380px; border-radius: 50%; background: #4C8DFF; opacity: .5; filter: blur(90px)"></div>
+<div style="position: absolute; left: 120px; top: 360px; width: 320px; height: 320px; border-radius: 50%; background: #8B5CF6; opacity: .3; filter: blur(90px)"></div>
+<div style="position: relative; height: 100%; box-sizing: border-box; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<section style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0 4px 0">
+<div style="font-size: 96px; font-weight: 200; line-height: .92; letter-spacing: -.045em; font-variant-numeric: tabular-nums">144<span style="font-size: 13px; font-weight: 700; letter-spacing: .2em; color: rgba(228,233,242,.44); margin-left: 6px">FPS</span></div>
+<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; font-size: 12px; font-weight: 600; color: rgba(228,233,242,.66)"><span style="display: flex; align-items: center; gap: 6px"><span style="width: 6px; height: 6px; border-radius: 50%; background: #3DDC84"></span>FC25.exe</span><span>1% <b style="color: #F4F6FA; font-weight: 600">118</b></span><span>ft <b style="color: #F4F6FA; font-weight: 600">6.9</b> ms</span></div>
+</section>
+<section class="card">
+<div style="display: flex; align-items: baseline; gap: 8px"><span class="kind">GPU</span><span class="nm">3080</span><span class="lim">power</span><span class="hv">97<small>%</small></span></div>
+<div class="bar"><div style="width: 97%; height: 100%; background: #4C8DFF; border-radius: 999px"></div></div>
+<div class="chips">
+<span class="chip">núcleo <b>74</b><i>▴78</i></span>
+<span class="chip" style="background: rgba(255,197,61,.14)">hot <b style="color: #FFC53D">97</b><i style="color: #FF6166">▴101</i></span>
+<span class="chip">junction <b>86</b><i>▴92</i></span>
+<span class="chip" style="background: rgba(255,197,61,.14)">Δ <b style="color: #FFC53D">23</b><i>▴26</i></span>
+<span class="chip">power <b>318</b>W<i>▴342</i></span>
+<span class="chip">clock <b>1845</b></span>
+</div>
+</section>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<section class="card">
+<div style="display: flex; align-items: baseline; gap: 6px"><span class="kind">CPU</span><span class="hv">41<small>%</small></span></div>
+<div class="bar"><div style="width: 41%; height: 100%; background: #4C8DFF; border-radius: 999px"></div></div>
+<div class="chips"><span class="chip">pkg <b>71</b><i>▴84</i></span></div>
+</section>
+<section class="card">
+<div style="display: flex; align-items: baseline; gap: 6px"><span class="kind">RAM</span><span class="hv">58<small>%</small></span></div>
+<div class="bar"><div style="width: 58%; height: 100%; background: #4C8DFF; border-radius: 999px"></div></div>
+<div class="chips"><span class="chip"><b>18.4</b>GB</span></div>
+</section>
+</div>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 16px; border: 1px dashed rgba(255,255,255,.18)">
+<span class="kind">Estados do chip de limite</span>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<span class="lim" style="background: rgba(255,197,61,.16); color: #FFC53D">térmico</span>
+<span class="lim">power</span>
+<span class="lim">voltagem</span>
+<span class="lim" style="background: rgba(255,255,255,.07); color: rgba(228,233,242,.66)">sincronia</span>
+<span class="lim" style="background: rgba(255,255,255,.07); color: rgba(228,233,242,.66)">ocioso</span>
+</div>
+<span style="font-size: 11px; line-height: 1.4; color: rgba(228,233,242,.5)">Sem limite ativo = sem chip. Picos ▴ só nos chips de temperatura, power e clock.</span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":320,"height":620}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

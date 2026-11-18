@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>v0.7 Widget completo — Lumen escuro</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:30px;box-shadow:0 18px 44px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.08);backdrop-filter:blur(28px) saturate(175%);-webkit-backdrop-filter:blur(28px) saturate(175%);box-sizing:border-box}
+.kind{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(228,233,242,.44)}
+.name{font-size:22px;font-weight:700;letter-spacing:-.01em;color:#F4F6FA}
+.tile{background:rgba(255,255,255,.05);border-radius:20px;padding:11px 14px;display:flex;flex-direction:column;gap:3px;min-width:0;transition:background 600ms ease}
+.tl{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:600;color:rgba(228,233,242,.66);white-space:nowrap}
+.pk{font-size:12px;font-weight:600;color:rgba(228,233,242,.44);font-variant-numeric:tabular-nums;transition:color 600ms ease}
+.v{font-size:30px;font-weight:300;line-height:1.05;color:#F4F6FA;font-variant-numeric:tabular-nums;transition:color 600ms ease}
+.u{font-size:14px;font-weight:500;color:rgba(228,233,242,.66)}
+.bar{height:8px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pill{display:flex;align-items:baseline;gap:6px;padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.05);font-size:13px;font-weight:600;color:rgba(228,233,242,.66)}
+.pill b{font-size:17px;font-weight:500;color:#F4F6FA;font-variant-numeric:tabular-nums}
+.lim{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.rst{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 6px 0 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-size:12px;font-weight:600;color:rgba(228,233,242,.66)}
+.rst button{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 10px;border:0;border-radius:999px;background:rgba(76,141,255,.16);color:#4C8DFF;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 1280px; height: 400px; position: relative; overflow: hidden; box-sizing: border-box; background: #0A0D13; color: #F4F6FA; font-family: 'Nunito', ui-rounded, system-ui, sans-serif;">
+<div style="position: absolute; left: -120px; top: -160px; width: 560px; height: 560px; border-radius: 50%; background: {{accent}}; opacity: 0.45; filter: blur(90px); pointer-events: none"></div>
+<div style="position: absolute; left: 560px; top: 120px; width: 420px; height: 420px; border-radius: 50%; background: #8B5CF6; opacity: 0.32; filter: blur(90px); pointer-events: none"></div>
+<div style="position: absolute; left: 1000px; top: -120px; width: 420px; height: 420px; border-radius: 50%; background: #14B8A6; opacity: 0.22; filter: blur(90px); pointer-events: none"></div>
+<div style="position: relative; height: 100%; box-sizing: border-box; padding: 24px; display: flex; gap: 22px">
+
+<section class="card" style="flex: 1.35 1 0; min-width: 0; padding: 18px 22px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span class="kind">GPU</span>
+<span style="display: flex; align-items: center; gap: 10px"><span class="name">3080</span>
+<sc-if value="{{showLimit}}" hint-placeholder-val="{{ true }}"><span class="lim" style="background: {{limBg}}; color: {{limFg}}" title="Por que o clock caiu"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M6 13l6 6 6-6"></path></svg>{{limText}}</span></sc-if>
+</span>
+</div>
+<div style="display: flex; align-items: baseline; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: rgba(228,233,242,.66)">uso</span><span style="font-size: 30px; font-weight: 300; font-variant-numeric: tabular-nums">97</span><span style="font-size: 15px; font-weight: 500; color: rgba(228,233,242,.66)">%</span></div>
+</div>
+<div class="bar"><div style="width: 97%; height: 100%; border-radius: 999px; background: {{accent}}"></div></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; flex-grow: 1">
+<div class="tile">
+<div class="tl"><span>núcleo</span><span class="pk">máx {{pkCore}}</span></div>
+<span><span class="v">74</span><span class="u"> °C</span></span>
+<svg viewBox="0 0 100 28" preserveAspectRatio="none" style="display: block; width: 100%; height: 22px; overflow: visible" aria-hidden="true"><polyline points="{{sp1}}" fill="none" stroke="{{accent}}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline></svg>
+</div>
+<div class="tile" style="background: rgba(255,197,61,.14)">
+<div class="tl"><span style="display: flex; align-items: center; gap: 6px"><span class="dot" style="background: #FFC53D"></span>hot spot</span><span class="pk" style="color: {{pkHotColor}}">máx {{pkHot}}</span></div>
+<span><span class="v" style="color: #FFC53D">97</span><span class="u"> °C</span></span>
+<svg viewBox="0 0 100 28" preserveAspectRatio="none" style="display: block; width: 100%; height: 22px; overflow: visible" aria-hidden="true"><polyline points="{{sp2}}" fill="none" stroke="#FFC53D" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline></svg>
+</div>
+<div class="tile">
+<div class="tl"><span>memory junction</span><span class="pk">máx {{pkJunc}}</span></div>
+<span><span class="v">86</span><span class="u"> °C</span></span>
+<svg viewBox="0 0 100 28" preserveAspectRatio="none" style="display: block; width: 100%; height: 22px; overflow: visible" aria-hidden="true"><polyline points="{{sp3}}" fill="none" stroke="{{accent}}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline></svg>
+</div>
+<div class="tile" style="background: rgba(255,197,61,.14)">
+<div class="tl"><span style="display: flex; align-items: center; gap: 6px"><span class="dot" style="background: #FFC53D"></span>Δ hot spot − núcleo</span><span class="pk">máx {{pkDelta}}</span></div>
+<span><span class="v" style="color: #FFC53D">23</span><span class="u"> °C</span></span>
+<div style="height: 22px"></div>
+</div>
+</div>
+</section>
+
+<section style="width: 350px; flex-shrink: 0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: rgba(228,233,242,.66)"><span class="dot" style="background: #3DDC84"></span>FC25.exe</span>
+<span style="font-size: 172px; font-weight: 200; line-height: .9; letter-spacing: -.045em; font-variant-numeric: tabular-nums">144</span>
+<span style="font-size: 13px; font-weight: 700; letter-spacing: .24em; text-transform: uppercase; color: rgba(228,233,242,.44)">fps</span>
+<div style="display: flex; gap: 8px; margin-top: 6px"><span class="pill">1% low<b>118</b></span><span class="pill">frametime<b>6.9 ms</b></span></div>
+<sc-if value="{{isHover}}" hint-placeholder-val="{{ false }}"><div style="position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: center"><span class="rst">Picos desde 21:02<button type="button"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"></path><path d="M3.5 4v5h5"></path></svg>Zerar</button></span></div></sc-if>
+<sc-if value="{{isReset}}" hint-placeholder-val="{{ false }}"><div style="position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: center"><span class="rst" style="padding: 0 12px; color: #F4F6FA"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3DDC84" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Picos zerados</span></div></sc-if>
+</section>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<section class="card" style="flex-grow: 1; padding: 18px 22px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between"><div style="display: flex; flex-direction: column; gap: 2px"><span class="kind">CPU</span><span class="name">12600K</span></div><div style="display: flex; align-items: baseline; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: rgba(228,233,242,.66)">uso</span><span style="font-size: 30px; font-weight: 300; font-variant-numeric: tabular-nums">41</span><span style="font-size: 15px; font-weight: 500; color: rgba(228,233,242,.66)">%</span></div></div>
+<div class="bar"><div style="width: 41%; height: 100%; border-radius: 999px; background: {{accent}}"></div></div>
+<div class="tile" style="flex-direction: row; align-items: center; gap: 14px; flex-grow: 1; padding: 10px 14px">
+<div style="display: flex; flex-direction: column; gap: 2px; flex-shrink: 0"><span class="tl" style="gap: 10px">package<span class="pk">máx {{pkPkg}}</span></span><span><span class="v" style="font-size: 28px">71</span><span class="u"> °C</span></span></div>
+<svg viewBox="0 0 100 28" preserveAspectRatio="none" style="display: block; flex-grow: 1; min-width: 0; height: 34px; overflow: visible" aria-hidden="true"><polyline points="{{sp4}}" fill="none" stroke="{{accent}}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline></svg>
+</div>
+</section>
+<section class="card" style="flex-shrink: 0; padding: 16px 22px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between"><div style="display: flex; flex-direction: column; gap: 2px"><span class="kind">RAM</span><span style="display: flex; align-items: baseline; gap: 4px"><span style="font-size: 26px; font-weight: 300; font-variant-numeric: tabular-nums">18.4</span><span style="font-size: 15px; font-weight: 500; color: rgba(228,233,242,.66)">/ 32 GB</span></span></div><span style="font-size: 30px; font-weight: 300; font-variant-numeric: tabular-nums">58<span style="font-size: 15px; font-weight: 500; color: rgba(228,233,242,.66)">%</span></span></div>
+<div class="bar"><div style="width: 58%; height: 100%; border-radius: 999px; background: {{accent}}"></div></div>
+</section>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#4C8DFF","options":["#4C8DFF","#3DDC84","#FF8A3D","#B18CFF"],"section":"Tema"},"estado":{"editor":"enum","default":"hover","options":["normal","hover","zerado"],"section":"Picos"},"limite":{"editor":"enum","default":"power","options":["nenhum","térmico","power","voltagem","ocioso","sincronia"],"section":"Limite de clock"},"$preview":{"width":1280,"height":400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const a = this.props.accent ?? '#4C8DFF';
+    const est = this.props.estado ?? 'hover';
+    const lim = this.props.limite ?? 'power';
+    const rgba = (hex, al) => { const n = parseInt(String(hex).replace('#', '').slice(0, 6), 16); return isNaN(n) ? hex : 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + al + ')'; };
+    const sp = (arr) => { const lo = Math.min(...arr), hi = Math.max(...arr); return arr.map((v, i) => (i * 100 / (arr.length - 1)).toFixed(1) + ',' + (26 - (v - lo) / ((hi - lo) || 1) * 22).toFixed(1)).join(' '); };
+    const reset = est === 'zerado';
+    const L = {
+      'térmico': ['Limite: térmico', 'rgba(255,197,61,.16)', '#FFC53D'],
+      'power': ['Limite: power', rgba(a, .16), a],
+      'voltagem': ['Limite: voltagem', rgba(a, .16), a],
+      'ocioso': ['Ocioso', 'rgba(255,255,255,.07)', 'rgba(228,233,242,.66)'],
+      'sincronia': ['Limite: sincronia', 'rgba(255,255,255,.07)', 'rgba(228,233,242,.66)']
+    }[lim];
+    return {
+      accent: a, accentFaint: rgba(a, .16),
+      isHover: est === 'hover', isReset: reset,
+      showLimit: lim !== 'nenhum', limText: L ? L[0] : '', limBg: L ? L[1] : '', limFg: L ? L[2] : '',
+      pkCore: reset ? '74' : '78', pkHot: reset ? '97' : '101', pkHotColor: reset ? '#FFC53D' : '#FF6166',
+      pkJunc: reset ? '86' : '92', pkDelta: reset ? '23' : '26', pkPkg: reset ? '71' : '84',
+      sp1: sp([70,71,71,72,73,73,74,75,74,74,73,74,75,76,75,74,74,73,74,74]),
+      sp2: sp([90,91,92,93,95,96,97,99,101,100,98,97,96,97,97,96,97,98,97,97]),
+      sp3: sp([82,83,83,84,85,85,86,87,88,87,86,86,85,86,86,86,87,86,86,86]),
+      sp4: sp([62,64,67,70,74,79,84,80,76,72,70,71,72,70,69,71,72,71,70,71])
+    };
+  }
+}
+</script>
+</body>
+</html>

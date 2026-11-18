@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>v0.7 Configurações · GPU — Lumen escuro</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.nav{display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:12px;text-decoration:none;font-size:14px;font-weight:600;color:rgba(228,233,242,.68)}
+.nav.on{font-weight:800;color:#F4F6FA;background:rgba(255,255,255,.10);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:22px;box-shadow:0 16px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%);box-sizing:border-box}
+h2{margin:0;font-size:16px;font-weight:800}
+.row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 20px;border-top:1px solid rgba(255,255,255,.07)}
+.fl{font-size:14px;font-weight:700}
+.hint{font-size:12px;line-height:1.4;color:rgba(228,233,242,.68)}
+.seg{display:flex;gap:2px;padding:3px;border-radius:11px;background:rgba(255,255,255,.07)}
+.seg button{border:0;border-radius:8px;padding:6px 11px;font-family:inherit;font-size:13px;font-weight:500;color:rgba(228,233,242,.68);background:transparent;cursor:pointer;white-space:nowrap}
+.seg button.sel{font-weight:700;color:#F4F6FA;background:rgba(255,255,255,.16);box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.lt{background:rgba(255,255,255,.05);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.lt b{font-size:22px;font-weight:300;font-variant-numeric:tabular-nums}
+.lim{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap}
+.lg{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(228,233,242,.68)}
+.lg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.lg b{color:#F4F6FA;font-weight:700;font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 1200px; height: 800px; position: relative; overflow: hidden; background: #0A0D13; color: #F4F6FA; font-family: 'Nunito', ui-rounded, system-ui, sans-serif; display: flex">
+<div style="position: absolute; left: -120px; top: -200px; width: 620px; height: 620px; border-radius: 50%; background: #4C8DFF; opacity: .3; filter: blur(110px)"></div>
+<div style="position: absolute; left: 760px; top: 360px; width: 640px; height: 640px; border-radius: 50%; background: #8B5CF6; opacity: .28; filter: blur(110px)"></div>
+<div style="position: relative; display: flex; width: 100%; height: 100%">
+<nav aria-label="Seções" style="width: 240px; flex-shrink: 0; box-sizing: border-box; padding: 18px 16px; display: flex; flex-direction: column; gap: 4px; background: rgba(255,255,255,.04); border-right: 1px solid rgba(255,255,255,.08)">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 6px 18px 6px"><span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 11px; background: #4C8DFF"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 16a7 7 0 0 1 14 0"></path><path d="M12 16l3.5-4.5"></path></svg></span><span style="display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 800">Pitwall</span><span style="font-size: 12px; color: rgba(228,233,242,.68)">Configurações</span></span></div>
+<a class="nav" href="#">Métricas</a><a class="nav" href="#">Geral</a><a class="nav on" href="#" aria-current="page">GPU</a><a class="nav" href="#">Jogos</a><a class="nav" href="#">Log</a><a class="nav" href="#">Celular</a>
+<div style="flex-grow: 1"></div>
+<span style="text-align: center; font-size: 11px; color: rgba(228,233,242,.5)">v0.7.0 · executando como administrador</span>
+</nav>
+<main style="flex-grow: 1; min-width: 0; padding: 36px 32px 20px 32px; display: flex; flex-direction: column; gap: 14px">
+<div><h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.02em">Ajuste da GPU</h1><p style="margin: 4px 0 0 0; font-size: 13px; color: rgba(228,233,242,.68)">Limite de energia e de clock para a RTX 3080 rodar mais fria.</p></div>
+
+<section class="card" style="padding-bottom: 4px">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 12px 20px"><h2>Agora</h2><span class="lim" style="background: rgba(61,220,132,.14); color: #3DDC84">Aplicado · Equilibrado</span></div>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; padding: 0 20px 14px 20px">
+<div class="lt"><span class="hint">hot spot</span><b style="color: #FFC53D">97 °C</b></div>
+<div class="lt"><span class="hint">Δ hot spot</span><b>23 °C</b></div>
+<div class="lt"><span class="hint">núcleo</span><b>74 °C</b></div>
+<div class="lt"><span class="hint">power</span><b>318 W</b></div>
+<div class="lt"><span class="hint">clock</span><b>1845 MHz</b></div>
+<div class="lt"><span class="hint">fan</span><b>72 %</b></div>
+</div>
+<div class="row" style="align-items: flex-start; padding-top: 14px; padding-bottom: 16px">
+<div style="display: flex; flex-direction: column; gap: 2px; width: 260px; flex-shrink: 0"><span class="fl">Por que o clock caiu</span><span class="hint">O que a GPU diz que está segurando o clock agora, e quanto tempo de cada motivo nesta sessão.</span></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0">
+<div style="display: flex; align-items: center; gap: 10px"><span class="hint">agora</span><span class="lim" style="background: rgba(76,141,255,.16); color: #4C8DFF">↓ Limite: power</span><span class="hint">há 2 min · 318 de 320 W</span></div>
+<div role="img" aria-label="Tempo por motivo: power 46%, térmico 18%, voltagem 9%, sincronia 12%, sem limite 15%" style="display: flex; height: 10px; border-radius: 999px; overflow: hidden; gap: 2px"><span style="width: 46%; background: #4C8DFF"></span><span style="width: 18%; background: #FFC53D"></span><span style="width: 9%; background: #8FB5FF"></span><span style="width: 12%; background: rgba(228,233,242,.44)"></span><span style="width: 15%; background: rgba(255,255,255,.12)"></span></div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px 16px"><span class="lg"><i style="background: #4C8DFF"></i>power <b>46%</b></span><span class="lg"><i style="background: #FFC53D"></i>térmico <b>18%</b></span><span class="lg"><i style="background: #8FB5FF"></i>voltagem <b>9%</b></span><span class="lg"><i style="background: rgba(228,233,242,.44)"></i>sincronia <b>12%</b></span><span class="lg"><i style="background: rgba(255,255,255,.12)"></i>sem limite <b>15%</b></span></div>
+</div>
+</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+<section class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+<h2>Estados da linha</h2>
+<div style="display: flex; align-items: center; gap: 10px"><span class="lim" style="background: rgba(255,255,255,.07); color: rgba(228,233,242,.68)">Sem limite</span><span class="hint">GPU no clock máximo do perfil.</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><span class="lim" style="background: rgba(255,197,61,.16); color: #FFC53D">↓ Limite: térmico</span><span class="hint">Temperatura alcançou o alvo do driver.</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><span class="lim" style="background: rgba(255,255,255,.07); color: rgba(228,233,242,.68)">Ocioso</span><span class="hint">Pouca carga: clock baixo de propósito.</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><span class="lim" style="background: rgba(255,255,255,.07); color: rgba(228,233,242,.68)">↓ Limite: sincronia</span><span class="hint">V-Sync ou limite de FPS segurando.</span></div>
+</section>
+<section class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+<h2>Sem dados</h2>
+<div style="display: flex; align-items: center; gap: 10px"><span class="hint" style="font-style: italic">Carregando motivos…</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,.05)"><span style="font-size: 13px; font-weight: 700">Motivo indisponível</span><span class="hint">O driver não informou o motivo (precisa de NVIDIA com NVAPI). O resto do painel funciona.</span></div>
+<span class="hint">Barra da sessão vazia até 10 s de jogo.</span>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

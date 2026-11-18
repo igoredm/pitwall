@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>v0.7 Celular 360 — Splash escuro (reconectando)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&amp;family=Nunito:wght@700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.blk{border-radius:28px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.big{font-family:'Baloo 2',sans-serif;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.lb{font-size:12px;font-weight:900}
+.pill{font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.tile{border-radius:20px;padding:8px 12px;background:rgba(20,6,40,.22);display:flex;flex-direction:column}
+.bar{height:10px;border-radius:999px;background:rgba(20,6,40,.30);overflow:hidden}
+</style>
+</helmet>
+<div style="width: 360px; height: 800px; position: relative; overflow: hidden; box-sizing: border-box; background: #140A26; color: #FFF7FB; font-family: 'Nunito', sans-serif">
+<svg viewBox="0 0 200 200" aria-hidden="true" style="position: absolute; left: 20px; top: 70px; width: 320px; height: 300px; opacity: .55"><defs><linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7B5CFF"></stop><stop offset="1" stop-color="#FF2E88"></stop></linearGradient></defs><path d="M100 12 C140 10 178 40 186 82 C194 124 170 170 128 184 C88 196 40 182 22 146 C6 112 16 66 44 38 C60 22 80 13 100 12 Z" fill="url(#bg1)"></path></svg>
+<div style="position: relative; height: 100%; box-sizing: border-box; padding: 18px 14px 14px 14px; display: flex; flex-direction: column; gap: 12px">
+<div role="status" style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 18px; background: #FFD400; color: #1A1200; box-shadow: inset 0 0 0 3px #1A1200"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"></path><path d="M3.5 4v5h5"></path></svg><span style="font-size: 13px; font-weight: 900">Sem conexão com o PC. Tentando de novo…</span></div>
+
+<section style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; opacity: .6">
+<span style="display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: rgba(255,255,255,.12); font-size: 13px; font-weight: 900"><span style="width: 8px; height: 8px; border-radius: 50%; background: #9BE22E"></span>FC25.exe</span>
+<span class="big" style="font-size: 132px; line-height: .82; background: linear-gradient(180deg, #FFE45C, #FF8A1A 55%, #FF2E88); -webkit-background-clip: text; background-clip: text; color: transparent">144</span>
+<span class="pill" style="color: rgba(255,240,250,.72)">fps · último valor 21:46:58</span>
+</section>
+
+<section class="blk" style="background: linear-gradient(135deg, #E0206F, #F2580F); color: #FFF; opacity: .6">
+<div style="display: flex; align-items: center; gap: 8px"><span class="big" style="font-size: 22px">GPU 3080</span><span class="pill" style="padding: 3px 8px; border-radius: 999px; background: #150A28; color: #FFD23F">↓ power</span><span class="big" style="margin-left: auto; font-size: 30px">97%</span></div>
+<div class="bar"><div style="width: 97%; height: 100%; background: #FFF; border-radius: 999px"></div></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<div class="tile"><span class="lb">núcleo · máx 78</span><span class="big" style="font-size: 26px">74°</span></div>
+<div class="tile" style="background: #FFD400; color: #1A1200; box-shadow: inset 0 0 0 3px #1A1200"><span class="lb">hot spot · máx 101</span><span class="big" style="font-size: 26px">97°</span></div>
+</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; opacity: .6">
+<section class="blk" style="background: linear-gradient(135deg, #0077C8, #5B3FF0)"><span class="lb">CPU</span><span class="big" style="font-size: 30px">41%</span><span class="lb" style="opacity: .85">pkg 71°</span></section>
+<section class="blk" style="background: linear-gradient(135deg, #A8EB3A, #2BD3A6); color: #0E2418"><span class="lb">RAM</span><span class="big" style="font-size: 30px">58%</span><span class="lb">18.4 / 32 GB</span></section>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 6px; opacity: .6"><span style="padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.12); font-size: 12px; font-weight: 900">controle 80%</span><span style="padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.12); font-size: 12px; font-weight: 900">headset 35%</span></div>
+
+<div style="flex-grow: 1"></div>
+<footer style="text-align: center; font-size: 11px; font-weight: 800; color: rgba(255,240,250,.52)">Só leitura · rede local</footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

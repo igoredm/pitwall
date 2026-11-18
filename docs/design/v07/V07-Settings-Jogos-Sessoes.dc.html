@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>v0.7 Configurações · Jogos — resumo e relatório de queda</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.nav{display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:12px;text-decoration:none;font-size:14px;font-weight:600;color:rgba(228,233,242,.68)}
+.nav.on{font-weight:800;color:#F4F6FA;background:rgba(255,255,255,.10);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:22px;box-shadow:0 16px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);box-sizing:border-box}
+h2{margin:0;font-size:16px;font-weight:800}
+.hint{font-size:12px;line-height:1.4;color:rgba(228,233,242,.68)}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:34px;padding:0 14px;border-radius:11px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);color:#F4F6FA;text-decoration:none}
+.st{background:rgba(255,255,255,.05);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.st b{font-size:24px;font-weight:300;font-variant-numeric:tabular-nums;line-height:1.1}
+.st b small{font-size:13px;font-weight:500;color:rgba(228,233,242,.68)}
+.k{font-size:12px;font-weight:600;color:rgba(228,233,242,.68)}
+.sp{display:grid;grid-template-columns:120px minmax(0,1fr) 150px;align-items:center;gap:14px;padding:8px 0;border-top:1px solid rgba(255,255,255,.07)}
+.sp .n{font-size:13px;font-weight:700}
+.sp .r{font-size:12px;color:rgba(228,233,242,.68);font-variant-numeric:tabular-nums;text-align:right}
+.sp .r b{font-size:15px;font-weight:600;color:#F4F6FA}
+.ses{display:grid;grid-template-columns:minmax(0,1fr) 90px 90px 90px 120px;gap:12px;align-items:center;padding:11px 20px;border-top:1px solid rgba(255,255,255,.07);font-size:13px;font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 1200px; height: 1180px; position: relative; overflow: hidden; background: #0A0D13; color: #F4F6FA; font-family: 'Nunito', ui-rounded, system-ui, sans-serif; display: flex">
+<div style="position: absolute; left: -120px; top: -200px; width: 620px; height: 620px; border-radius: 50%; background: #4C8DFF; opacity: .3; filter: blur(110px)"></div>
+<div style="position: absolute; left: 760px; top: 560px; width: 640px; height: 640px; border-radius: 50%; background: #8B5CF6; opacity: .28; filter: blur(110px)"></div>
+<div style="position: relative; display: flex; width: 100%; height: 100%">
+<nav aria-label="Seções" style="width: 240px; flex-shrink: 0; box-sizing: border-box; padding: 18px 16px; display: flex; flex-direction: column; gap: 4px; background: rgba(255,255,255,.04); border-right: 1px solid rgba(255,255,255,.08)">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 6px 18px 6px"><span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 11px; background: #4C8DFF"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 16a7 7 0 0 1 14 0"></path><path d="M12 16l3.5-4.5"></path></svg></span><span style="display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 800">Pitwall</span><span style="font-size: 12px; color: rgba(228,233,242,.68)">Configurações</span></span></div>
+<a class="nav" href="#">Métricas</a><a class="nav" href="#">Geral</a><a class="nav" href="#">GPU</a><a class="nav on" href="#" aria-current="page">Jogos<span style="margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: #FF6166"></span></a><a class="nav" href="#">Log</a><a class="nav" href="#">Celular</a>
+<div style="flex-grow: 1"></div>
+<span style="text-align: center; font-size: 11px; color: rgba(228,233,242,.5)">v0.7.0 · executando como administrador</span>
+</nav>
+<main style="flex-grow: 1; min-width: 0; padding: 36px 32px 20px 32px; display: flex; flex-direction: column; gap: 14px">
+<div><h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.02em">Jogos</h1><p style="margin: 4px 0 0 0; font-size: 13px; color: rgba(228,233,242,.68)">Detecção, perfis por jogo e o resumo de cada sessão.</p></div>
+
+<div role="status" style="display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 18px; background: rgba(255,97,102,.12); border: 1px solid rgba(255,97,102,.35)">
+<span style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 11px; background: rgba(255,97,102,.18); color: #FF6166; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9"></path><path d="M6.3 6.8a8 8 0 1 0 11.4 0"></path></svg></span>
+<span style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 14px; font-weight: 800">O PC desligou durante FC25.exe</span><span class="hint">Ontem, 22:41 · os 60 s antes da queda estão abaixo.</span></span>
+<a class="btn" href="#relatorio">Ver relatório</a>
+<button type="button" class="btn" style="background: transparent; border-color: transparent">Dispensar</button>
+</div>
+
+<section class="card" id="relatorio" style="padding: 16px 20px 10px 20px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 6px"><div><h2>Últimos 60 s antes da queda</h2><p class="hint" style="margin: 2px 0 0 0">FC25.exe · ontem, 22:40:08 → 22:41:08</p></div><div style="display: flex; gap: 8px; align-items: center"><span class="mono" style="font-size: 12px; color: rgba(228,233,242,.68)">crash_2026-11-17_22-41-08.csv</span><a class="btn" href="#">Abrir pasta</a></div></div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+<div class="sp">
+<span class="n">{{r.name}}</span>
+<svg viewBox="0 0 100 32" preserveAspectRatio="none" style="display: block; width: 100%; height: 36px; overflow: visible" role="img" aria-label="{{r.aria}}"><polygon points="{{r.area}}" fill="{{r.color}}" fill-opacity="0.16"></polygon><polyline points="{{r.line}}" fill="none" stroke="{{r.color}}" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline><line x1="100" y1="0" x2="100" y2="32" stroke="rgba(228,233,242,.44)" stroke-dasharray="2 2" vector-effect="non-scaling-stroke"></line></svg>
+<span class="r">mín {{r.min}} · máx {{r.max}}<br>último <b>{{r.last}}</b></span>
+</div>
+</sc-for>
+<div style="display: grid; grid-template-columns: 120px minmax(0, 1fr) 150px; gap: 14px; font-size: 11px; color: rgba(228,233,242,.5)"><span></span><span style="display: flex; justify-content: space-between"><span>−60 s</span><span>−30 s</span><span>última leitura</span></span><span></span></div>
+</section>
+
+<section class="card" style="padding-bottom: 4px">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 12px 20px"><div><h2>Última sessão</h2><p class="hint" style="margin: 2px 0 0 0"><span class="mono">FC25.exe</span> · hoje, 21:02 → 21:47</p></div><a class="btn" href="#"><span class="mono" style="font-size: 12px">FC25_2026-11-18_21-02.csv</span></a></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 0 20px 8px 20px">
+<div class="st"><span class="k">duração</span><b>45<small> min</small></b></div>
+<div class="st"><span class="k">FPS médio</span><b>141</b></div>
+<div class="st"><span class="k">1% low</span><b>112</b></div>
+<div class="st"><span class="k">0.1% low</span><b>88</b></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 0 20px 14px 20px">
+<div class="st"><span class="k">pico GPU</span><b>79<small> °C</small></b></div>
+<div class="st" style="background: rgba(255,97,102,.16)"><span class="k">pico hot spot</span><b style="color: #FF6166">101<small> °C</small></b></div>
+<div class="st" style="background: rgba(255,197,61,.14)"><span class="k">pico Δ</span><b style="color: #FFC53D">27<small> °C</small></b></div>
+<div class="st" style="gap: 6px"><span class="k">tempo no amarelo / vermelho</span><span style="display: flex; align-items: baseline; gap: 10px; font-variant-numeric: tabular-nums"><span style="font-size: 18px; font-weight: 400; color: #FFC53D">6 min 12 s</span><span style="font-size: 18px; font-weight: 400; color: #FF6166">48 s</span></span><div style="display: flex; height: 6px; border-radius: 999px; overflow: hidden; background: rgba(255,255,255,.10)"><span style="width: 13.8%; background: #FFC53D"></span><span style="width: 1.8%; background: #FF6166"></span></div></div>
+</div>
+<div class="ses" style="font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: rgba(228,233,242,.5)"><span>Sessões anteriores</span><span>duração</span><span>FPS médio</span><span>pico hot</span><span></span></div>
+<div class="ses"><span><span class="mono">FC25.exe</span> <span class="hint">· ontem, 22:10</span> <span style="margin-left: 6px; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: rgba(255,97,102,.16); color: #FF6166">PC desligou</span></span><span>31 min</span><span>138</span><span style="color: #FF6166">104 °C</span><a href="#" style="color: #4C8DFF; font-weight: 700; text-decoration: none; text-align: right">Ver</a></div>
+<div class="ses"><span><span class="mono">RocketLeague.exe</span> <span class="hint">· domingo, 19:40</span></span><span>1 h 05</span><span>—</span><span>88 °C</span><a href="#" style="color: #4C8DFF; font-weight: 700; text-decoration: none; text-align: right">Ver</a></div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="padding: 12px 14px; border-radius: 16px; border: 1px dashed rgba(255,255,255,.18); display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; font-weight: 800">Vazio</span><span class="hint">"Nenhuma sessão ainda. Abra um jogo e o resumo aparece aqui quando ele fechar."</span></div>
+<div style="padding: 12px 14px; border-radius: 16px; border: 1px dashed rgba(255,255,255,.18); display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; font-weight: 800">Em andamento</span><span class="hint">Card mostra "Em andamento · 12 min" com os picos até agora; FPS médio/lows só no fim.</span></div>
+<div style="padding: 12px 14px; border-radius: 16px; border: 1px dashed rgba(255,255,255,.18); display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; font-weight: 800">Sem FPS / CSV sumiu</span><span class="hint">FPS sem PresentMon: "—" e "FPS indisponível". Arquivo apagado: link vira texto e "Arquivo não encontrado".</span></div>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mk = (name, color, unit, arr) => {
+      const lo = Math.min(...arr), hi = Math.max(...arr);
+      const pts = arr.map((v, i) => (i * 100 / (arr.length - 1)).toFixed(1) + ',' + (30 - (v - lo) / ((hi - lo) || 1) * 26).toFixed(1));
+      return { name, color, line: pts.join(' '), area: '0,32 ' + pts.join(' ') + ' 100,32', min: lo + unit, max: hi + unit, last: arr[arr.length - 1] + unit, aria: name + ' de ' + lo + ' a ' + hi + unit };
+    };
+    return {
+      rows: [
+        mk('GPU temp', '#4C8DFF', ' °C', [76,76,77,77,77,78,78,78,79,79,79,79,80,80,80,80,81,81,81,81]),
+        mk('hot spot', '#FF6166', ' °C', [99,99,100,100,101,101,101,102,102,102,103,103,103,103,104,104,104,104,104,104]),
+        mk('power', '#4C8DFF', ' W', [312,318,320,316,319,320,320,318,321,320,319,320,322,320,318,320,321,320,320,96]),
+        mk('clock', '#4C8DFF', ' MHz', [1860,1845,1845,1830,1830,1815,1815,1800,1800,1800,1785,1785,1785,1770,1770,1770,1755,1755,1755,210]),
+        mk('FPS', '#3DDC84', '', [142,141,143,139,140,138,141,139,137,138,136,137,135,136,134,133,131,128,112,0])
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

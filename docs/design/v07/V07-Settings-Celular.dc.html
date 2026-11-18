@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>v0.7 Configurações · Celular — Lumen escuro</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.nav{display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:12px;text-decoration:none;font-size:14px;font-weight:600;color:rgba(228,233,242,.68)}
+.nav.on{font-weight:800;color:#F4F6FA;background:rgba(255,255,255,.10);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:22px;box-shadow:0 16px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);box-sizing:border-box}
+h2{margin:0;font-size:16px;font-weight:800}
+.hint{font-size:12px;line-height:1.4;color:rgba(228,233,242,.68)}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:34px;padding:0 14px;border-radius:11px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);color:#F4F6FA}
+.sw{position:relative;flex-shrink:0;width:44px;height:26px;border:0;padding:0;border-radius:999px;background:#4C8DFF;cursor:pointer}
+.sw span{position:absolute;top:2px;left:20px;width:22px;height:22px;border-radius:50%;background:#FFF;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.dev{display:flex;align-items:center;gap:12px;padding:12px 20px;border-top:1px solid rgba(255,255,255,.07)}
+</style>
+</helmet>
+<div style="width: 1200px; height: 800px; position: relative; overflow: hidden; background: #0A0D13; color: #F4F6FA; font-family: 'Nunito', ui-rounded, system-ui, sans-serif; display: flex">
+<div style="position: absolute; left: -120px; top: -200px; width: 620px; height: 620px; border-radius: 50%; background: #4C8DFF; opacity: .3; filter: blur(110px)"></div>
+<div style="position: absolute; left: 760px; top: 360px; width: 640px; height: 640px; border-radius: 50%; background: #8B5CF6; opacity: .28; filter: blur(110px)"></div>
+<div style="position: relative; display: flex; width: 100%; height: 100%">
+<nav aria-label="Seções" style="width: 240px; flex-shrink: 0; box-sizing: border-box; padding: 18px 16px; display: flex; flex-direction: column; gap: 4px; background: rgba(255,255,255,.04); border-right: 1px solid rgba(255,255,255,.08)">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 6px 18px 6px"><span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 11px; background: #4C8DFF"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 16a7 7 0 0 1 14 0"></path><path d="M12 16l3.5-4.5"></path></svg></span><span style="display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 800">Pitwall</span><span style="font-size: 12px; color: rgba(228,233,242,.68)">Configurações</span></span></div>
+<a class="nav" href="#">Métricas</a><a class="nav" href="#">Geral</a><a class="nav" href="#">GPU</a><a class="nav" href="#">Jogos</a><a class="nav" href="#">Log</a><a class="nav on" href="#" aria-current="page">Celular</a>
+<div style="flex-grow: 1"></div>
+<span style="text-align: center; font-size: 11px; color: rgba(228,233,242,.5)">v0.7.0 · executando como administrador</span>
+</nav>
+<main style="flex-grow: 1; min-width: 0; padding: 36px 32px 20px 32px; display: flex; flex-direction: column; gap: 14px">
+<div><h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.02em">Ver pelo celular</h1><p style="margin: 4px 0 0 0; font-size: 13px; color: rgba(228,233,242,.68)">Acompanhe o PC no navegador do celular. Só leitura: nada muda no PC pelo celular.</p></div>
+
+<section class="card" style="padding-bottom: 4px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px"><div style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 700">Ativar acesso pelo celular</span><span class="hint">Desligado por padrão. Ao desligar, todos os celulares perdem o acesso na hora.</span></div><button type="button" role="switch" aria-checked="true" aria-label="Ativar acesso pelo celular" class="sw"><span></span></button></div>
+<div style="display: flex; gap: 10px; align-items: flex-start; margin: 0 20px 16px 20px; padding: 12px 14px; border-radius: 14px; background: rgba(255,197,61,.10); border: 1px solid rgba(255,197,61,.30)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFC53D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px"><path d="M12 3l9 16H3z"></path><path d="M12 10v4"></path><path d="M12 17v.5"></path></svg><span style="font-size: 13px; line-height: 1.45"><b>Só para a rede local.</b> O celular precisa estar no mesmo Wi-Fi do PC. Não abra esta porta no roteador nem use em Wi-Fi público.</span></div>
+</section>
+
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 14px; align-items: start">
+<section class="card" style="padding: 16px 20px 20px 20px; display: flex; flex-direction: column; gap: 14px">
+<div><h2>Parear um celular</h2><p class="hint" style="margin: 2px 0 0 0">Aponte a câmera do celular para o código.</p></div>
+<div style="display: flex; gap: 18px; align-items: center">
+<div role="img" aria-label="QR code de pareamento" style="width: 176px; height: 176px; flex-shrink: 0; box-sizing: border-box; padding: 12px; border-radius: 16px; background: #FFFFFF; display: grid; grid-template-columns: repeat(25, minmax(0, 1fr))">
+<sc-for list="{{qr}}" as="c" hint-placeholder-count="625"><span style="background: {{c.bg}}; aspect-ratio: 1"></span></sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+<span class="hint">ou digite no navegador</span>
+<span class="mono" style="font-size: 14px; font-weight: 500">192.168.0.12:5317</span>
+<span class="hint" style="margin-top: 6px">código</span>
+<span class="mono" style="font-size: 26px; font-weight: 700; letter-spacing: .12em">482 913</span>
+<span class="hint">Vale por 2:00 · <a href="#" style="color: #4C8DFF; font-weight: 700; text-decoration: none">Gerar outro</a></span>
+</div>
+</div>
+</section>
+
+<section class="card" style="padding-bottom: 4px">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 12px 20px"><h2>Dispositivos pareados</h2><button type="button" class="btn" style="background: transparent; border-color: transparent; color: #FF6166">Revogar todos</button></div>
+<div class="dev"><span style="width: 10px; height: 10px; border-radius: 50%; background: #3DDC84; box-shadow: 0 0 0 4px rgba(61,220,132,.18); flex-shrink: 0"></span><span style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 14px; font-weight: 700">iPhone · Safari</span><span class="hint">Vendo agora · pareado em 12/11</span></span><button type="button" class="btn">Revogar</button></div>
+<div class="dev"><span style="width: 10px; height: 10px; border-radius: 50%; background: rgba(228,233,242,.3); flex-shrink: 0"></span><span style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 14px; font-weight: 700">Android · Chrome</span><span class="hint">Visto há 3 dias · pareado em 02/11</span></span><button type="button" class="btn">Revogar</button></div>
+<div class="dev" style="flex-direction: column; align-items: flex-start; gap: 4px"><span style="font-size: 12px; font-weight: 800; color: rgba(228,233,242,.5); text-transform: uppercase; letter-spacing: .08em">Estados</span><span class="hint">Vazio: "Nenhum celular pareado ainda." · Desligado: QR e lista somem, fica só o aviso e o botão. · Porta ocupada: "Não deu para abrir a porta 5317. Feche o app que está usando ou reinicie o Pitwall."</span></div>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const N = 25, cells = [];
+    let s = 7;
+    const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+    const finder = (x, y, ox, oy) => { const dx = x - ox, dy = y - oy; if (dx < 0 || dy < 0 || dx > 6 || dy > 6) return null; const edge = dx === 0 || dy === 0 || dx === 6 || dy === 6; const core = dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4; return edge || core; };
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      let f = finder(x, y, 0, 0); if (f === null) f = finder(x, y, N - 7, 0); if (f === null) f = finder(x, y, 0, N - 7);
+      const near = (x < 8 && y < 8) || (x > N - 9 && y < 8) || (x < 8 && y > N - 9);
+      const on = f !== null ? f : (near ? false : rnd() > 0.52);
+      cells.push({ bg: on ? '#0A0D13' : 'transparent' });
+    }
+    return { qr: cells };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>v0.7 Configurações · Jogos — perfis e marcar como jogo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.nav{display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:12px;text-decoration:none;font-size:14px;font-weight:600;color:rgba(228,233,242,.68)}
+.nav.on{font-weight:800;color:#F4F6FA;background:rgba(255,255,255,.10);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:22px;box-shadow:0 16px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);box-sizing:border-box}
+h2{margin:0;font-size:16px;font-weight:800}
+.hint{font-size:12px;line-height:1.4;color:rgba(228,233,242,.68)}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:34px;padding:0 14px;border-radius:11px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);color:#F4F6FA}
+.btn.p{background:#4C8DFF;border:0;box-shadow:0 4px 12px rgba(76,141,255,.28)}
+.tr{display:grid;grid-template-columns:minmax(0,1fr) 250px 170px 44px;column-gap:12px;align-items:center;min-height:54px;padding:0 20px;border-top:1px solid rgba(255,255,255,.07)}
+.sel{display:flex;align-items:center;justify-content:space-between;gap:8px;height:34px;padding:0 10px 0 12px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);font-family:inherit;font-size:13px;font-weight:600;color:#F4F6FA;cursor:pointer;text-align:left;width:100%}
+.sel.def{color:rgba(228,233,242,.68);font-weight:500}
+.x{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:0;border-radius:9px;background:transparent;color:rgba(228,233,242,.68);cursor:pointer}
+</style>
+</helmet>
+<div style="width: 1200px; height: 800px; position: relative; overflow: hidden; background: #0A0D13; color: #F4F6FA; font-family: 'Nunito', ui-rounded, system-ui, sans-serif; display: flex">
+<div style="position: absolute; left: -120px; top: -200px; width: 620px; height: 620px; border-radius: 50%; background: #4C8DFF; opacity: .3; filter: blur(110px)"></div>
+<div style="position: absolute; left: 760px; top: 360px; width: 640px; height: 640px; border-radius: 50%; background: #8B5CF6; opacity: .28; filter: blur(110px)"></div>
+<div style="position: relative; display: flex; width: 100%; height: 100%">
+<nav aria-label="Seções" style="width: 240px; flex-shrink: 0; box-sizing: border-box; padding: 18px 16px; display: flex; flex-direction: column; gap: 4px; background: rgba(255,255,255,.04); border-right: 1px solid rgba(255,255,255,.08)">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 6px 18px 6px"><span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 11px; background: #4C8DFF"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 16a7 7 0 0 1 14 0"></path><path d="M12 16l3.5-4.5"></path></svg></span><span style="display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 800">Pitwall</span><span style="font-size: 12px; color: rgba(228,233,242,.68)">Configurações</span></span></div>
+<a class="nav" href="#">Métricas</a><a class="nav" href="#">Geral</a><a class="nav" href="#">GPU</a><a class="nav on" href="#" aria-current="page">Jogos</a><a class="nav" href="#">Log</a><a class="nav" href="#">Celular</a>
+<div style="flex-grow: 1"></div>
+<span style="text-align: center; font-size: 11px; color: rgba(228,233,242,.5)">v0.7.0 · executando como administrador</span>
+</nav>
+<main style="flex-grow: 1; min-width: 0; padding: 36px 32px 20px 32px; display: flex; flex-direction: column; gap: 14px">
+<div><h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.02em">Jogos</h1><p style="margin: 4px 0 0 0; font-size: 13px; color: rgba(228,233,242,.68)">Detecção, perfis por jogo e o resumo de cada sessão.</p></div>
+
+<section class="card" style="padding: 14px 20px 16px 20px; display: flex; flex-direction: column; gap: 10px">
+<h2>Detecção automática</h2>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(76,141,255,.10); border: 1px solid rgba(76,141,255,.28)">
+<span style="width: 10px; height: 10px; border-radius: 50%; background: #FFC53D; box-shadow: 0 0 0 4px rgba(255,197,61,.18); flex-shrink: 0"></span>
+<span style="display: flex; flex-direction: column; flex-grow: 1; min-width: 0"><span style="font-size: 12px; font-weight: 700; color: rgba(228,233,242,.68)">Em foco agora · não é um jogo conhecido</span><span style="font-size: 14px; font-weight: 800"><span class="mono" style="font-size: 14px">eldenring.exe</span> · janela · 60 FPS há 1 min</span></span>
+<span style="font-size: 13px; font-weight: 800; white-space: nowrap">Marcar como jogo?</span>
+<button type="button" class="btn">Ignorar este app</button>
+<button type="button" class="btn p">Marcar como jogo</button>
+</div>
+<span class="hint">Aparece quando um processo fora das regras desenha quadros numa janela por 60 s. Uma vez por executável; "Ignorar" cria a regra Ignorar.</span>
+</section>
+
+<section class="card" style="padding-bottom: 4px">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 12px 20px"><div><h2>Perfis por jogo</h2><p class="hint" style="margin: 2px 0 0 0">Troca o ajuste da GPU e o layout do widget enquanto o jogo roda. "Padrão" segue GPU e Geral.</p></div><button type="button" class="btn p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Novo perfil</button></div>
+<div class="tr" style="min-height: 34px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: rgba(228,233,242,.5)"><span>Executável</span><span>Ajuste da GPU</span><span>Layout do widget</span><span></span></div>
+<div class="tr"><span style="display: flex; flex-direction: column"><span class="mono">FC25.exe</span><span class="hint">ativo agora</span></span><button type="button" class="sel">Frio · 260 W · 1700 MHz<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button><button type="button" class="sel def">Padrão<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button><button type="button" class="x" aria-label="Remover perfil de FC25.exe"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></button></div>
+<div class="tr"><span class="mono">RocketLeague.exe</span><button type="button" class="sel def">Padrão<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button><button type="button" class="sel">Compacto<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button><button type="button" class="x" aria-label="Remover perfil de RocketLeague.exe"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></button></div>
+<div class="tr"><span class="mono">Cyberpunk2077.exe</span><button type="button" class="sel">Personalizado · 280 W · 1800 MHz<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button><button type="button" class="sel">Completo<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button><button type="button" class="x" aria-label="Remover perfil de Cyberpunk2077.exe"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></button></div>
+<div class="tr"><span class="mono">eldenring.exe</span><span style="display: flex; flex-direction: column; gap: 6px; padding: 8px 0"><span style="font-size: 12px; font-weight: 700; color: rgba(228,233,242,.68)">Opções</span><span style="display: flex; flex-direction: column; border-radius: 12px; background: #161B26; border: 1px solid rgba(255,255,255,.12); box-shadow: 0 12px 30px rgba(0,0,0,.45); padding: 4px; font-size: 13px"><span style="padding: 7px 10px; border-radius: 8px; background: rgba(76,141,255,.18); font-weight: 700">Padrão (Equilibrado)</span><span style="padding: 7px 10px">Equilibrado · 300 W · 1800 MHz</span><span style="padding: 7px 10px">Frio · 260 W · 1700 MHz</span><span style="padding: 7px 10px">Personalizado…</span><span style="padding: 7px 10px; color: rgba(228,233,242,.68)">Desligado neste jogo</span></span></span><button type="button" class="sel def">Padrão<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button><button type="button" class="x" aria-label="Remover perfil de eldenring.exe"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></button></div>
+</section>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

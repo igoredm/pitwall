@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>v0.7 Peças por tema — pico e limite de clock</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;600;700;800&amp;family=Manrope:wght@300;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Baloo+2:wght@800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:14px;padding:22px;box-sizing:border-box}
+.cap{font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+</style>
+</helmet>
+<div style="width: 1280px; height: 640px; display: flex; font-family: 'Nunito', sans-serif; overflow: hidden">
+
+<div class="col" style="background: #E8ECF3; color: #0F1320">
+<span class="cap" style="color: #7C8599">Lumen claro</span>
+<div style="background: rgba(255,255,255,.52); border: 1px solid rgba(255,255,255,.85); border-radius: 30px; box-shadow: 0 14px 36px rgba(24,39,75,.12), 0 1px 2px rgba(24,39,75,.06); padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 10px"><span style="font-size: 22px; font-weight: 700">3080</span><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(168,100,0,.12); color: #A86400">↓ Limite: térmico</span></div>
+<div style="background: rgba(209,42,54,.10); border-radius: 20px; padding: 12px 14px"><div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #4F586B"><span>hot spot</span><span style="font-size: 12px; color: #D12A36">máx 101</span></div><span style="font-size: 30px; font-weight: 300; color: #D12A36">99</span><span style="font-size: 14px; color: #4F586B"> °C</span></div>
+<div style="background: rgba(15,19,32,.04); border-radius: 20px; padding: 12px 14px"><div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #4F586B"><span>núcleo</span><span style="font-size: 12px; color: #7C8599">máx 78</span></div><span style="font-size: 30px; font-weight: 300">74</span><span style="font-size: 14px; color: #4F586B"> °C</span></div>
+</div>
+<span style="font-size: 12px; line-height: 1.5; color: #4F586B">Pico em text3. Fica na cor do nível só quando o pico passou do amarelo/vermelho.</span>
+</div>
+
+<div class="col" style="background: #0F0F10; color: #EDEDEE; font-family: 'Manrope', sans-serif">
+<span class="cap" style="color: #6A6A70">Mínimo escuro</span>
+<div style="display: flex; flex-direction: column; gap: 0; border-top: 1px solid #26262A">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #26262A"><span style="font-size: 18px; font-weight: 600">3080</span><span style="font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: #9A9A9F">limite · power</span></div>
+<div style="padding: 14px 0; border-bottom: 1px solid #26262A"><div style="display: flex; justify-content: space-between; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #9A9A9F"><span>hot spot <span style="color: #FF5C5C">crítico</span></span><span style="color: #6A6A70">máx 101</span></div><span style="font-size: 28px; font-weight: 300; color: #FF5C5C">99</span><span style="color: #9A9A9F"> °C</span></div>
+<div style="padding: 14px 0; border-bottom: 1px solid #26262A"><div style="display: flex; justify-content: space-between; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #9A9A9F"><span>núcleo</span><span style="color: #6A6A70">máx 78</span></div><span style="font-size: 28px; font-weight: 300">74</span><span style="color: #9A9A9F"> °C</span></div>
+</div>
+<span style="font-size: 12px; line-height: 1.5; color: #9A9A9F">Sem chip: o motivo vira texto à direita do nome, igual às tags "atenção"/"crítico".</span>
+</div>
+
+<div class="col" style="background: #0B0D0E; color: #CFE3D6; font-family: 'JetBrains Mono', monospace">
+<span class="cap" style="color: #4F6258">Terminal</span>
+<div style="background: #0E1211; border: 1px solid #253029">
+<div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #121816; border-bottom: 1px solid #253029; font-size: 12px"><span>■ GPU :: 3080</span><span style="color: #F4D35E">lim=thermal</span></div>
+<div style="padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; font-size: 13px">
+<div style="display: flex; justify-content: space-between"><span style="color: #7D958A">hot_spot</span><span><span style="color: #FF5F56">[CRIT]</span> <b style="color: #FF5F56">99°C</b> <span style="color: #4F6258">max=101</span></span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #7D958A">core</span><span><span style="color: #4AF626">[ OK ]</span> 74°C <span style="color: #4F6258">max=78</span></span></div>
+<div style="border-top: 1px dashed #253029; padding-top: 8px; color: #4F6258; font-size: 12px">lim ∈ thermal | power | voltage | idle | sync</div>
+</div>
+</div>
+<span style="font-size: 12px; line-height: 1.5; color: #7D958A">Motivo em inglês snake_case no header, à direita (substitui "uso 97%" só no H compacto; no completo fica ao lado).</span>
+</div>
+
+<div class="col" style="background: #140A26; color: #FFF7FB">
+<span class="cap" style="color: rgba(255,240,250,.52)">Splash escuro</span>
+<div style="background: linear-gradient(135deg, #E0206F, #F2580F); border-radius: 32px; box-shadow: 0 18px 44px rgba(224,32,111,.4), inset 0 1px 0 rgba(255,255,255,.25); padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 10px"><span style="font-family: 'Baloo 2', sans-serif; font-size: 26px; font-weight: 800">3080</span><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; background: #150A28; color: #FFD23F; font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase">↓ power</span></div>
+<div style="background: #FFD400; border-radius: 22px; box-shadow: inset 0 0 0 3px #1A1200; padding: 12px 14px; color: #1A1200"><div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 900"><span>hot spot</span><span style="font-size: 12px">máx 101</span></div><span style="font-family: 'Baloo 2', sans-serif; font-size: 32px; font-weight: 800">97</span><span style="font-weight: 800"> °C</span></div>
+<div style="background: rgba(20,6,40,.22); border-radius: 22px; padding: 12px 14px"><div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 900"><span>núcleo</span><span style="font-size: 12px; opacity: .72">máx 78</span></div><span style="font-family: 'Baloo 2', sans-serif; font-size: 32px; font-weight: 800">74</span><span style="font-weight: 800"> °C</span></div>
+</div>
+<span style="font-size: 12px; line-height: 1.5; color: rgba(255,240,250,.72)">Chip tinta (#150A28) com texto amarelo: lê sobre qualquer gradiente de bloco.</span>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
