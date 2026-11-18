@@ -66,7 +66,7 @@ function read(): { version: string; until: number } | null {
             <div class="strip" [class.quiet]="notice.snoozed()">
               <span class="pulse" aria-hidden="true"></span>
               <span class="grow">
-                <span class="st-title">{{ sx.updAvailable(u.version ?? '') }}</span>
+                <span class="st-title">{{ sx.updAvailable(u.version ?? '') }}@if (u.size) { <span class="hint"> · {{ (u.size / 1048576).toFixed(0) }} MB</span> }</span>
                 <span class="hint">{{ notice.snoozed() ? sx.updSnoozed : sx.updYouHave(u.current, channelName(u.channel)) }}</span>
               </span>
               <button class="link" (click)="notesOpen.set(!notesOpen())" [attr.aria-expanded]="notesOpen()">{{ notesOpen() ? sx.updHideNotes : sx.updNotes }}</button>

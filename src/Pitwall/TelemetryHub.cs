@@ -526,9 +526,10 @@ public sealed class TelemetryHub : IDisposable
             return;
         }
         var interval = cfg.Alerts.MinIntervalMin * 60_000L;
+        var sustain = Math.Clamp(cfg.Alerts.SustainSec, 1, 120);
         foreach (var s in cfg.Metrics)
         {
-            if (s.Crit == null || !_alerts.Step(s.Id, _values.GetValueOrDefault(s.Id), s.Crit, now, interval)) continue;
+            if (s.Crit == null || !_alerts.Step(s.Id, _values.GetValueOrDefault(s.Id), s.Crit, now, interval, sustain * 1000L)) continue;
             var def = _definitions.FirstOrDefault(d => d.Id == s.Id);
             if (def == null) continue;
             var name = $"{GroupName(def.Group)} · {(string.IsNullOrWhiteSpace(s.Label) ? L.MetricName(def) : s.Label)}";
@@ -538,7 +539,7 @@ public sealed class TelemetryHub : IDisposable
             if (def.IsTemperature && s.Unit == "F") { value = value * 9 / 5 + 32; crit = crit * 9 / 5 + 32; unit = " °F"; }
             AlertRaised?.Invoke(
                 L.T($"{name} no vermelho", $"{name} in the red"),
-                L.T($"{value:0.#}{unit} há mais de 5 s (limite {crit:0.#}{unit}).", $"{value:0.#}{unit} for over 5 s (limit {crit:0.#}{unit})."));
+                L.T($"{value:0.#}{unit} há mais de {sustain} s (limite {crit:0.#}{unit}).", $"{value:0.#}{unit} for over {sustain} s (limit {crit:0.#}{unit})."));
         }
     }
 
@@ -622,6 +623,10 @@ public sealed class TelemetryHub : IDisposable
                     });
                     return null;
                 }
+                case "testAlert":
+                    AlertRaised?.Invoke(L.T("Pitwall · aviso de teste", "Pitwall · test alert"),
+                        L.T("É assim que o aviso aparece quando uma métrica fica no vermelho.", "This is how the alert looks when a metric stays in the red."));
+                    return null;
                 case "resetExtremes":
                     _extremes.Reset();
                     _ws.Broadcast(ExtremesMessage());

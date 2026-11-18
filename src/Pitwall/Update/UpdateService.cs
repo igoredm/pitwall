@@ -18,6 +18,8 @@ public sealed record UpdateState
     public string? NotesUrl { get; init; }
     /// <summary>Notas da release em markdown, truncadas. Texto vindo da internet: a interface deve sanitizar.</summary>
     public string? Notes { get; init; }
+    /// <summary>Tamanho do instalador (bytes).</summary>
+    public long? Size { get; init; }
     public string Channel { get; init; } = "stable";
     /// <summary>0–100 durante o download.</summary>
     public int? Progress { get; init; }
@@ -126,7 +128,7 @@ public sealed class UpdateService : IDisposable
             if (release == null || (!manual && skipped != null && SemVer.TryParse(skipped, out var sk) && sk.Equals(release.Version)))
             {
                 lock (_gate) _release = null;
-                Set(s => s with { Status = "idle", Version = null, NotesUrl = null, Notes = null, LastCheck = now });
+                Set(s => s with { Status = "idle", Version = null, NotesUrl = null, Notes = null, Size = null, LastCheck = now });
                 UpdateLog.Write(release == null ? $"sem atualização ({channel})" : $"{release.Version} disponível, mas foi pulada");
                 if (manual) Notice?.Invoke(L.T($"Você está na versão mais recente ({_current}).", $"You are on the latest version ({_current})."), false);
                 return;
@@ -134,7 +136,7 @@ public sealed class UpdateService : IDisposable
 
             lock (_gate) _release = release;
             var ver = release.Version.ToString();
-            Set(s => s with { Status = "available", Version = ver, NotesUrl = release.NotesUrl, Notes = release.Notes, LastCheck = now });
+            Set(s => s with { Status = "available", Version = ver, NotesUrl = release.NotesUrl, Notes = release.Notes, Size = release.InstallerSize, LastCheck = now });
             UpdateLog.Write($"{ver} disponível ({channel})");
             if (_notifiedVersion != ver || manual)
             {

@@ -276,3 +276,12 @@ Ao ser revogado, a conexão fecha com 1008 `revoked`.
 Sem mudança na 0.7. Página → host via `chrome.webview.postMessage`: `openSettings`, `hide` (widget); `pickFolder`, `pickExe`,
 `identifyMonitors`, `openLogFolder`, `openLogFile`, `showWidget` (configurações). Host → página: `folderPicked { path }`,
 `exePicked { name }`.
+
+## Adições finais da v0.7
+
+- `config.alerts.sustainSec` (número, padrão 10, 1–120): segundos no vermelho antes do aviso.
+- Cliente → servidor `{ "type": "testAlert" }`: mostra um aviso de exemplo na bandeja.
+- `update.size` (bytes, opcional): tamanho do instalador quando há versão disponível.
+- Mensagem do host (WebView2, não WebSocket) `{ "type": "openLogFile", "file": "pitwall_....csv" }`: seleciona o CSV no Explorer.
+  Só aceita um nome de arquivo `.csv` dentro da pasta de logs; sem `file`, abre o log atual; se não existir, abre a pasta.
+- Instalação nova (`firstRunDone: false`): o app abre as configurações sozinho e o assistente aparece por cima.

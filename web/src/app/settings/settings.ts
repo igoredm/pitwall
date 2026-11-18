@@ -63,6 +63,7 @@ export class Settings implements SettingsCtx {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   /** Intervalos do aviso do Windows (minutos). */
   protected readonly alertIntervals = [1, 5, 15, 30];
+  protected readonly alertSustains = [5, 10, 30];
   protected readonly themes = THEMES;
   protected readonly accents = ACCENTS;
   protected readonly refreshRates = [250, 500, 1000, 2000];

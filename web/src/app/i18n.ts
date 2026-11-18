@@ -265,6 +265,10 @@ const ptBR = {
   alertsSoundHint: 'Usa o som de notificação do Windows.',
   alertsInterval: 'Intervalo mínimo',
   alertsIntervalHint: 'Entre dois avisos da mesma métrica.',
+  alertsSustain: 'Esperar antes de avisar',
+  alertsSustainHint: 'Tempo no vermelho antes do aviso. Picos curtos não avisam.',
+  alertsTest: 'Testar aviso',
+  alertsTestHint: 'Mostra um aviso de exemplo agora.',
 
   updatesTitle: 'Atualizações',
   updAvailable: (v: string) => `Pitwall ${v} disponível`,
@@ -698,6 +702,10 @@ const en: Dict = {
   alertsSoundHint: 'Uses the Windows notification sound.',
   alertsInterval: 'Minimum interval',
   alertsIntervalHint: 'Between two notifications for the same metric.',
+  alertsSustain: 'Wait before alerting',
+  alertsSustainHint: 'Time in the red before the alert. Short spikes are ignored.',
+  alertsTest: 'Test alert',
+  alertsTestHint: 'Shows a sample alert now.',
 
   updatesTitle: 'Updates',
   updAvailable: (v) => `Pitwall ${v} available`,

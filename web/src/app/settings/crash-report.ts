@@ -48,7 +48,7 @@ const SERIES: { id: CrashSeriesId; unit: string }[] = [
               <span class="mono file">{{ r.csv }}</span>
             }
             @if (t.inHost) {
-              <button class="btn" (click)="t.host({ type: 'openLogFolder' })">{{ sx.openFolder }}</button>
+              <button class="btn" (click)="r.csv ? t.host({ type: 'openLogFile', file: r.csv }) : t.host({ type: 'openLogFolder' })">{{ sx.openFolder }}</button>
             }
           </div>
         </div>

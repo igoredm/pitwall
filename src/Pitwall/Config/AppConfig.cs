@@ -51,6 +51,8 @@ public sealed class AlertsConfig
     public bool Sound { get; set; }
     /// <summary>Intervalo mínimo entre avisos da mesma métrica.</summary>
     public int MinIntervalMin { get; set; } = 5;
+    /// <summary>Quanto tempo a métrica precisa ficar no vermelho antes do aviso (picos curtos não avisam).</summary>
+    public int SustainSec { get; set; } = 10;
 }
 
 /// <summary>Visualização no celular pela rede local (somente leitura). Desligada por padrão.</summary>

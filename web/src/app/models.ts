@@ -83,6 +83,8 @@ export interface AlertsConfig {
   enabled: boolean;
   sound: boolean;
   minIntervalMin: number;
+  /** Segundos no vermelho antes do aviso (padrão 10). */
+  sustainSec?: number;
 }
 
 /** v0.7: visualização no celular pela rede local. */
@@ -208,6 +210,8 @@ export interface UpdateState {
   status: UpdateStatus;
   /** Versão em execução. */
   current: string;
+  /** Tamanho do instalador em bytes (quando há versão disponível). */
+  size?: number | null;
   /** Versão nova (available/downloading/ready). */
   version?: string;
   /** Página da release no GitHub. */
@@ -333,6 +337,7 @@ export type ClientMessage =
   | { type: 'restoreDefaults' }
   | { type: 'getState' }
   | { type: 'resetExtremes' }
+  | { type: 'testAlert' }
   | { type: 'dismissCrashReport' }
   | { type: 'acceptGameSuggestion'; exe?: string }
   | { type: 'dismissGameSuggestion'; exe?: string }

@@ -185,7 +185,7 @@ public sealed class AlertTracker
     public void Clear() => _aboveSince.Clear();
 
     /// <returns>true = mostrar o aviso agora.</returns>
-    public bool Step(string id, double? value, double? crit, long nowMs, long minIntervalMs)
+    public bool Step(string id, double? value, double? crit, long nowMs, long minIntervalMs, long sustainMs = SustainMs)
     {
         if (crit is not { } c || value is not { } v || !double.IsFinite(v) || v < c)
         {
@@ -197,7 +197,7 @@ public sealed class AlertTracker
             _aboveSince[id] = nowMs;
             return false;
         }
-        if (nowMs - since < SustainMs) return false;
+        if (nowMs - since < sustainMs) return false;
         if (_lastFired.TryGetValue(id, out var last) && nowMs - last < minIntervalMs) return false;
         _lastFired[id] = nowMs;
         return true;

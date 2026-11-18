@@ -292,6 +292,21 @@
                     }
                   </div>
                 </div>
+                <div class="field row" [class.dim]="!d.alerts?.enabled">
+                  <div>
+                    <div class="f-label">{{ s().alertsSustain }}</div>
+                    <div class="hint">{{ s().alertsSustainHint }}</div>
+                  </div>
+                  <div class="seg" role="group" [attr.aria-label]="s().alertsSustain">
+                    @for (sec of alertSustains; track sec) {
+                      <button [class.sel]="(d.alerts?.sustainSec ?? 10) === sec" [attr.aria-pressed]="(d.alerts?.sustainSec ?? 10) === sec" [disabled]="!d.alerts?.enabled" (click)="patchAlerts({ sustainSec: sec })">{{ sec }} s</button>
+                    }
+                  </div>
+                </div>
+                <div class="field row" [class.dim]="!d.alerts?.enabled">
+                  <div class="hint">{{ s().alertsTestHint }}</div>
+                  <button class="btn" [disabled]="!d.alerts?.enabled" (click)="t.send({ type: 'testAlert' })">{{ s().alertsTest }}</button>
+                </div>
               </section>
             </div>
 

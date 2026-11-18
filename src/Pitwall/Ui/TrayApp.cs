@@ -74,6 +74,8 @@ public sealed class TrayApp : ApplicationContext
         }, null);
         // Clicar no balão (alerta ou relatório de crash) abre as configurações
         _tray.BalloonTipClicked += (_, _) => OpenSettings();
+        // Instalação nova: abre as configurações, onde o assistente de primeira execução aparece
+        if (!config.Current.FirstRunDone) _ui.Post(_ => OpenSettings(), null);
 
         // Relatório de crash: a detecção roda em segundo plano e pode terminar antes ou depois daqui
         hub.CrashReportDetected += r => _ui.Post(_ => ShowCrashBalloon(r), null);

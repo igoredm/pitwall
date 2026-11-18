@@ -106,8 +106,20 @@ public sealed partial class SettingsForm : Form
                     Process.Start("explorer.exe", _config.Current.Log.Folder);
                     break;
                 case "openLogFile":
-                    if (_logPath() is { } path && File.Exists(path)) Process.Start("explorer.exe", $"/select,\"{path}\"");
+                {
+                    // Com "file": só um nome de arquivo .csv dentro da pasta de logs (nada de caminhos vindos da página)
+                    var path = _logPath();
+                    if (root.TryGetProperty("file", out var f) && f.GetString() is { } name)
+                        path = name == Path.GetFileName(name) && name.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
+                            ? Path.Combine(_config.Current.Log.Folder, name) : null;
+                    if (path != null && File.Exists(path)) Process.Start("explorer.exe", $"/select,\"{path}\"");
+                    else
+                    {
+                        Directory.CreateDirectory(_config.Current.Log.Folder);
+                        Process.Start("explorer.exe", _config.Current.Log.Folder);
+                    }
                     break;
+                }
                 case "showWidget":
                     ShowWidgetRequested?.Invoke();
                     break;

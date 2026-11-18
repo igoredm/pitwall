@@ -33,7 +33,7 @@ interface Stat {
           </div>
           @if (v.session.csvFile; as csv) {
             @if (t.inHost) {
-              <button class="btn csv" [title]="sx.csvOpensFolder" (click)="t.host({ type: 'openLogFolder' })"><span class="mono">{{ csv }}</span></button>
+              <button class="btn csv" (click)="t.host({ type: 'openLogFile', file: csv })"><span class="mono">{{ csv }}</span></button>
             } @else {
               <span class="mono csv-text">{{ csv }}</span>
             }
