@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/Pitwall/Pitwall.csproj" />
+  <Project Path="tests/Pitwall.Tests/Pitwall.Tests.csproj" />
+</Solution>

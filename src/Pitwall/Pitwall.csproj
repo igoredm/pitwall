@@ -31,6 +31,10 @@
     <EmbeddedResource Include="pitwall.ico" LogicalName="pitwall.ico" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pitwall.Tests" />
+  </ItemGroup>
+
   <!-- PresentMon console (Intel, MIT): lê eventos ETW, não toca no processo do jogo -->
   <ItemGroup>
     <None Include="..\..\tools\PresentMon.exe" Condition="Exists('..\..\tools\PresentMon.exe')" Link="tools\PresentMon.exe" CopyToOutputDirectory="PreserveNewest" />
