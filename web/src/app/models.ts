@@ -34,6 +34,8 @@ export interface AppConfig {
   /** "auto" (idioma do Windows), "pt-BR" ou "en". */
   language?: 'auto' | 'pt-BR' | 'en';
   startWithWindows: boolean;
+  /** v0.7: assistente de primeira execução concluído (ou pulado). Config antiga vira true na migração v5. */
+  firstRunDone?: boolean;
   autoOpenWidgetOnGame: boolean;
   primaryGpu: string;
   groupLabels: Record<string, string>;
@@ -387,4 +389,6 @@ export interface MetricView {
   level: Level;
   sparkline: boolean;
   isTemperature: boolean;
+  /** v0.7: pico da sessão (máx) já formatado, com o nível que ele alcançou. Ausente = métrica sem pico ou ocioso. */
+  peak?: { text: string; level: Level } | null;
 }
