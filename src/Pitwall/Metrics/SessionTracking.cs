@@ -148,6 +148,22 @@ public sealed class SessionStatsAccumulator
         }
     }
 
+    readonly Dictionary<string, double> _reasonSec = [];
+
+    /// <summary>
+    /// Soma <paramref name="dtSec"/> ao motivo do limite de clock deste tick (valor de gpu.perfcap:
+    /// thermal | power | voltage | idle | sync | none). null = sem leitura (não conta).
+    /// </summary>
+    public void AddClockReason(string? reason, double dtSec)
+    {
+        if (reason == null || !(dtSec > 0)) return;
+        _reasonSec[reason] = _reasonSec.GetValueOrDefault(reason) + dtSec;
+    }
+
+    /// <summary>Segundos por motivo até agora (arredondados), ou null se ainda não há leitura.</summary>
+    public Dictionary<string, double>? ClockReasonSeconds() =>
+        _reasonSec.Count > 0 ? _reasonSec.ToDictionary(kv => kv.Key, kv => Math.Round(kv.Value)) : null;
+
     static void Peak(ref double? peak, IReadOnlyDictionary<string, double?> values, string id)
     {
         if (values.TryGetValue(id, out var v) && v is { } d && double.IsFinite(d) && (peak == null || d > peak)) peak = d;
@@ -165,6 +181,7 @@ public sealed class SessionStatsAccumulator
         s.PeakGpuPower = R(_peakPower);
         s.SecondsAboveWarn = _warnSec.Count > 0 ? _warnSec.ToDictionary(kv => kv.Key, kv => Math.Round(kv.Value)) : null;
         s.SecondsAboveCrit = _critSec.Count > 0 ? _critSec.ToDictionary(kv => kv.Key, kv => Math.Round(kv.Value)) : null;
+        s.ClockReasonSec = ClockReasonSeconds();
     }
 
     static double? R(double? v) => v is { } d && double.IsFinite(d) ? Math.Round(d, 1) : null;

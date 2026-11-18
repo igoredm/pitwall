@@ -49,7 +49,10 @@ public sealed class TelemetryHub : IDisposable
     // Relatório de crash: buffer dos últimos 60 s (em disco durante o jogo) e o relatório detectado ao abrir
     readonly CrashRing _ring = new();
     volatile CrashReport? _crashReport;
-    public CrashReport? PendingCrashReport => _crashReport;
+    /// <summary>Relatório pendente (null com features.crashReport desligado).</summary>
+    public CrashReport? PendingCrashReport => _crashFeature ? _crashReport : null;
+    volatile bool _crashFeature;
+    int _crashDetectStarted;
     /// <summary>Relatório de crash detectado ao abrir (thread de fundo).</summary>
     public event Action<CrashReport>? CrashReportDetected;
 
@@ -88,7 +91,10 @@ public sealed class TelemetryHub : IDisposable
 
         _ws = new WsServer(config.Current.WebSocketPort)
         {
-            OnConnect = () => [CatalogMessage(), ConfigMessage(), SessionsMessage(), ExtremesMessage()],
+            // Mín/máx desligado (features.sessionPeaks): nem a mensagem completa vai
+            OnConnect = () => _config.Current.Features.SessionPeaks
+                ? [CatalogMessage(), ConfigMessage(), SessionsMessage(), ExtremesMessage()]
+                : [CatalogMessage(), ConfigMessage(), SessionsMessage()],
             OnMessage = HandleMessage,
         };
         // Celular na rede local: servidor separado, somente leitura, com dados sanitizados
@@ -98,14 +104,38 @@ public sealed class TelemetryHub : IDisposable
         };
         _remote.Paired += d =>
         {
-            // Lista nova em vez de Add: o servidor da rede pode estar lendo a antiga em outra thread
+            // Lista nova em vez de Add: o servidor da rede pode estar lendo a antiga em outra thread.
+            // O "devices" vai no Authenticated logo depois (aí o aparelho já conta como online).
             _config.Update(c => c.Remote.PairedDevices = [.. c.Remote.PairedDevices, d]);
-            _ws.Broadcast(DevicesMessage(d.Id));
         };
+        _remote.Authenticated += (id, paired) =>
+        {
+            TouchDevices(new HashSet<string> { id });
+            _ws.Broadcast(DevicesMessage(paired ? id : null));
+        };
+        _remote.Disconnected += _ => _ws.Broadcast(DevicesMessage());
 
+        _crashFeature = config.Current.Features.CrashReport;
+        _peaksOn = config.Current.Features.SessionPeaks;
+        RefreshLastReasons();
+        _retentionKey = RetentionKey(config.Current.Log);
         config.Changed += c =>
         {
             ApplyActive(c);
+            // Relatório de crash ligado/desligado: some/volta no catálogo (e, se ainda não rodou, a detecção roda agora)
+            if (c.Features.CrashReport != _crashFeature)
+            {
+                _crashFeature = c.Features.CrashReport;
+                if (_crashFeature && Interlocked.Exchange(ref _crashDetectStarted, 1) == 0) _ = Task.Run(DetectCrash);
+                _ws.Broadcast(CatalogMessage());
+            }
+            // Mudou a retenção (ou a pasta): roda de novo daqui a pouco, sem esperar o ciclo diário
+            var key = RetentionKey(c.Log);
+            if (key != _retentionKey)
+            {
+                _retentionKey = key;
+                Interlocked.Exchange(ref _retentionAt, Environment.TickCount64 + RetentionDebounceMs);
+            }
             if (_lang != L.Lang)
             {
                 _lang = L.Lang;
@@ -176,7 +206,8 @@ public sealed class TelemetryHub : IDisposable
     {
         _ws.Start();
         new Thread(Loop) { IsBackground = true, Name = "Telemetry", Priority = ThreadPriority.BelowNormal }.Start();
-        _ = Task.Run(DetectCrash);
+        // Relatório de crash desligado: nem olha o sessions.json/log do Windows (roda se for ligado depois)
+        if (_config.Current.Features.CrashReport && Interlocked.Exchange(ref _crashDetectStarted, 1) == 0) _ = Task.Run(DetectCrash);
         ApplyRemote(_config.Current.Remote);
     }
 
@@ -192,21 +223,29 @@ public sealed class TelemetryHub : IDisposable
             if (report == null) return;
             _crashReport = report;
             _ws.Broadcast(CatalogMessage());
-            CrashReportDetected?.Invoke(report);
+            if (_crashFeature) CrashReportDetected?.Invoke(report);
         }
         catch { }
     }
 
+    /// <summary>Próxima limpeza de logs (TickCount64). Antecipada quando a config de retenção muda.</summary>
+    long _retentionAt = Environment.TickCount64 + 15_000;
+    string _retentionKey;
+    /// <summary>Espera depois de mudar a retenção (o usuário pode estar clicando entre as opções).</summary>
+    const long RetentionDebounceMs = 5_000;
+
+    static string RetentionKey(LogConfig l) => $"{l.KeepDays}|{l.MaxTotalMb}|{l.Folder}";
+
     void Loop()
     {
         var cleanupAt = Environment.TickCount64 + 30_000;
-        // Retenção de logs: logo depois de abrir (o CSV atual já existe) e depois 1x por dia
-        var retentionAt = Environment.TickCount64 + 15_000;
+        // Retenção de logs: logo depois de abrir (o CSV atual já existe), 1x por dia e ~5 s depois de mudar a config
         while (!_cts.IsCancellationRequested)
         {
+            var retentionAt = Interlocked.Read(ref _retentionAt);
             if (Environment.TickCount64 > retentionAt)
             {
-                retentionAt = Environment.TickCount64 + 24 * 3600_000L;
+                Interlocked.CompareExchange(ref _retentionAt, Environment.TickCount64 + 24 * 3600_000L, retentionAt);
                 var logCfg = _config.Current.Log;
                 var keep = RetentionProtected();
                 _ = Task.Run(() => { try { LogRetention.Run(logCfg, keep); } catch { } });
@@ -225,6 +264,12 @@ public sealed class TelemetryHub : IDisposable
             {
                 _presentMon.CleanupStale();
                 cleanupAt = started + 30_000;
+            }
+            // "Visto por último" dos aparelhos conectados: no máximo 1x por minuto
+            if (started - _lastSeenAt >= LastSeenEveryMs)
+            {
+                _lastSeenAt = started;
+                if (_remote.HasClients) TouchDevices(_remote.OnlineDeviceIds());
             }
             var wait = Math.Max(50, cfg.RefreshMs - (int)(Environment.TickCount64 - started));
             _cts.Token.WaitHandle.WaitOne(wait);
@@ -267,13 +312,44 @@ public sealed class TelemetryHub : IDisposable
             }
             catch { }
         });
+        RefreshLastReasons();
+    }
+
+    // Motivos do limite de clock da última sessão (mostrados fora de jogo); atualizado só quando uma sessão termina
+    (string Exe, Dictionary<string, double> Sec)? _lastReasons;
+    bool _peaksOn;
+    bool _ringDirty;
+
+    void RefreshLastReasons()
+    {
+        var last = _sessions.Recent.FirstOrDefault();
+        _lastReasons = last?.ClockReasonSec is { Count: > 0 } sec ? (last.Exe, sec) : null;
+    }
+
+    /// <summary>snapshot.clockReasons: segundos por motivo na sessão atual (live) ou, fora de jogo, na última.</summary>
+    JsonObject? ClockReasonsNode(GameInfo? game) =>
+        ClockReasonsNode(game?.Exe, _stats?.ClockReasonSeconds(), _lastReasons?.Exe, _lastReasons?.Sec);
+
+    /// <summary>Regra pura (testável): em jogo, a sessão atual (live); fora, a última sessão que tem dados; senão null.</summary>
+    internal static JsonObject? ClockReasonsNode(string? gameExe, Dictionary<string, double>? liveSec, string? lastExe, Dictionary<string, double>? lastSec)
+    {
+        var (exe, sec, live) = gameExe != null ? (gameExe, liveSec, true) : (lastExe, lastSec, false);
+        if (exe == null || sec == null) return null;
+        return new JsonObject { ["live"] = live, ["exe"] = exe, ["sec"] = JsonSerializer.SerializeToNode(sec) };
     }
 
     void Tick(AppConfig cfg)
     {
+        var features = cfg.Features;
         _sensors.Read(_values);
-        if (_available.Contains("gpu.perfcap"))
-            _texts["gpu.perfcap"] = _tuner.ClockReasonsMask() is { } mask ? ClockReasons.Map(mask, _values.GetValueOrDefault("gpu.load")) : null;
+        // Motivo do limite de clock: desligado = nenhuma consulta ao NVML e nada em texts
+        string? clockReason = null;
+        if (features.ClockReason && _available.Contains("gpu.perfcap"))
+        {
+            clockReason = _tuner.ClockReasonsMask() is { } mask ? ClockReasons.Map(mask, _values.GetValueOrDefault("gpu.load")) : null;
+            _texts["gpu.perfcap"] = clockReason;
+        }
+        else _texts.Remove("gpu.perfcap");
 
         var now = Environment.TickCount64;
         var dt = _lastTickMs == 0 ? 0 : Math.Clamp((now - _lastTickMs) / 1000.0, 0, 5);
@@ -303,7 +379,9 @@ public sealed class TelemetryHub : IDisposable
         var profile = game != null ? cfg.Games.ProfileFor(game.Exe) : null;
         _tuner.Update(GameProfiles.EffectiveTuning(cfg.GpuTuning, profile, game != null), game != null);
 
-        UpdateSuggestion(cfg, game, now);
+        // "Marcar como jogo?" desligado: nem olha a janela em foco
+        if (features.GameSuggestions) UpdateSuggestion(cfg, game, now);
+        else if (_suggester.Suggestion != null) _suggester.Clear();
 
         var stats = game != null ? _presentMon.Get(game.Pid) : null;
         var fps = stats?.Snapshot();
@@ -317,11 +395,20 @@ public sealed class TelemetryHub : IDisposable
 
         _log.Write(cfg.Log, _logColumns, _values, _texts, game?.Exe);
 
-        _extremes.Add(_values);
+        // Mín/máx: ligar/desligar zera (o epoch novo faz a página descartar o que tinha)
+        if (features.SessionPeaks != _peaksOn)
+        {
+            _peaksOn = features.SessionPeaks;
+            _extremes.Reset();
+            _extremesSentAt = 0;
+            if (_peaksOn) _ws.Broadcast(ExtremesMessage());
+        }
+        if (_peaksOn) _extremes.Add(_values);
         if (_stats != null)
         {
             if (stats != null) _stats.AddFrames(stats.FramesSince(ref _statsCursor, 16_384));
             _stats.AddTick(_values, cfg.Metrics, dt);
+            _stats.AddClockReason(clockReason, dt);
             if (now - _sessionSavedAt > 30_000)
             {
                 _sessionSavedAt = now;
@@ -335,10 +422,17 @@ public sealed class TelemetryHub : IDisposable
         }
         CheckAlerts(cfg, now);
 
-        if (game != null && _sessions.Open is { } open)
+        // Buffer do relatório de crash: desligado = nada na memória nem no disco
+        if (features.CrashReport && game != null && _sessions.Open is { } open)
         {
             _ring.Sample(_values, now);
             _ring.PersistIfDue(open, _log.CurrentPath is { } p ? Path.GetFileName(p) : null, now);
+            _ringDirty = true;
+        }
+        else if (_ringDirty)
+        {
+            _ring.Reset();
+            _ringDirty = false;
         }
 
         var values = new JsonObject();
@@ -372,8 +466,11 @@ public sealed class TelemetryHub : IDisposable
             },
         };
 
+        // Segundos por motivo do limite de clock: sessão atual (ao vivo) ou a última
+        if (features.ClockReason && ClockReasonsNode(game) is { } reasons) msg["clockReasons"] = reasons;
+
         // Mín/máx da sessão: só o que mudou, no máximo 1x por segundo
-        if (now - _extremesSentAt >= 1_000 && _extremes.TakeChanges() is { } changed)
+        if (_peaksOn && now - _extremesSentAt >= 1_000 && _extremes.TakeChanges() is { } changed)
         {
             _extremesSentAt = now;
             msg["extremes"] = new JsonObject
@@ -417,7 +514,7 @@ public sealed class TelemetryHub : IDisposable
             presentMon = _presentMon.Available,
             battery = _battery.Available,
             hardware = new { cpu = _sensors.CpuName, gpu = _sensors.GpuName, gpu2 = _sensors.Gpu2Name },
-            crashReport = _crashReport,
+            crashReport = _crashFeature ? _crashReport : null,
             remote = new { running = _remote.Running, port = _remote.Running ? _remote.Port : (int?)null, error = _remote.LastError },
             tuning = _tuner.Caps,
             update = Updater?.State,
@@ -488,13 +585,42 @@ public sealed class TelemetryHub : IDisposable
         }, ConfigStore.Json);
     }
 
-    /// <summary>Celulares pareados (sem hash). <paramref name="paired"/> = id do que acabou de parear.</summary>
-    string DevicesMessage(string? paired = null) => JsonSerializer.Serialize(new
+    /// <summary>Celulares/TVs pareados (sem hash), com "visto por último" e se estão conectados agora.
+    /// <paramref name="paired"/> = id do que acabou de parear.</summary>
+    string DevicesMessage(string? paired = null)
     {
-        type = "devices",
-        paired,
-        devices = _config.Current.Remote.PairedDevices.Select(d => new { id = d.Id, name = d.Name, created = d.Created }),
-    }, ConfigStore.Json);
+        var online = _remote.OnlineDeviceIds();
+        return JsonSerializer.Serialize(new
+        {
+            type = "devices",
+            paired,
+            devices = _config.Current.Remote.PairedDevices.Select(d => new
+            {
+                id = d.Id,
+                name = d.Name,
+                created = d.Created,
+                lastSeen = d.LastSeen,
+                online = online.Contains(d.Id),
+            }),
+        }, ConfigStore.Json);
+    }
+
+    /// <summary>Intervalo mínimo entre gravações do "visto por último" enquanto conectado.</summary>
+    const long LastSeenEveryMs = 60_000;
+    long _lastSeenAt;
+
+    /// <summary>
+    /// Atualiza o "visto por último" (sem reenviar a config: a página vê isso na mensagem devices).
+    /// Lista nova com cópias: o servidor da rede lê a lista atual em outra thread.
+    /// </summary>
+    void TouchDevices(IReadOnlySet<string> ids)
+    {
+        if (ids.Count == 0) return;
+        var now = DateTime.Now;
+        _config.UpdateQuiet(c => c.Remote.PairedDevices = [.. c.Remote.PairedDevices.Select(d => ids.Contains(d.Id)
+            ? new PairedDevice { Id = d.Id, Name = d.Name, TokenHash = d.TokenHash, Created = d.Created, LastSeen = now }
+            : d)]);
+    }
 
     string StartPairing()
     {
@@ -505,8 +631,10 @@ public sealed class TelemetryHub : IDisposable
         var ips = RemoteServer.LanAddresses();
         if (ips.Count == 0) return Fail("noNetwork");
         var (code, expires) = _pairing.Start(DateTime.UtcNow);
-        var urls = ips.Select(ip => $"http://{ip}:{_remote.Port}/index.html#/mobile?pair={code}").ToList();
-        return JsonSerializer.Serialize(new { type = "pairing", ok = true, url = urls[0], urls, expiresAt = expires }, ConfigStore.Json);
+        var urls = ips.Select(ip => $"http://{ip}:{_remote.Port}{RemoteServer.MobilePath}?pair={code}").ToList();
+        // Para digitar na TV/celular sem câmera: endereço curto (a raiz redireciona para a tela de código)
+        var typeUrls = ips.Select(ip => $"http://{ip}:{_remote.Port}/").ToList();
+        return JsonSerializer.Serialize(new { type = "pairing", ok = true, code, expiresAt = expires, url = urls[0], urls, typeUrl = typeUrls[0], typeUrls }, ConfigStore.Json);
     }
 
     string SessionsMessage() => JsonSerializer.Serialize(new { type = "sessions", sessions = _sessions.Recent }, ConfigStore.Json);
@@ -627,7 +755,12 @@ public sealed class TelemetryHub : IDisposable
                     AlertRaised?.Invoke(L.T("Pitwall · aviso de teste", "Pitwall · test alert"),
                         L.T("É assim que o aviso aparece quando uma métrica fica no vermelho.", "This is how the alert looks when a metric stays in the red."));
                     return null;
+                case "replayTutorial":
+                    // A página recebe tutorialDone = false no config e abre o tutorial
+                    _config.Update(c => c.TutorialDone = false);
+                    return null;
                 case "resetExtremes":
+                    if (!_config.Current.Features.SessionPeaks) return null;
                     _extremes.Reset();
                     _ws.Broadcast(ExtremesMessage());
                     return null;
