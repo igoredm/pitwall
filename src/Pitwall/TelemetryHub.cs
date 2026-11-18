@@ -110,10 +110,10 @@ public sealed class TelemetryHub : IDisposable
             {
                 _lang = L.Lang;
                 _ws.Broadcast(CatalogMessage());
-                _remote.Broadcast(CatalogMessage(remote: true));
+                if (_remote.HasClients) _remote.Broadcast(CatalogMessage(remote: true));
             }
             _ws.Broadcast(ConfigMessage());
-            _remote.Broadcast(RemoteConfigMessage());
+            if (_remote.HasClients) _remote.Broadcast(RemoteConfigMessage());
             ApplyRemote(c.Remote);
         };
     }
