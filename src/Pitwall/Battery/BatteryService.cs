@@ -40,6 +40,7 @@ public sealed partial class BatteryService : IDisposable
     {
         _enabled = enabled;
         if (!Available) return;
+        KillOrphans();
         new Thread(Loop) { IsBackground = true, Name = "Battery", Priority = ThreadPriority.Lowest }.Start();
     }
 
@@ -64,6 +65,23 @@ public sealed partial class BatteryService : IDisposable
         }
     }
 
+    /// <summary>
+    /// Leitores que sobraram de uma execução anterior (ex.: o Pitwall foi fechado à força no meio de uma leitura):
+    /// ficam presos segurando o exe, e uma atualização não consegue substituí-lo. Só os desta pasta.
+    /// </summary>
+    void KillOrphans()
+    {
+        var dir = Path.GetDirectoryName(_exe)!;
+        foreach (var name in new[] { "WirelessBattery", "headsetcontrol" })
+            foreach (var p in Process.GetProcessesByName(name))
+                using (p)
+                    try
+                    {
+                        if (p.MainModule?.FileName is { } f && f.StartsWith(dir, StringComparison.OrdinalIgnoreCase)) p.Kill();
+                    }
+                    catch { }
+    }
+
     void Poll()
     {
         using var p = Process.Start(new ProcessStartInfo(_exe, "--list")
@@ -79,7 +97,8 @@ public sealed partial class BatteryService : IDisposable
         var output = p.StandardOutput.ReadToEndAsync();
         if (!p.WaitForExit(20_000))
         {
-            try { p.Kill(); } catch { }
+            // Árvore inteira: o WirelessBattery pode ter aberto o headsetcontrol
+            try { p.Kill(entireProcessTree: true); } catch { }
             return;
         }
         _devices = Parse(output.Result);
