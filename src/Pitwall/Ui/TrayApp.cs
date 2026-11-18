@@ -65,6 +65,13 @@ public sealed class TrayApp : ApplicationContext
 
         hub.QuitRequested += () => _ui.Post(_ => ExitThread(), null);
 
+        // Alerta de vermelho: balão da bandeja (o Windows 10/11 mostra como notificação). Sem dependência nova.
+        hub.AlertRaised += (title, text) => _ui.Post(_ =>
+        {
+            _tray.ShowBalloonTip(8000, title, text, ToolTipIcon.Warning);
+            if (_config.Current.Alerts.Sound) System.Media.SystemSounds.Exclamation.Play();
+        }, null);
+
         // Sincroniza a flag com o Agendador (pode ter sido removida por fora)
         _autostartState = Autostart.IsEnabled();
         if (_autostartState != config.Current.StartWithWindows) config.Update(c => c.StartWithWindows = _autostartState);

@@ -36,7 +36,18 @@ public sealed class TelemetryHub : IDisposable
     string[] _logColumns = [];
     long _graphCursor;
 
+    // Sessão: mín/máx por métrica, estatísticas e alertas de vermelho
+    readonly MetricExtremes _extremes = new();
+    readonly AlertTracker _alerts = new();
+    SessionStatsAccumulator? _stats;
+    long _statsCursor;
+    long _lastTickMs;
+    long _extremesSentAt;
+    long _sessionSavedAt;
+
     public event Action<GameInfo?>? GameChanged;
+    /// <summary>Métrica no vermelho por 5 s ou mais (título, texto). Disparado na thread de telemetria.</summary>
+    public event Action<string, string>? AlertRaised;
     /// <summary>"Compacto no canto superior direito" (tela de configurações).</summary>
     public event Action<string>? PlaceTopRightRequested;
     /// <summary>Só em Debug: permite reiniciar o app a partir do dev tooling (o processo é elevado).</summary>
@@ -69,7 +80,7 @@ public sealed class TelemetryHub : IDisposable
 
         _ws = new WsServer(config.Current.WebSocketPort)
         {
-            OnConnect = () => [CatalogMessage(), ConfigMessage(), SessionsMessage()],
+            OnConnect = () => [CatalogMessage(), ConfigMessage(), SessionsMessage(), ExtremesMessage()],
             OnMessage = HandleMessage,
         };
         config.Changed += c =>
@@ -128,7 +139,23 @@ public sealed class TelemetryHub : IDisposable
             var wait = Math.Max(50, cfg.RefreshMs - (int)(Environment.TickCount64 - started));
             _cts.Token.WaitHandle.WaitOne(wait);
         }
-        _sessions.End(CurrentGame);
+        EndSession();
+    }
+
+    /// <summary>Fecha a sessão aberta gravando as estatísticas finais.</summary>
+    void EndSession()
+    {
+        var stats = _stats;
+        var csv = _log.CurrentPath;
+        _sessions.End(CurrentGame, s =>
+        {
+            try
+            {
+                stats?.ApplyTo(s, DateTime.Now);
+                if (csv != null) s.CsvFile ??= Path.GetFileName(csv);
+            }
+            catch { }
+        });
     }
 
     void Tick(AppConfig cfg)
@@ -137,13 +164,25 @@ public sealed class TelemetryHub : IDisposable
         if (_available.Contains("gpu.perfcap"))
             _texts["gpu.perfcap"] = _tuner.ClockReasonsMask() is { } mask ? ClockReasons.Map(mask, _values.GetValueOrDefault("gpu.load")) : null;
 
+        var now = Environment.TickCount64;
+        var dt = _lastTickMs == 0 ? 0 : Math.Clamp((now - _lastTickMs) / 1000.0, 0, 5);
+        _lastTickMs = now;
+
         var game = _games.Update(cfg.Games);
         if (game?.Pid != CurrentGame?.Pid)
         {
-            _sessions.End(CurrentGame);
+            EndSession();
             _sessions.Start(game);
             _log.Rotate(game?.Exe);
             CurrentGame = game;
+            _stats = game != null ? new SessionStatsAccumulator() : null;
+            _statsCursor = 0;
+            _sessionSavedAt = now;
+            if (game != null)
+            {
+                _extremes.Reset();
+                _extremesSentAt = 0;
+            }
             GameChanged?.Invoke(game);
             _ws.Broadcast(SessionsMessage());
         }
@@ -161,6 +200,24 @@ public sealed class TelemetryHub : IDisposable
         _values["fps.displayed"] = has ? fps!.Value.Displayed : null;
 
         _log.Write(cfg.Log, _logColumns, _values, _texts, game?.Exe);
+
+        _extremes.Add(_values);
+        if (_stats != null)
+        {
+            if (stats != null) _stats.AddFrames(stats.FramesSince(ref _statsCursor, 16_384));
+            _stats.AddTick(_values, cfg.Metrics, dt);
+            if (now - _sessionSavedAt > 30_000)
+            {
+                _sessionSavedAt = now;
+                var csv = _log.CurrentPath;
+                _sessions.UpdateOpen(s =>
+                {
+                    _stats.ApplyTo(s, DateTime.Now);
+                    if (csv != null) s.CsvFile ??= Path.GetFileName(csv);
+                });
+            }
+        }
+        CheckAlerts(cfg, now);
 
         var values = new JsonObject();
         foreach (var (k, v) in _values)
@@ -185,6 +242,17 @@ public sealed class TelemetryHub : IDisposable
                 ["size"] = _log.CurrentSize,
             },
         };
+
+        // Mín/máx da sessão: só o que mudou, no máximo 1x por segundo
+        if (now - _extremesSentAt >= 1_000 && _extremes.TakeChanges() is { } changed)
+        {
+            _extremesSentAt = now;
+            msg["extremes"] = new JsonObject
+            {
+                ["epoch"] = changed.Epoch,
+                ["values"] = JsonSerializer.SerializeToNode(changed.Values),
+            };
+        }
 
         // Gráfico de frametime: frametimes reais de cada frame desde o último snapshot
         if (stats != null && cfg.Metrics.Any(m => m.Id == "fps.graph" && m.Enabled))
@@ -246,6 +314,46 @@ public sealed class TelemetryHub : IDisposable
 
     string SessionsMessage() => JsonSerializer.Serialize(new { type = "sessions", sessions = _sessions.Recent }, ConfigStore.Json);
 
+    /// <summary>Mín/máx completos (cliente recém-conectado); depois disso vão só as mudanças no snapshot.</summary>
+    string ExtremesMessage()
+    {
+        var (epoch, values) = _extremes.Snapshot();
+        return JsonSerializer.Serialize(new { type = "extremes", epoch, values });
+    }
+
+    void CheckAlerts(AppConfig cfg, long now)
+    {
+        if (!cfg.Alerts.Enabled)
+        {
+            _alerts.Clear();
+            return;
+        }
+        var interval = cfg.Alerts.MinIntervalMin * 60_000L;
+        foreach (var s in cfg.Metrics)
+        {
+            if (s.Crit == null || !_alerts.Step(s.Id, _values.GetValueOrDefault(s.Id), s.Crit, now, interval)) continue;
+            var def = _definitions.FirstOrDefault(d => d.Id == s.Id);
+            if (def == null) continue;
+            var name = $"{GroupName(def.Group)} · {(string.IsNullOrWhiteSpace(s.Label) ? L.MetricName(def) : s.Label)}";
+            var value = _values.GetValueOrDefault(s.Id) ?? 0;
+            var crit = s.Crit.Value;
+            var unit = def.Unit is "fps" or "text" or "graph" ? "" : " " + def.Unit;
+            if (def.IsTemperature && s.Unit == "F") { value = value * 9 / 5 + 32; crit = crit * 9 / 5 + 32; unit = " °F"; }
+            AlertRaised?.Invoke(
+                L.T($"{name} no vermelho", $"{name} in the red"),
+                L.T($"{value:0.#}{unit} há mais de 5 s (limite {crit:0.#}{unit}).", $"{value:0.#}{unit} for over 5 s (limit {crit:0.#}{unit})."));
+        }
+    }
+
+    static string GroupName(MetricGroup g) => g switch
+    {
+        MetricGroup.Fps => "FPS",
+        MetricGroup.Gpu => "GPU",
+        MetricGroup.Cpu => "CPU",
+        MetricGroup.Ram => "RAM",
+        _ => L.T("Outros", "Other"),
+    };
+
     string? HandleMessage(string raw)
     {
         try
@@ -279,6 +387,10 @@ public sealed class TelemetryHub : IDisposable
                     return null;
                 case "getState":
                     return CatalogMessage();
+                case "resetExtremes":
+                    _extremes.Reset();
+                    _ws.Broadcast(ExtremesMessage());
+                    return null;
 #if DEBUG
                 case "quit":
                     QuitRequested?.Invoke();
@@ -311,7 +423,7 @@ public sealed class TelemetryHub : IDisposable
     public void Dispose()
     {
         _cts.Cancel();
-        _sessions.End(CurrentGame);
+        EndSession();
         _ws.Dispose();
         _log.Dispose();
     }
