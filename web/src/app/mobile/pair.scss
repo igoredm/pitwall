@@ -405,6 +405,22 @@ pw-pair {
   }
 }
 
+// TV menor que 1920×1080 em px CSS (TV 720p, ou 1080p com escala de 150%, que o navegador informa como 1280×720):
+// as medidas acima são do quadro de 1920, então a tela inteira encolhe junto (zoom), sem quebrar o título em 3 linhas
+// nem rolar. O min-height compensa o zoom para a legenda continuar no rodapé.
+@media (max-width: 1599px), (max-height: 899px) {
+  .pw-app.pr.pr-tv {
+    zoom: 0.6667;
+    min-height: 150vh;
+  }
+}
+@media (max-width: 1199px), (max-height: 674px) {
+  .pw-app.pr.pr-tv {
+    zoom: 0.5;
+    min-height: 200vh;
+  }
+}
+
 // Movimento reduzido: o anel fica parado (sem transform)
 @media (prefers-reduced-motion: reduce) {
   .pw-app.pr .pr-spin {
