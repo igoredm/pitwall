@@ -1,0 +1,412 @@
+// Tela de código do celular (390×844) e da TV (1920×1080). Sem encapsulamento, preso em .pr.
+
+pw-pair {
+  display: block;
+  height: 100%;
+}
+
+.pw-app.pr {
+  position: relative;
+  min-height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  .pr-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    img {
+      display: block;
+      border-radius: 8px;
+    }
+  }
+  .pr-brand {
+    font-weight: 800;
+    font-size: 16px;
+  }
+  .pr-net {
+    margin-left: auto;
+  }
+  .pr-ro {
+    margin-left: auto;
+  }
+  .pr-code {
+    position: relative;
+  }
+  .pr-boxes {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+  .pr-gap {
+    width: 6px;
+  }
+  .pr-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 58px;
+    border-radius: 10px;
+    background: var(--sf);
+    border: 1px solid var(--bd);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--tx);
+    &.cur {
+      border: 2px solid var(--ac);
+    }
+  }
+  // Cursor estático (nada pisca: nada em loop contínuo)
+  .pr-caret {
+    display: block;
+    width: 2px;
+    height: 28px;
+    background: var(--ac);
+  }
+  .pr-code.err .pr-box {
+    border: 2px solid var(--r);
+    color: var(--r);
+  }
+  .pr-code.dim .pr-box {
+    opacity: 0.45;
+  }
+  // O input de verdade fica por cima das caixas, invisível: teclado numérico, colar e preencher sozinho funcionam
+  .pr-input {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    border: 0;
+    padding: 0;
+    font-size: 16px;
+    caret-color: transparent;
+    cursor: text;
+  }
+  .pr-msg {
+    min-height: 20px;
+    margin-top: 14px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .pr-red {
+    color: var(--r);
+  }
+  .pr-strong b {
+    color: var(--tx);
+  }
+  .pr-spin {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    vertical-align: -3px;
+    animation: pr-spin 700ms linear infinite;
+  }
+  .pr-done {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    margin-top: 64px;
+    .pd {
+      margin: 0;
+      font-size: 15px;
+      b {
+        color: var(--tx);
+      }
+    }
+  }
+  .pr-ok {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--gs);
+    color: var(--g);
+  }
+  .pr-skel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 36px;
+    .skel {
+      border-radius: 10px;
+    }
+  }
+}
+
+@keyframes pr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ------------------------------------------------------------------ celular
+.pw-app.pr.pr-phone {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: max(20px, env(safe-area-inset-top)) 24px max(64px, env(safe-area-inset-bottom));
+  -webkit-tap-highlight-color: transparent;
+
+  h1 {
+    font-size: 28px;
+    margin-top: 56px;
+  }
+  .pr-hint {
+    font-size: 15px;
+    margin-top: 6px;
+  }
+  .pr-revoked {
+    margin-top: 28px;
+    + h1 {
+      margin-top: 24px;
+    }
+  }
+  .pr-code {
+    margin-top: 28px;
+  }
+  .pr-go {
+    width: 100%;
+    height: 50px;
+    margin-top: 14px;
+    border-radius: 10px;
+    font-size: 16px;
+  }
+  .pr-go.busy:disabled {
+    opacity: 1;
+  }
+  .pr-tip {
+    text-align: center;
+    margin: 22px 0 0;
+    font-size: 13px;
+  }
+  .pr-foot {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: max(24px, env(safe-area-inset-bottom));
+    margin: 0;
+    text-align: center;
+  }
+  .pr-done h1 {
+    margin-top: 0;
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 370px) {
+  .pw-app.pr.pr-phone {
+    padding-left: 18px;
+    padding-right: 18px;
+    .pr-boxes {
+      gap: 6px;
+    }
+    .pr-box {
+      width: 42px;
+      height: 54px;
+    }
+  }
+}
+
+// ------------------------------------------------------------------ TV (margem segura 96/128, texto ≥ 26 px)
+.pw-app.pr.pr-tv {
+  --tv-focus: #ffffff;
+  min-height: 100vh;
+  padding: 96px 128px 64px;
+
+  &.app-light {
+    --tv-focus: #12151b;
+  }
+  .pr-head {
+    gap: 20px;
+    img {
+      border-radius: 16px;
+    }
+  }
+  .pr-brand {
+    font-size: 40px;
+  }
+  .pr-ro {
+    font-size: 26px;
+    color: var(--tx2);
+  }
+  .pr-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 560px;
+    gap: 120px;
+    margin-top: 80px;
+    align-items: start;
+  }
+  h1 {
+    font-size: 84px;
+    letter-spacing: -0.03em;
+  }
+  .pr-hint {
+    font-size: 32px;
+    line-height: 1.4;
+    margin-top: 18px;
+    max-width: 40ch;
+  }
+  .pr-revoked {
+    font-size: 26px;
+    margin-bottom: 32px;
+  }
+  .pr-code {
+    margin-top: 56px;
+  }
+  .pr-boxes {
+    justify-content: flex-start;
+    gap: 16px;
+  }
+  .pr-gap {
+    width: 28px;
+  }
+  .pr-box {
+    width: 112px;
+    height: 144px;
+    border-radius: 16px;
+    border-width: 2px;
+    font-size: 84px;
+    &.cur {
+      border-width: 4px;
+    }
+  }
+  .pr-caret {
+    width: 4px;
+    height: 80px;
+  }
+  .pr-code.err .pr-box {
+    border-width: 4px;
+  }
+  .pr-msg {
+    margin-top: 36px;
+    text-align: left;
+    font-size: 30px;
+    min-height: 42px;
+  }
+  .pr-tvhint {
+    margin: 36px 0 0;
+    font-size: 30px;
+    line-height: 1.4;
+    color: var(--tx2);
+  }
+  .pr-pad {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+  // Foco: contorno de 6 px com offset de 4 + fundo mais claro, sempre visível e nunca só pela cor
+  .pr-key {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 116px;
+    padding: 0;
+    border-radius: 18px;
+    border: 2px solid var(--hair);
+    background: var(--sf);
+    color: var(--tx);
+    font: 700 52px 'Manrope', sans-serif;
+    cursor: pointer;
+    outline: none;
+    &:focus,
+    &:focus-visible {
+      outline: 6px solid var(--tv-focus);
+      outline-offset: 4px;
+      background: var(--kp-focus);
+    }
+    &[aria-disabled='true'] {
+      opacity: 0.5;
+    }
+  }
+  .pr-del {
+    font-size: 34px;
+  }
+  .pr-ok-key {
+    font-size: 34px;
+    background: var(--ac);
+    border-color: var(--ac);
+    color: #fff;
+    &:focus,
+    &:focus-visible {
+      background: var(--ac);
+      filter: brightness(1.12);
+    }
+  }
+  .pr-spin {
+    width: 28px;
+    height: 28px;
+    border-width: 4px;
+    margin-right: 14px;
+  }
+  .pr-done {
+    margin-top: 120px;
+    gap: 24px;
+    h1 {
+      font-size: 72px;
+    }
+    .pd {
+      font-size: 32px;
+      max-width: 40ch;
+    }
+  }
+  .pr-ok {
+    width: 112px;
+    height: 112px;
+  }
+  .pr-skel {
+    max-width: 1100px;
+    margin: 72px auto 0;
+    .skel {
+      height: 140px !important;
+    }
+  }
+  .pr-legend {
+    position: absolute;
+    left: 128px;
+    right: 128px;
+    bottom: 64px;
+    display: flex;
+    align-items: center;
+    gap: 56px;
+    padding-top: 32px;
+    border-top: 2px solid var(--hair);
+    font-size: 26px;
+    color: var(--tx2);
+    > span {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+  }
+  .pr-k {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    height: 48px;
+    padding: 0 12px;
+    border-radius: 12px;
+    border: 2px solid var(--bd);
+    font-size: 24px;
+    font-weight: 700;
+    box-sizing: border-box;
+  }
+}
+
+// Movimento reduzido: o anel fica parado (sem transform)
+@media (prefers-reduced-motion: reduce) {
+  .pw-app.pr .pr-spin {
+    animation: none;
+  }
+}

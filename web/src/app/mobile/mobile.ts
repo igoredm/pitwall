@@ -5,6 +5,7 @@ import { AppConfig, MetricGroup, MetricView, ThemeName } from '../models';
 import { fmtDuration } from '../settings/format';
 import { TelemetryService } from '../telemetry.service';
 import { buildViews, groupLabel, isDarkTheme } from '../widget/metric-views';
+import { Pair } from './pair';
 
 const HEAD: Partial<Record<MetricGroup, string>> = { gpu: 'gpu.load', cpu: 'cpu.load', ram: 'ram.load' };
 const SKIP = new Set(['ram.used', 'ram.total', 'fps.current', 'fps.graph', 'fps.avg', 'fps.low01']);
@@ -20,24 +21,13 @@ const SKIP = new Set(['ram.used', 'ram.total', 'fps.current', 'fps.graph', 'fps.
   styleUrl: './mobile.scss',
   template: `
     @let sx = s();
+    @if (showPair()) {
+      <pw-pair [revoked]="t.remote() === 'revoked'" [paired]="justPaired()" />
+    } @else {
     <div [class]="rootClass()" [style.--accent]="accent()">
       <div class="backdrop" aria-hidden="true"></div>
       <div class="page">
         @switch (t.remote()) {
-          @case ('revoked') {
-            <ng-container *ngTemplateOutlet="brandRow" />
-            <div class="notice">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.2" /><path d="M4 4l16 16" /></svg>
-              <p>{{ sx.mobileRevoked }}</p>
-            </div>
-          }
-          @case ('needPair') {
-            <ng-container *ngTemplateOutlet="brandRow" />
-            <div class="notice">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><path d="M14 14h3v3h-3zM18 18h3v3h-3z" /></svg>
-              <p>{{ sx.mobileNeedPair }}</p>
-            </div>
-          }
           @default {
             @if (t.remote() === 'reconnecting') {
               <div class="banner" role="status">
@@ -143,11 +133,12 @@ const SKIP = new Set(['ram.used', 'ram.total', 'fps.current', 'fps.graph', 'fps.
         }
       </div>
     </div>
+    }
 
     <ng-template #brandRow>
       <header class="top">
         <span class="brand">
-          <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 16a7 7 0 0 1 14 0" /><path d="M12 16l3.5-4.5" /></svg></span>
+          <img class="logo" src="pitwall-logo.png" alt="" width="28" height="28" />
           <span class="pc">{{ pcName }}</span>
         </span>
         @if (t.remote() === 'live') {
@@ -156,7 +147,7 @@ const SKIP = new Set(['ram.used', 'ram.total', 'fps.current', 'fps.graph', 'fps.
       </header>
     </ng-template>
   `,
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, Pair],
 })
 export class Mobile {
   protected readonly t = inject(TelemetryService);
@@ -169,6 +160,10 @@ export class Mobile {
   private readonly gameSeen = signal<{ exe: string; since: number } | null>(null);
 
   private readonly config = computed(() => this.t.config() as AppConfig | null);
+  /** 1.0: acabou de parear: mostra "Pareado" por um instante antes do widget. */
+  protected readonly justPaired = signal<string | null>(null);
+  /** 1.0: sem token (ou revogado): tela de código; também durante o "Pareado". */
+  protected readonly showPair = computed(() => this.t.remote() === 'needPair' || this.t.remote() === 'revoked' || !!this.justPaired());
   protected readonly theme = computed<ThemeName>(() => (this.config()?.widgetTheme as ThemeName) || 'lumen');
   protected readonly dark = computed(() => isDarkTheme(this.config(), this.theme(), this.systemDark()));
   protected readonly rootClass = computed(() => `mb t-${this.theme()} ${this.dark() ? 'dark' : 'light'}`);
@@ -267,6 +262,12 @@ export class Mobile {
   }
 
   constructor() {
+    effect(() => {
+      const name = this.t.pairedName();
+      if (!name) return;
+      this.justPaired.set(name);
+      setTimeout(() => this.justPaired.set(null), 1500);
+    });
     // Duração do jogo: o socket do celular não manda sessões; conta desde que a página viu o jogo
     effect(() => {
       const g = this.t.game();
