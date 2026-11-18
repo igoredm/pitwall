@@ -1,460 +1,356 @@
-import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, forwardRef, inject, signal, untracked } from '@angular/core';
-import { AppConfig, MetricDef, MetricGroup, MetricSetting, MonitorInfo, THEMES, ThemeName } from '../models';
-import { I18n, LANGUAGES } from '../i18n';
-import { TelemetryService } from '../telemetry.service';
-import { LIMITS, NOT_COUNTED, groupLabel, isDarkTheme, unitLabel } from '../widget/metric-views';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  ViewEncapsulation,
+  computed,
+  effect,
+  forwardRef,
+  inject,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
+import { I18n } from '../i18n';
+import { AppConfig, HostMessage, SettingsPage } from '../models';
+import { TelemetryService, hashParams } from '../telemetry.service';
+import { AppAppearance } from '../ui/appearance';
+import { Icon } from '../ui/icon';
 import { Widget } from '../widget/widget';
 import { Wizard } from '../wizard/wizard';
-import { CrashReport } from './crash-report';
-import { GameProfiles } from './game-profiles';
-import { PerfcapRow } from './perfcap-row';
-import { PhoneSection } from './phone-section';
-import { SessionSummary } from './session-summary';
-import { SettingsCtx } from './settings-ctx';
-import { UpdateNotice, UpdatesCard } from './updates-card';
+import { fmtDuration, fmtMs } from './format';
+import { selectedMonitor } from './helpers';
+import { NAV, PAGES, SettingsNav } from './nav';
+import { AlertsPage } from './pages/alerts';
+import { AppPage } from './pages/app-page';
+import { AppearancePage } from './pages/appearance';
+import { DevicesPage } from './pages/devices';
+import { FeaturesPage } from './pages/features';
+import { GamesPage } from './pages/games';
+import { GpuPage } from './pages/gpu';
+import { MetricsPage } from './pages/metrics';
+import { OverviewPage } from './pages/overview';
+import { SessionsPage } from './pages/sessions';
+import { Search } from './search';
+import { ConfirmOptions, SaveState, SettingsCtx, ToastOptions } from './settings-ctx';
+import { Tour, TourService } from './tour';
+import { UpdateNotice } from './update-notice';
 
-type Section = 'metricas' | 'geral' | 'gpu' | 'jogos' | 'log' | 'celular';
+/** Ícone de cada página na navegação. */
+const ICON: Record<SettingsPage, string> = {
+  overview: 'overview',
+  widget: 'widget',
+  metrics: 'metrics',
+  alerts: 'alerts',
+  games: 'games',
+  sessions: 'sessions',
+  gpu: 'gpu',
+  devices: 'devices',
+  features: 'features',
+  app: 'app',
+};
+/** "Agora não" no convite do tour: não pergunta de novo nesta máquina (o card da Visão geral continua). */
+const INVITED_KEY = 'pitwall.tourInvited';
 
-interface Row {
-  def: MetricDef;
-  s: MetricSetting;
-}
-
-interface Group {
-  key: MetricGroup;
-  name: string;
-  label: string;
-  rows: Row[];
-  active: number;
-  total: number;
-}
-
-const GROUPS: MetricGroup[] = ['gpu', 'cpu', 'ram', 'fps', 'other'];
-
-/** Lista "ignorar" de fábrica (espelha GamesConfig.Ignore no backend) — só para mostrar a origem de cada regra. */
-const DEFAULT_IGNORE = new Set(
-  [
-    'explorer.exe', 'chrome.exe', 'msedge.exe', 'firefox.exe', 'opera.exe', 'brave.exe', 'discord.exe', 'pitwall.exe',
-    'msedgewebview2.exe', 'dwm.exe', 'applicationframehost.exe', 'textinputhost.exe', 'shellexperiencehost.exe',
-    'startmenuexperiencehost.exe', 'searchhost.exe', 'lockapp.exe', 'spotify.exe', 'vlc.exe', 'mpc-hc64.exe',
-    'code.exe', 'devenv.exe', 'claude.exe',
-  ],
-);
-const BROWSERS = new Set(['chrome.exe', 'msedge.exe', 'firefox.exe', 'opera.exe', 'brave.exe']);
-
-/** Cores de destaque; os nomes ficam em i18n.ts (accents). */
-export const ACCENTS = ['', '#4C8DFF', '#8B5CF6', '#FF2E88', '#FF7A1A', '#FFC53D', '#3DDC84', '#00E5FF'];
-
+/**
+ * Janela de configurações 1.0: barra lateral (logo, busca Ctrl K, 3 grupos, rodapé com atualização e status do
+ * widget), uma página por vez com deep link #/settings/<pagina>/<ancora>, o "Salvo", diálogos, aviso no rodapé,
+ * assistente de primeira execução, convite e tour. Um visual só (claro/escuro por config.appearance).
+ */
 @Component({
   selector: 'pw-settings',
-  imports: [CdkDropList, CdkDrag, CdkDragHandle, Widget, Wizard, CrashReport, GameProfiles, PerfcapRow, PhoneSection, SessionSummary, UpdatesCard],
+  imports: [
+    Icon,
+    Search,
+    Tour,
+    Widget,
+    Wizard,
+    OverviewPage,
+    AppearancePage,
+    MetricsPage,
+    AlertsPage,
+    GamesPage,
+    SessionsPage,
+    GpuPage,
+    DevicesPage,
+    FeaturesPage,
+    AppPage,
+  ],
   templateUrl: './settings.html',
-  styleUrl: './settings.scss',
+  styleUrls: ['../ui/kit.scss', './settings.scss'],
+  encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [{ provide: SettingsCtx, useExisting: forwardRef(() => Settings) }],
+  providers: [{ provide: SettingsCtx, useExisting: forwardRef(() => Settings) }, SettingsNav, TourService],
+  host: { class: 'pw-settings-host' },
 })
 export class Settings implements SettingsCtx {
   protected readonly t = inject(TelemetryService);
   protected readonly s = inject(I18n).s;
-  protected readonly languages = LANGUAGES;
-  protected readonly navItems: Section[] = ['metricas', 'geral', 'gpu', 'jogos', 'log', 'celular'];
-  protected readonly updateNotice = inject(UpdateNotice);
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
-  /** Intervalos do aviso do Windows (minutos). */
-  protected readonly alertIntervals = [1, 5, 15, 30];
-  protected readonly alertSustains = [5, 10, 30];
-  protected readonly themes = THEMES;
-  protected readonly accents = ACCENTS;
-  protected readonly refreshRates = [250, 500, 1000, 2000];
-  protected readonly logIntervals = [500, 1000, 2000, 5000];
-
-  protected readonly section = signal<Section>((new URLSearchParams(location.search).get('section') as Section) || 'metricas');
-  protected readonly search = signal('');
-  protected readonly collapsed = signal<Set<MetricGroup>>(new Set(['ram', 'fps', 'other']));
-  protected readonly confirmReset = signal(false);
-  protected readonly preview = signal(false);
-  protected readonly newExe = signal('');
-  protected readonly newRule = signal<'include' | 'ignore'>('include');
-  protected readonly ruleFilter = signal<'all' | 'include' | 'ignore'>('all');
+  protected readonly appearance = inject(AppAppearance);
+  protected readonly nav = inject(SettingsNav);
+  protected readonly tour = inject(TourService);
+  protected readonly notice = inject(UpdateNotice);
+  protected readonly navGroups = NAV;
+  protected readonly icons = ICON;
+  private readonly main = viewChild<ElementRef<HTMLElement>>('main');
+  private readonly search = viewChild(Search);
+  private readonly confirmBtn = viewChild<ElementRef<HTMLButtonElement>>('confirmCancel');
 
   /** Cópia local editável; salva com debounce. Sincroniza com o servidor quando não há edição pendente. */
   readonly draft = signal<AppConfig | null>(null);
-  /** Assistente de primeira execução: config que nunca concluiu (firstRunDone === false). */
-  protected readonly showWizard = computed(() => this.t.config()?.firstRunDone === false);
+  private readonly pendingSave = signal(false);
   private saveTimer?: ReturnType<typeof setTimeout>;
-  private readonly systemDark = signal(matchMedia('(prefers-color-scheme: dark)').matches);
+  readonly saveState = computed<SaveState>(() => (!this.t.connected() ? 'offline' : this.pendingSave() ? 'saving' : 'saved'));
 
-  protected readonly dark = computed(() => {
-    const d = this.draft();
-    return isDarkTheme(d, (d?.appTheme as ThemeName) || 'lumen', this.systemDark());
-  });
-  protected readonly rootClass = computed(() => {
-    const d = this.draft();
-    return `st t-${d?.appTheme || 'lumen'} ${this.dark() ? 'dark' : 'light'}`;
-  });
+  protected readonly preview = signal(false);
+  protected readonly invite = signal(false);
+  protected readonly dialog = signal<(ConfirmOptions & { resolve: (ok: boolean) => void }) | null>(null);
+  protected readonly toastMsg = signal<ToastOptions | null>(null);
+  private toastTimer?: ReturnType<typeof setTimeout>;
+  private toastLeft = 0;
+  private toastStart = 0;
 
-  protected readonly groups = computed<Group[]>(() => {
-    const d = this.draft();
-    const defs = this.t.defs();
-    if (!d || defs.size === 0) return [];
-    const q = normalize(this.search());
+  /** Assistente: config que nunca concluiu (firstRunDone === false). */
+  protected readonly showWizard = computed(() => (this.draft() ?? this.t.config())?.firstRunDone === false);
+  protected readonly wide = computed(() => this.nav.page() === 'metrics');
+  protected readonly previewMon = computed(() => selectedMonitor(this.t.catalog(), this.draft()));
+
+  protected readonly side = computed(() => {
     const s = this.s();
-    return GROUPS.map((key) => {
-      const name = key === 'other' ? s.groupOther : key.toUpperCase();
-      const all = [...d.metrics]
-        .sort((a, b) => a.order - b.order)
-        .map((s) => ({ s, def: defs.get(s.id)! }))
-        .filter((r) => r.def && r.def.group === key);
-      const rows = q ? all.filter((r) => normalize(`${r.def.name} ${r.s.label ?? ''} ${r.s.id}`).includes(q)) : all;
-      return {
-        key,
-        name,
-        label: groupLabel(d, key, this.t.catalog(), s),
-        rows,
-        active: all.filter((r) => r.s.enabled && r.def.available).length,
-        total: all.filter((r) => r.def.available).length,
-      };
-    }).filter((g) => g.rows.length > 0 || !q);
-  });
-
-  /** Em qual layout menor cada métrica ainda aparece (pela ordem de prioridade dentro do grupo). */
-  protected readonly placement = computed(() => {
     const d = this.draft();
-    const defs = this.t.defs();
-    const out = new Map<string, 'compact' | 'mid' | 'full'>();
-    if (!d) return out;
-    const rank = new Map<string, number>();
-    for (const s of [...d.metrics].sort((a, b) => a.order - b.order)) {
-      const def = defs.get(s.id);
-      if (!def || !s.enabled || !def.available || NOT_COUNTED.has(s.id) || def.unit === 'text') continue;
-      const i = rank.get(def.group) ?? 0;
-      rank.set(def.group, i + 1);
-      out.set(
-        s.id,
-        i < LIMITS.compact[def.group] && s.id !== 'fps.graph' ? 'compact' : i < LIMITS.mid[def.group] ? 'mid' : 'full',
-      );
-    }
-    return out;
-  });
-
-  protected readonly monitors = computed(() => {
-    const list = this.t.catalog()?.monitors ?? [];
-    if (!list.length) return { list: [], box: { x: 0, y: 0, w: 1, h: 1 } };
-    const x = Math.min(...list.map((m) => m.x));
-    const y = Math.min(...list.map((m) => m.y));
-    const w = Math.max(...list.map((m) => m.x + m.width)) - x;
-    const h = Math.max(...list.map((m) => m.y + m.height)) - y;
-    return { list, box: { x, y, w, h } };
-  });
-
-  protected readonly selectedMonitor = computed<MonitorInfo | null>(() => {
-    const list = this.t.catalog()?.monitors ?? [];
-    const dev = this.draft()?.widget.monitor;
-    return list.find((m) => m.device === dev) ?? list.find((m) => !m.primary) ?? list[0] ?? null;
-  });
-
-  protected readonly rules = computed(() => {
-    const g = this.draft()?.games;
-    if (!g) return [];
-    const rows = [
-      ...g.include.map((exe) => ({ exe, rule: 'include' as const })),
-      ...g.ignore.map((exe) => ({ exe, rule: 'ignore' as const })),
-    ].map((r) => ({ ...r, origin: this.origin(r.exe), fixed: r.exe.toLowerCase() === 'pitwall.exe' }));
-    const f = this.ruleFilter();
-    return f === 'all' ? rows : rows.filter((r) => r.rule === f);
-  });
-  protected readonly ruleCounts = computed(() => {
-    const g = this.draft()?.games;
-    return { include: g?.include.length ?? 0, ignore: g?.ignore.length ?? 0 };
-  });
-
-  protected readonly status = computed(() => {
-    const d = this.draft();
-    const m = this.selectedMonitor();
-    const game = this.t.game();
-    const s = this.s();
-    return {
-      title: d?.widget.visible ? s.widgetActive : s.widgetHidden,
-      line1: s.statusMonitor(m?.index ?? '?', !!d?.widget.locked),
-      line2: s.statusGame(game?.exe ?? null, fmtMs(d?.refreshMs ?? 500)),
-    };
+    const m = selectedMonitor(this.t.catalog(), d);
+    const g = this.t.game();
+    const live = this.t.sessions()[0];
+    const fps = this.t.values()['fps.current'];
+    let line: string;
+    if (g) {
+      const dur = live && !live.end && live.exe === g.exe ? fmtDuration((Date.now() - new Date(live.start).getTime()) / 1000) : '';
+      line = [g.exe, dur, fps != null ? `${Math.round(fps)} FPS` : ''].filter(Boolean).join(' · ');
+    } else line = s.sideIdle(fmtMs(d?.refreshMs ?? 1000, s));
+    return { visible: !!d?.widget.visible, title: d?.widget.visible ? s.sideWidgetOn(m?.index ?? '—') : s.sideWidgetHidden, line };
   });
 
   constructor() {
     effect(() => {
       const c = this.t.config();
-      if (c && !untracked(() => this.saveTimer)) this.draft.set(structuredClone(c));
+      if (c && !untracked(() => this.pendingSave())) this.draft.set(structuredClone(c));
     });
-    const off = this.t.onHost((msg) => {
+
+    // Rolar até a âncora (ou ao topo, ao trocar de página), sem animação: navegação nunca anima
+    let lastPage: SettingsPage | null = null;
+    effect(() => {
+      this.nav.seq();
+      const page = this.nav.page();
+      const anchor = this.nav.anchor();
+      const changed = page !== lastPage;
+      lastPage = page;
+      untracked(() => this.scrollTo(anchor, changed, this.nav.flash));
+    });
+
+    // Gatilhos do tour: #/settings?tutorial=1 (janela nova pela bandeja) e o convite depois do assistente
+    let urlTour = hashParams().get('tutorial') === '1';
+    effect(() => {
+      const c = this.t.config();
+      if (!c || this.showWizard()) return;
+      untracked(() => {
+        if (urlTour) {
+          urlTour = false;
+          history.replaceState(null, '', location.href.replace(/[?&]tutorial=1/, ''));
+          this.startTour();
+        } else if (c.tutorialDone === false && !c.tour?.done && !c.tour?.dismissed && !(c.tour?.step ?? 0) && !this.tour.running() && !invited()) {
+          this.invite.set(true);
+          markInvited();
+        }
+      });
+    });
+
+    const off = this.t.onHost((msg: HostMessage) => {
       if (msg?.type === 'folderPicked') this.update((c) => (c.log.folder = msg.path));
-      if (msg?.type === 'exePicked') this.newExe.set(msg.name);
+      else if (msg?.type === 'navigate' && PAGES.includes(msg.page)) this.go(msg.page, msg.anchor);
+      else if (msg?.type === 'startTutorial') this.startTour();
     });
-    const mq = matchMedia('(prefers-color-scheme: dark)');
-    const onScheme = (e: MediaQueryListEvent) => this.systemDark.set(e.matches);
-    mq.addEventListener('change', onScheme);
+    const keys = (e: KeyboardEvent) => this.keys(e);
+    document.addEventListener('keydown', keys);
     inject(DestroyRef).onDestroy(() => {
       off();
-      mq.removeEventListener('change', onScheme);
+      document.removeEventListener('keydown', keys);
+      clearTimeout(this.toastTimer);
     });
   }
 
-  // ------------------------------------------------------------------ edição
-
-  /** Vai para uma seção (e rola até um card dela, se houver âncora). */
-  go(section: string, anchor?: string) {
-    this.section.set(section as Section);
-    if (anchor)
-      requestAnimationFrame(() =>
-        this.host.nativeElement.querySelector(`#${anchor}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-      );
-  }
+  // ------------------------------------------------------------------ SettingsCtx
 
   update(mutate: (c: AppConfig) => void) {
     const d = this.draft();
     if (!d) return;
     const next = structuredClone(d);
     mutate(next);
+    // tutorialDone é apelido de tour.done
+    if (next.tour) next.tutorialDone = next.tour.done;
     this.draft.set(next);
+    this.pendingSave.set(true);
     clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(() => {
       this.saveTimer = undefined;
       const cur = this.draft();
       if (cur) this.t.saveConfig(cur);
+      this.pendingSave.set(false);
     }, 300);
   }
 
-  /** Atribui por caminho ("widget.locked", "log.folder"…). */
-  protected patch(path: string, value: unknown) {
-    this.update((c) => {
-      const keys = path.split('.');
-      let obj: any = c;
-      for (const k of keys.slice(0, -1)) obj = obj[k];
-      obj[keys[keys.length - 1]] = value;
+  go(page: SettingsPage, anchor?: string, flash = false) {
+    this.nav.go(page, anchor, flash);
+  }
+
+  openPreview() {
+    this.preview.set(true);
+  }
+
+  toast(opts: ToastOptions) {
+    clearTimeout(this.toastTimer);
+    this.toastMsg.set(opts);
+    this.toastLeft = opts.duration ?? 6000;
+    this.resumeToast();
+  }
+
+  confirm(opts: ConfirmOptions): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.dialog.set({ ...opts, resolve });
+      // Ação destrutiva: o foco começa em Cancelar
+      requestAnimationFrame(() => this.confirmBtn()?.nativeElement.focus());
     });
   }
 
-  protected flip(path: string) {
-    let obj: any = this.draft();
-    for (const k of path.split('.')) obj = obj?.[k];
-    this.patch(path, !obj);
-  }
-
-  protected patchAlerts(patch: Partial<NonNullable<AppConfig['alerts']>>) {
-    this.update((c) => {
-      c.alerts = { enabled: false, sound: false, minIntervalMin: 5, ...c.alerts, ...patch };
-    });
-  }
-
-  protected isCustomAccent(accent: string | undefined) {
-    return !!accent && !ACCENTS.includes(accent);
-  }
-
-  protected round(v: number) {
-    return Math.round(v);
-  }
-
-  protected toggleBatteryDevice(key: string) {
-    this.update((c) => {
-      const h = c.battery.hidden;
-      const i = h.indexOf(key);
-      if (i >= 0) h.splice(i, 1);
-      else h.push(key);
-    });
-  }
-
-  protected setMetric(id: string, patch: Partial<MetricSetting>) {
-    this.update((c) => {
-      const m = c.metrics.find((x) => x.id === id);
-      if (m) Object.assign(m, patch);
-    });
-  }
-
-  protected numberOrNull(v: string): number | undefined {
-    const n = parseFloat(v.replace(',', '.'));
-    return isFinite(n) ? n : undefined;
-  }
-
-  protected drop(group: Group, e: CdkDragDrop<Row[]>) {
-    if (e.previousIndex === e.currentIndex || this.search()) return;
-    const ids = group.rows.map((r) => r.s.id);
-    const orders = group.rows.map((r) => r.s.order).sort((a, b) => a - b);
-    moveItemInArray(ids, e.previousIndex, e.currentIndex);
-    this.update((c) => {
-      ids.forEach((id, i) => {
-        const m = c.metrics.find((x) => x.id === id);
-        if (m) m.order = orders[i];
-      });
-    });
-  }
-
-  protected toggleGroup(key: MetricGroup) {
-    this.collapsed.update((s) => {
-      const n = new Set(s);
-      if (n.has(key)) n.delete(key);
-      else n.add(key);
-      return n;
-    });
-  }
-
-  protected setGroupLabel(key: MetricGroup, value: string) {
-    this.update((c) => {
-      c.groupLabels ??= {};
-      if (value.trim()) c.groupLabels[key] = value.trim();
-      else delete c.groupLabels[key];
-    });
-  }
-
-  protected unitOf(def: MetricDef) {
-    return unitLabel(def);
-  }
-
-  protected setMonitor(m: MonitorInfo) {
-    this.update((c) => {
-      if (c.widget.monitor === m.device) return;
-      c.widget.monitor = m.device;
-      c.widget.x = 40;
-      c.widget.y = 40;
-    });
-  }
-
-  protected monitorStyle(m: MonitorInfo) {
-    const { box } = this.monitors();
-    const scale = Math.min(300 / box.w, 110 / box.h);
-    return {
-      left: `${(m.x - box.x) * scale}px`,
-      top: `${(m.y - box.y) * scale}px`,
-      width: `${m.width * scale - 6}px`,
-      height: `${m.height * scale - 6}px`,
-    };
-  }
-
-  protected monitorsBoxStyle() {
-    const { box } = this.monitors();
-    const scale = Math.min(300 / box.w, 110 / box.h);
-    return { width: `${box.w * scale}px`, height: `${box.h * scale}px` };
-  }
-
-  protected addRule() {
-    const exe = this.newExe().trim();
-    if (!exe) return;
-    const name = exe.toLowerCase().endsWith('.exe') ? exe : exe + '.exe';
-    this.update((c) => {
-      c.games.include = c.games.include.filter((x) => x.toLowerCase() !== name.toLowerCase());
-      c.games.ignore = c.games.ignore.filter((x) => x.toLowerCase() !== name.toLowerCase());
-      (this.newRule() === 'include' ? c.games.include : c.games.ignore).push(name);
-    });
-    this.newExe.set('');
-  }
-
-  protected setRule(exe: string, rule: 'include' | 'ignore') {
-    this.update((c) => {
-      c.games.include = c.games.include.filter((x) => x !== exe);
-      c.games.ignore = c.games.ignore.filter((x) => x !== exe);
-      (rule === 'include' ? c.games.include : c.games.ignore).push(exe);
-    });
-  }
-
-  protected removeRule(exe: string) {
-    this.update((c) => {
-      c.games.include = c.games.include.filter((x) => x !== exe);
-      c.games.ignore = c.games.ignore.filter((x) => x !== exe);
-    });
-  }
-
-  protected restoreDefaults() {
-    if (!this.confirmReset()) {
-      this.confirmReset.set(true);
-      setTimeout(() => this.confirmReset.set(false), 4000);
-      return;
-    }
-    this.confirmReset.set(false);
+  restoreDefaults() {
     clearTimeout(this.saveTimer);
     this.saveTimer = undefined;
+    this.pendingSave.set(false);
     this.t.send({ type: 'restoreDefaults' });
   }
 
-  // ------------------------------------------------------------------ formatação
-
-  protected fmtMs = fmtMs;
-
-  /** Valores efetivos do ajuste de GPU para o preset escolhido (para mostrar na tela). */
-  protected tuningTarget() {
-    const d = this.draft()?.gpuTuning;
-    const cat = this.t.catalog();
-    if (!d || !cat?.tuning) return null;
-    if (d.preset === 'custom') return { powerW: d.powerLimitW, clockMhz: d.maxClockMhz };
-    return cat.tuningPresets?.[d.preset] ?? null;
+  startTour(resume = false) {
+    this.invite.set(false);
+    markInvited();
+    this.tour.start(resume);
   }
 
-  protected pctOfDefault(w: number) {
-    const def = this.t.catalog()?.tuning?.powerDefaultW || 1;
-    return Math.round((w / def) * 100);
+  // ------------------------------------------------------------------ moldura
+
+  protected navTo(e: MouseEvent, page: SettingsPage) {
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+    e.preventDefault();
+    this.go(page);
   }
 
-  protected setCustom(patch: { powerLimitW?: number; maxClockMhz?: number }) {
-    this.update((c) => {
-      // Ao mexer nos controles, parte do preset atual
-      if (c.gpuTuning.preset !== 'custom') {
-        const p = this.tuningTarget();
-        if (p) {
-          c.gpuTuning.powerLimitW = p.powerW;
-          c.gpuTuning.maxClockMhz = p.clockMhz;
-        }
-        c.gpuTuning.preset = 'custom';
+  protected onSearch(r: { page: SettingsPage; anchor?: string }) {
+    this.go(r.page, r.anchor, true);
+  }
+
+  protected closeDialog(ok: boolean) {
+    const d = this.dialog();
+    this.dialog.set(null);
+    d?.resolve(ok);
+  }
+
+  protected inviteLater() {
+    this.invite.set(false);
+  }
+
+  protected wizardDone(finished: boolean) {
+    const c = this.t.config();
+    // Convite só ao concluir; "Pular configuração" não pergunta (o card da Visão geral continua)
+    if (finished && c?.tutorialDone !== true && !c?.tour?.done) this.invite.set(true);
+    markInvited();
+  }
+
+  protected pauseToast() {
+    clearTimeout(this.toastTimer);
+    this.toastLeft -= Date.now() - this.toastStart;
+  }
+
+  protected resumeToast() {
+    this.toastStart = Date.now();
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => this.toastMsg.set(null), Math.max(1200, this.toastLeft));
+  }
+
+  protected toastAction() {
+    const a = this.toastMsg()?.action;
+    this.toastMsg.set(null);
+    clearTimeout(this.toastTimer);
+    a?.run();
+  }
+
+  private keys(e: KeyboardEvent) {
+    if (this.tour.running()) return;
+    if (e.key === 'Escape') {
+      if (this.dialog()) this.closeDialog(false);
+      else if (this.preview()) this.preview.set(false);
+      else if (this.invite()) this.inviteLater();
+      else return;
+      e.preventDefault();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !this.dialog() && !this.showWizard()) {
+      e.preventDefault();
+      this.search()?.focus();
+    }
+  }
+
+  /** Espera a página renderizar (até ~20 quadros) e rola até a âncora; sem âncora numa página nova, volta ao topo. */
+  private scrollTo(anchor: string | null, pageChanged: boolean, flash: boolean, tries = 0) {
+    requestAnimationFrame(() => {
+      const main = this.main()?.nativeElement;
+      if (!main) return;
+      const el = anchor ? main.querySelector<HTMLElement>(`[data-anchor="${CSS.escape(anchor)}"]`) : null;
+      if (!el) {
+        if (anchor && tries < 20 && this.draft()) return this.scrollTo(anchor, pageChanged, flash, tries + 1);
+        if (pageChanged) main.scrollTop = 0;
+        return;
       }
-      Object.assign(c.gpuTuning, patch);
+      el.scrollIntoView({ block: 'start', behavior: 'instant' });
+      this.holdAnchor(main, el);
+      if (flash) {
+        el.classList.remove('pw-flash');
+        void el.offsetWidth;
+        el.classList.add('pw-flash');
+        setTimeout(() => el.classList.remove('pw-flash'), 1600);
+      }
     });
   }
 
-  protected fmtSize(bytes: number) {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    const mb = (bytes / 1024 / 1024).toFixed(1);
-    return `${this.s().decimalComma ? mb.replace('.', ',') : mb} MB`;
-  }
-
-  protected sessionWhen(start: string) {
-    const d = new Date(start);
-    const today = new Date();
-    const yesterday = new Date(Date.now() - 86_400_000);
-    const s = this.s();
-    const time = d.toLocaleTimeString(s.locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-    if (d.toDateString() === today.toDateString()) return `${s.today}, ${time}`;
-    if (d.toDateString() === yesterday.toDateString()) return `${s.yesterday}, ${time}`;
-    return `${d.toLocaleDateString(s.locale, { weekday: 'long' })}, ${time}`;
-  }
-
-  protected sessionDuration(start: string, end?: string) {
-    if (!end) return this.s().inProgress;
-    const min = Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60_000));
-    if (min < 60) return `${min} min`;
-    return `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
-  }
-
-  protected monitorLabel(m: MonitorInfo | null) {
-    if (!m) return this.s().noMonitor;
-    return this.s().monitorLabel(m.index, m.width, m.height, m.height > m.width, m.primary);
-  }
-
-  private origin(exe: string) {
-    const e = exe.toLowerCase();
-    const s = this.s();
-    if (e === 'pitwall.exe') return s.originSelf;
-    if (BROWSERS.has(e)) return s.originBrowser;
-    if (DEFAULT_IGNORE.has(e)) return s.originDefault;
-    return s.originManual;
-  }
-
-  protected isDarkOnly(theme: string | undefined) {
-    return THEMES.find((x) => x.id === theme)?.darkOnly ?? false;
+  /**
+   * Conteúdo que chega depois (histórico, uso da pasta) empurra a âncora para baixo: segura a linha no lugar por
+   * ~1 s, a não ser que a pessoa role antes.
+   */
+  private holdAnchor(main: HTMLElement, el: HTMLElement) {
+    let cancelled = false;
+    const cancel = () => (cancelled = true);
+    const opts = { once: true, passive: true } as const;
+    main.addEventListener('wheel', cancel, opts);
+    main.addEventListener('touchmove', cancel, opts);
+    main.addEventListener('keydown', cancel, opts);
+    main.addEventListener('pointerdown', cancel, opts);
+    for (const ms of [150, 400, 900])
+      setTimeout(() => {
+        if (!cancelled && el.isConnected) el.scrollIntoView({ block: 'start', behavior: 'instant' });
+      }, ms);
   }
 }
 
-function fmtMs(ms: number) {
-  return ms >= 1000 ? `${ms / 1000} s` : `${ms} ms`;
+function invited(): boolean {
+  try {
+    return localStorage.getItem(INVITED_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
-function normalize(s: string) {
-  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+function markInvited() {
+  try {
+    localStorage.setItem(INVITED_KEY, '1');
+  } catch {
+    // sem armazenamento: o convite pode voltar na próxima vez
+  }
 }

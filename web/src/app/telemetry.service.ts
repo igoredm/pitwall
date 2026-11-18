@@ -2,6 +2,7 @@ import { Injectable, computed, signal } from '@angular/core';
 import {
   AppConfig,
   Catalog,
+  ClockReasonStats,
   Extremes,
   GameInfo,
   GameSession,
@@ -136,6 +137,8 @@ export class TelemetryService {
   readonly pairEntry = signal<PairEntryState>({ status: 'idle' });
   /** 1.0: nome com que o aparelho acabou de parear (a página mostra "Pareado" por um instante). */
   readonly pairedName = signal<string | null>(null);
+  /** 1.0: segundos por motivo do limite de clock (snapshot.clockReasons). Só muda quando o conteúdo muda. */
+  readonly snapshotClockReasons = signal<ClockReasonStats | null>(null);
   /** 1.0: última resposta a getLogStats sem valores hipotéticos (uso atual da pasta de CSV). */
   readonly logStats = signal<LogStats | null>(null);
 
@@ -443,6 +446,8 @@ export class TelemetryService {
         const sug = msg.gameSuggestion ?? null;
         if (sug?.exe !== this.gameSuggestion()?.exe) this.gameSuggestion.set(sug);
         this.trackPerfcap(texts['gpu.perfcap'] ?? null, now);
+        const cr = msg.clockReasons ?? null;
+        if (JSON.stringify(cr) !== JSON.stringify(this.snapshotClockReasons())) this.snapshotClockReasons.set(cr);
         this.pushHistory(msg.values);
         break;
       }

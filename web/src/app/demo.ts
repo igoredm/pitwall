@@ -97,7 +97,7 @@ const NOTES = `## Novidades
 - Ver pelo celular na rede local.
 - Correções: a bateria não corta mais no compacto.
 
-Detalhes em [GitHub](https://github.com/igoredm/pitwall/releases/tag/v0.7.1).
+Detalhes em [GitHub](https://github.com/igoredm/pitwall/releases/tag/v1.0.1).
 <script>alert('isto não pode rodar')</script> <img src=x onerror="alert(1)">`;
 
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -170,9 +170,9 @@ export function startDemo(t: TelemetryService) {
   const updateStatus = (urlParam('update') ?? (empty ? 'idle' : 'available')) as UpdateState['status'];
   let update: UpdateState = {
     status: updateStatus,
-    current: '0.7.0',
-    version: updateStatus === 'idle' || updateStatus === 'checking' ? undefined : '0.7.1',
-    notesUrl: 'https://github.com/igoredm/pitwall/releases/tag/v0.7.1',
+    current: '1.0.0',
+    version: updateStatus === 'idle' || updateStatus === 'checking' ? undefined : '1.0.1',
+    notesUrl: 'https://github.com/igoredm/pitwall/releases/tag/v1.0.1',
     notes: NOTES,
     channel: 'stable',
     progress: updateStatus === 'downloading' ? 62 : undefined,
@@ -248,7 +248,7 @@ export function startDemo(t: TelemetryService) {
     primaryGpu: 'auto',
     groupLabels: {},
     widget: { visible: true, monitor: '\\\\.\\DISPLAY2', x: 40, y: 40, width: 1280, height: 400, alwaysOnTop: false, locked: false, layout: 'auto' },
-    log: { enabled: true, folder: 'C:\\Users\\demo\\AppData\\Local\\Pitwall\\logs', intervalMs: 1000, keepDays: 30, maxTotalMb: 500 },
+    log: { enabled: true, folder: 'C:\\Users\\demo\\AppData\\Local\\Pitwall\\logs', intervalMs: 1000, keepDays: 30, maxTotalMb: 2048 },
     gpuTuning: { enabled: true, preset: 'balanced', powerLimitW: 280, maxClockMhz: 1800, onlyInGames: true },
     battery: { enabled: true, hidden: [], lowPercent: 15 },
     games: {
@@ -444,7 +444,7 @@ export function startDemo(t: TelemetryService) {
         update = { ...update, status: 'checking' };
         send({ type: 'update', update });
         setTimeout(() => {
-          update = { ...update, status: 'available', version: '0.7.1', lastCheck: iso(Date.now()) };
+          update = { ...update, status: 'available', version: '1.0.1', lastCheck: iso(Date.now()) };
           send({ type: 'update', update });
         }, 1500);
         break;

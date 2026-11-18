@@ -9,6 +9,37 @@ export function fmtDuration(sec: number, withSeconds = false): string {
   return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
 }
 
+/** 1,4 GB · 212 MB · 830 KB (vírgula decimal em PT). */
+export function fmtBytes(bytes: number, s: Dict): string {
+  const units: [number, string][] = [
+    [1024 ** 3, 'GB'],
+    [1024 ** 2, 'MB'],
+    [1024, 'KB'],
+  ];
+  for (const [k, u] of units) {
+    if (bytes >= k) {
+      const v = bytes / k;
+      const txt = v >= 100 || u === 'KB' ? String(Math.round(v)) : v.toFixed(1).replace(/\.0$/, '');
+      return `${s.decimalComma ? txt.replace('.', ',') : txt} ${u}`;
+    }
+  }
+  return `${Math.round(bytes)} B`;
+}
+
+/** 500 ms · 1 s · 0,5 s (com preferSeconds, o intervalo do CSV fica em segundos). */
+export function fmtMs(ms: number, s?: Dict, preferSeconds = false): string {
+  if (ms >= 1000 || preferSeconds) {
+    const txt = String(ms / 1000);
+    return `${s?.decimalComma ? txt.replace('.', ',') : txt} s`;
+  }
+  return `${ms} ms`;
+}
+
+/** Megabytes do teto do CSV → "500 MB" / "2 GB". */
+export function fmtMb(mb: number): string {
+  return mb >= 1024 ? `${mb / 1024} GB` : `${mb} MB`;
+}
+
 /** "hoje, 21:02" · "ontem, 22:41" · "domingo, 19:40" */
 export function dayTime(iso: string | number, s: Dict, withSeconds = false): string {
   const d = new Date(iso);
