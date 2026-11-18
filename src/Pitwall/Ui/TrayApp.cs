@@ -66,6 +66,19 @@ public sealed class TrayApp : ApplicationContext
         hub.QuitRequested += () => _ui.Post(_ => ExitThread(), null);
         UpdateTray.Attach(_tray, _ui, hub.Updater, ExitThread, OpenSettings);
 
+        // Alerta de vermelho: balão da bandeja (o Windows 10/11 mostra como notificação). Sem dependência nova.
+        hub.AlertRaised += (title, text) => _ui.Post(_ =>
+        {
+            _tray.ShowBalloonTip(8000, title, text, ToolTipIcon.Warning);
+            if (_config.Current.Alerts.Sound) System.Media.SystemSounds.Exclamation.Play();
+        }, null);
+        // Clicar no balão (alerta ou relatório de crash) abre as configurações
+        _tray.BalloonTipClicked += (_, _) => OpenSettings();
+
+        // Relatório de crash: a detecção roda em segundo plano e pode terminar antes ou depois daqui
+        hub.CrashReportDetected += r => _ui.Post(_ => ShowCrashBalloon(r), null);
+        if (hub.PendingCrashReport is { } pending) ShowCrashBalloon(pending);
+
         // Sincroniza a flag com o Agendador (pode ter sido removida por fora)
         _autostartState = Autostart.IsEnabled();
         if (_autostartState != config.Current.StartWithWindows) config.Update(c => c.StartWithWindows = _autostartState);
@@ -146,6 +159,21 @@ public sealed class TrayApp : ApplicationContext
 
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(L.T("Sair", "Exit"), null, (_, _) => ExitThread());
+    }
+
+    bool _crashShown;
+
+    void ShowCrashBalloon(Games.CrashReport r)
+    {
+        if (_crashShown) return;
+        _crashShown = true;
+        var when = r.Time.ToString("g");
+        var text = r.Reason == "kernelPower41"
+            ? L.T($"O Windows registrou um desligamento inesperado (Kernel-Power 41) depois de {r.Session.Exe}. Clique para ver o relatório.",
+                  $"Windows logged an unexpected shutdown (Kernel-Power 41) after {r.Session.Exe}. Click to see the report.")
+            : L.T($"O PC desligou ou travou durante {r.Session.Exe} ({when}). Clique para ver os últimos 60 s.",
+                  $"The PC shut down or froze during {r.Session.Exe} ({when}). Click to see the last 60 s.");
+        _tray.ShowBalloonTip(10000, L.T("Pitwall · relatório de crash", "Pitwall · crash report"), text, ToolTipIcon.Warning);
     }
 
     void ToggleAutostart() => Toggle(c => c.StartWithWindows = !c.StartWithWindows);

@@ -57,6 +57,9 @@ jobs:
           $env:PATH = "${{ runner.temp }}\msys64\ucrt64\bin;$env:PATH"
           ./installer/build-battery.ps1
 
+      - name: Tests
+        run: dotnet test tests/Pitwall.Tests/Pitwall.Tests.csproj -c Release
+
       - name: Build installer
         shell: pwsh
         run: ./installer/build.ps1 -Version ${{ steps.ver.outputs.version }}

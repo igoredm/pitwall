@@ -25,6 +25,10 @@ public sealed class PresentMonService : IDisposable
 
     volatile bool _capturing;
     volatile bool _blocked;
+    volatile bool _useV1;
+
+    /// <summary>Formato do CSV em uso (1 = --v1_metrics, 2 = métricas 2.x com frames exibidos). 0 antes do primeiro cabeçalho.</summary>
+    public int MetricsVersion { get; private set; }
 
     /// <summary>Sessão ETW aberta e lendo frames agora.</summary>
     public bool Healthy => _capturing;
@@ -89,13 +93,18 @@ public sealed class PresentMonService : IDisposable
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
-        foreach (var arg in new[]
-                 {
-                     "--output_stdout", "--no_console_stats", "--v1_metrics",
-                     "--stop_existing_session", "--session_name", SessionName,
-                     "--no_track_input", "--no_track_gpu", "--no_track_display",
-                     "--exclude", "dwm.exe", "--exclude", "Pitwall.exe", "--exclude", "msedgewebview2.exe",
-                 })
+        // Métricas v2 (padrão do PresentMon 2.x) com rastreio até a tela: DisplayedTime separa frames exibidos dos
+        // apresentados, e FrameType (beta) marca frames gerados (XeFG, AFMF...). Se o v2 falhar sem ser bloqueio
+        // do anti-cheat, volta para o formato v1 de antes.
+        var v1 = _useV1;
+        string[] args = v1
+            ? ["--output_stdout", "--no_console_stats", "--v1_metrics",
+               "--stop_existing_session", "--session_name", SessionName,
+               "--no_track_input", "--no_track_gpu", "--no_track_display"]
+            : ["--output_stdout", "--no_console_stats", "--v2_metrics", "--track_frame_type",
+               "--stop_existing_session", "--session_name", SessionName,
+               "--no_track_input", "--no_track_gpu"];
+        foreach (var arg in args.Concat(["--exclude", "dwm.exe", "--exclude", "Pitwall.exe", "--exclude", "msedgewebview2.exe"]))
             psi.ArgumentList.Add(arg);
 
         using var p = Process.Start(psi) ?? throw new InvalidOperationException(L.T("Falha ao iniciar PresentMon", "Failed to start PresentMon"));
@@ -112,49 +121,28 @@ public sealed class PresentMonService : IDisposable
         };
         p.BeginErrorReadLine();
 
-        int colApp = -1, colPid = -1, colFt = -1;
+        PresentMonCsv? csv = null;
         string? line;
         while ((line = p.StandardOutput.ReadLine()) != null)
         {
-            if (colFt < 0)
+            if (csv == null)
             {
-                var header = line.Split(',');
-                colApp = Array.FindIndex(header, h => h.Equals("Application", StringComparison.OrdinalIgnoreCase));
-                colPid = Array.FindIndex(header, h => h.Equals("ProcessID", StringComparison.OrdinalIgnoreCase));
-                colFt = Array.FindIndex(header, h => h.Equals("msBetweenPresents", StringComparison.OrdinalIgnoreCase));
-                if (colFt < 0) colFt = Array.FindIndex(header, h => h.Equals("FrameTime", StringComparison.OrdinalIgnoreCase));
+                csv = PresentMonCsv.FromHeader(line);
+                if (csv == null) continue;
                 // Cabeçalho do CSV = sessão ETW aberta com sucesso
+                MetricsVersion = csv.Version;
                 _capturing = true;
                 _blocked = false;
                 LastError = null;
                 continue;
             }
-            ParseRow(line, colApp, colPid, colFt);
+            if (csv.TryParse(line, out var row))
+                _byPid.GetOrAdd(row.Pid, _ => new FrameStats(row.App)).AddPresent(row);
         }
         p.WaitForExit();
         _capturing = false;
+        if (csv == null && !v1 && !_blocked) _useV1 = true;
         LastError ??= L.T($"PresentMon saiu (código {p.ExitCode})", $"PresentMon exited (code {p.ExitCode})");
-    }
-
-    void ParseRow(string line, int colApp, int colPid, int colFt)
-    {
-        // CSV simples (sem aspas) — split manual para não alocar um array por linha
-        ReadOnlySpan<char> span = line;
-        string? app = null; int pid = -1; double ft = -1;
-        int col = 0;
-        while (true)
-        {
-            var comma = span.IndexOf(',');
-            var field = comma < 0 ? span : span[..comma];
-            if (col == colApp) app = field.ToString();
-            else if (col == colPid) int.TryParse(field, NumberStyles.Integer, CultureInfo.InvariantCulture, out pid);
-            else if (col == colFt) double.TryParse(field, NumberStyles.Float, CultureInfo.InvariantCulture, out ft);
-            if (comma < 0) break;
-            span = span[(comma + 1)..];
-            col++;
-        }
-        if (pid <= 0 || ft <= 0) return;
-        _byPid.GetOrAdd(pid, _ => new FrameStats(app ?? "?")).Add(ft);
     }
 
     public void CleanupStale()

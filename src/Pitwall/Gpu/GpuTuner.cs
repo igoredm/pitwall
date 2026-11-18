@@ -109,6 +109,30 @@ public sealed class GpuTuner : IDisposable
         _applied is { ClockMax: > 0 } b ? (int)b.ClockMax : null,
         _lastError);
 
+    int _reasonsApi; // 0 = ainda não testado, 1 = EventReasons, 2 = ThrottleReasons, -1 = indisponível
+
+    /// <summary>Máscara de motivos de limitação do clock (NVML), ou null se o driver/placa não expõe.</summary>
+    public ulong? ClockReasonsMask()
+    {
+        if (_dev == IntPtr.Zero || _reasonsApi < 0) return null;
+        try
+        {
+            if (_reasonsApi is 0 or 1)
+            {
+                try
+                {
+                    if (Nvml.GetClocksEventReasons(_dev, out var r) == Nvml.Success) { _reasonsApi = 1; return r; }
+                    if (_reasonsApi == 1) return null; // falha pontual: não troca de API
+                }
+                catch (EntryPointNotFoundException) { }
+            }
+            if (Nvml.GetClocksThrottleReasons(_dev, out var t) == Nvml.Success) { _reasonsApi = 2; return t; }
+        }
+        catch (EntryPointNotFoundException) { }
+        if (_reasonsApi == 0) _reasonsApi = -1;
+        return null;
+    }
+
     /// <summary>Chamado a cada tick: aplica/desfaz só quando o estado desejado muda.</summary>
     public void Update(GpuTuningConfig cfg, bool gameActive)
     {

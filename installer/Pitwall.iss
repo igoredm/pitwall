@@ -80,6 +80,8 @@ Filename: "{app}\{#AppExe}"; Flags: nowait; Check: RestartAfterSilentUpdate
 Filename: "{sys}\taskkill.exe"; Parameters: "/IM {#AppExe} /F"; Flags: runhidden waituntilterminated; RunOnceId: "KillApp"
 Filename: "{app}\{#AppExe}"; Parameters: "--set-autostart off"; Flags: runhidden waituntilterminated; RunOnceId: "RemoveAutostart"
 Filename: "{app}\tools\PresentMon.exe"; Parameters: "--terminate_existing_session --session_name PitwallPresentMon"; Flags: runhidden waituntilterminated; RunOnceId: "StopEtw"
+; Regra do firewall da visualização no celular (Remote.Enabled); some mesmo que o recurso tenha ficado ligado
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=Pitwall-PhoneView"; Flags: runhidden waituntilterminated; RunOnceId: "RemoveFirewallRule"
 
 [UninstallDelete]
 ; Cache do WebView2. Config (%APPDATA%\Pitwall) e logs (%LOCALAPPDATA%\Pitwall\logs) ficam, como a maioria dos apps.

@@ -32,7 +32,46 @@ public sealed class AppConfig
     public LogConfig Log { get; set; } = new();
     public GamesConfig Games { get; set; } = new();
     public UpdateConfig Update { get; set; } = new();
+    public AlertsConfig Alerts { get; set; } = new();
+    public RemoteConfig Remote { get; set; } = new();
     public List<MetricSetting> Metrics { get; set; } = [];
+}
+
+/// <summary>Aviso do Windows quando uma métrica fica no vermelho por 5 s ou mais. Desligado por padrão.</summary>
+public sealed class AlertsConfig
+{
+    public bool Enabled { get; set; }
+    /// <summary>Toca o som de alerta do Windows junto com o aviso.</summary>
+    public bool Sound { get; set; }
+    /// <summary>Intervalo mínimo entre avisos da mesma métrica.</summary>
+    public int MinIntervalMin { get; set; } = 5;
+}
+
+/// <summary>Visualização no celular pela rede local (somente leitura). Desligada por padrão.</summary>
+public sealed class RemoteConfig
+{
+    public bool Enabled { get; set; }
+    public int Port { get; set; } = 48124;
+    /// <summary>Celulares pareados. Só o hash SHA-256 do token fica salvo; o token em si fica no celular.</summary>
+    public List<PairedDevice> PairedDevices { get; set; } = [];
+}
+
+public sealed class PairedDevice
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    /// <summary>SHA-256 (hex minúsculo) do token do dispositivo.</summary>
+    public string TokenHash { get; set; } = "";
+    public DateTime Created { get; set; }
+}
+
+/// <summary>Perfil por jogo: aplicado quando o jogo começa e desfeito quando ele termina (nada fica salvo no meio).</summary>
+public sealed class GameProfile
+{
+    /// <summary>off | balanced | cool | custom. null = usa a config geral.</summary>
+    public string? TuningPreset { get; set; }
+    /// <summary>auto | full | mid | compact. null = usa a config geral.</summary>
+    public string? Layout { get; set; }
 }
 
 public sealed class WidgetWindowConfig
@@ -83,6 +122,10 @@ public sealed class LogConfig
     public string Folder { get; set; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Pitwall", "logs");
     public int IntervalMs { get; set; } = 1000;
+    /// <summary>Apaga logs mais velhos que isso (dias). 0 = não apaga por idade.</summary>
+    public int KeepDays { get; set; } = 30;
+    /// <summary>Teto do total da pasta (MB); apaga os mais antigos primeiro. 0 = sem teto.</summary>
+    public int MaxTotalMb { get; set; } = 500;
 }
 
 public sealed class GamesConfig
@@ -96,6 +139,13 @@ public sealed class GamesConfig
         "TextInputHost.exe", "ShellExperienceHost.exe", "StartMenuExperienceHost.exe", "SearchHost.exe",
         "LockApp.exe", "Spotify.exe", "vlc.exe", "mpc-hc64.exe", "Code.exe", "devenv.exe", "Claude.exe",
     ];
+    /// <summary>Perfis por exe (chave sem diferenciar maiúsculas).</summary>
+    public Dictionary<string, GameProfile> Profiles { get; set; } = [];
+    /// <summary>Exes para os quais o usuário recusou "Marcar como jogo?".</summary>
+    public List<string> DismissedSuggestions { get; set; } = [];
+
+    public GameProfile? ProfileFor(string? exe) =>
+        exe == null ? null : Profiles.FirstOrDefault(p => string.Equals(p.Key, exe, StringComparison.OrdinalIgnoreCase)).Value;
 }
 
 public sealed class MetricSetting

@@ -42,6 +42,7 @@ public static class L
     static readonly Dictionary<string, string> StaticEn = new()
     {
         ["fps.avg"] = "Session average FPS",
+        ["fps.displayed"] = "Displayed FPS",
         ["fps.graph"] = "Frametime graph",
         ["gpu.load"] = "Load",
         ["gpu.temp"] = "Core",

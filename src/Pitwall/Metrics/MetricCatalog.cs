@@ -23,7 +23,9 @@ public static class MetricCatalog
     public static readonly IReadOnlyList<MetricDefinition> Static =
     [
         // FPS (PresentMon)
+        // fps.current = renderizado/apresentado pelo jogo; fps.displayed = o que chegou à tela (geração de frames conta aqui)
         new("fps.current", MetricGroup.Fps, "FPS", "fps", true),
+        new("fps.displayed", MetricGroup.Fps, "FPS exibido", "fps"),
         new("fps.low1", MetricGroup.Fps, "1% low", "fps", true),
         new("fps.frametime", MetricGroup.Fps, "Frametime", "ms", true),
         new("fps.low01", MetricGroup.Fps, "0.1% low", "fps"),
@@ -45,7 +47,7 @@ public static class MetricCatalog
         new("gpu.fan", MetricGroup.Gpu, "Fan", "%"),
         new("gpu.fanRpm", MetricGroup.Gpu, "Fan", "RPM"),
         new("gpu.voltage", MetricGroup.Gpu, "Voltagem do núcleo", "V"),
-        // O LibreHardwareMonitor não expõe o motivo de limitação (PerfCap) da NVIDIA; aparece como "não disponível".
+        // Motivo de limitação (PerfCap): vem do NVML (thermal | power | voltage | idle | sync | none), só em NVIDIA.
         new("gpu.perfcap", MetricGroup.Gpu, "Motivo de limitação do clock", "text"),
 
         // CPU

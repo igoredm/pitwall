@@ -19,8 +19,12 @@ Spec: [docs/spec.md](docs/spec.md) · Design: [docs/design-notes.md](docs/design
 - `src/Pitwall` — .NET 10 WinForms (bandeja + janela WebView2), roda como administrador.
   - Sensores: LibreHardwareMonitorLib 0.9.6 (driver **PawnIO**, sem WinRing0).
   - FPS: `tools/PresentMon.exe` (Intel, ETW) lido pelo stdout; FPS, frametime, 1% e 0.1% low.
-  - WebSocket `ws://localhost:48123/ws` (HttpListener) — snapshot a cada `refreshMs`.
-  - CSV em `%LOCALAPPDATA%\Pitwall\logs`, todas as métricas disponíveis, `FlushFileBuffers` por linha.
+  - WebSocket `ws://localhost:48123/ws` (HttpListener, token por execução + Origin) — snapshot a cada `refreshMs`.
+    Referência das mensagens: [docs/protocol.md](docs/protocol.md).
+  - Visualização opcional no celular pela rede local (desligada por padrão): servidor separado, somente leitura, porta 48124,
+    com pareamento por QR.
+  - CSV em `%LOCALAPPDATA%\Pitwall\logs`, todas as métricas disponíveis, `FlushFileBuffers` por linha; logs antigos são
+    apagados (padrão 30 dias / 500 MB). Relatório de crash com os últimos 60 s antes de um desligamento inesperado.
   - Iniciar com o Windows: Agendador de Tarefas com "privilégios mais altos".
 - `web` — Angular 22: widget (`#/widget`) e configurações (`#/settings`, carregada sob demanda), 5 temas
   (Lumen, Mínimo, Neon, Terminal, Splash) com tokens em `src/styles.scss`. Servido ao WebView2 via `https://pitwall.local`.

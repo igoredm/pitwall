@@ -25,7 +25,7 @@ public sealed class WsServer : IDisposable
     public static readonly string SessionToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
 
     readonly HttpListener _listener = new();
-    readonly ConcurrentDictionary<Guid, Client> _clients = new();
+    readonly ConcurrentDictionary<Guid, WsClient> _clients = new();
     readonly CancellationTokenSource _cts = new();
 
     public int Port { get; }
@@ -84,7 +84,7 @@ public sealed class WsServer : IDisposable
         try { ws = (await ctx.AcceptWebSocketAsync(null)).WebSocket; }
         catch { return; }
 
-        var client = new Client(ws);
+        var client = new WsClient(ws);
         var id = Guid.NewGuid();
         _clients[id] = client;
         try
@@ -125,29 +125,5 @@ public sealed class WsServer : IDisposable
     {
         _cts.Cancel();
         try { _listener.Stop(); _listener.Close(); } catch { }
-    }
-
-    sealed class Client(WebSocket ws)
-    {
-        readonly SemaphoreSlim _send = new(1, 1);
-
-        public Task SendAsync(string json) => SendAsync(Encoding.UTF8.GetBytes(json));
-
-        async Task SendAsync(byte[] bytes)
-        {
-            await _send.WaitAsync();
-            try { await ws.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None); }
-            finally { _send.Release(); }
-        }
-
-        /// <summary>Envio sem bloquear o loop de telemetria; se o cliente estiver atrasado, descarta o frame.</summary>
-        public bool TrySend(byte[] bytes)
-        {
-            if (ws.State != WebSocketState.Open) return false;
-            if (!_send.Wait(0)) return true;
-            _ = ws.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None)
-                .ContinueWith(_ => _send.Release());
-            return true;
-        }
     }
 }

@@ -30,6 +30,10 @@ internal static partial class Nvml
     [LibraryImport(Dll, EntryPoint = "nvmlDeviceSetGpuLockedClocks")] public static partial int SetLockedClocks(IntPtr device, uint minMhz, uint maxMhz);
     [LibraryImport(Dll, EntryPoint = "nvmlDeviceResetGpuLockedClocks")] public static partial int ResetLockedClocks(IntPtr device);
 
+    // Motivo de limitação do clock. "ClocksEventReasons" é o nome novo (driver R535+); o antigo "ThrottleReasons" fica de reserva.
+    [LibraryImport(Dll, EntryPoint = "nvmlDeviceGetCurrentClocksEventReasons")] public static partial int GetClocksEventReasons(IntPtr device, out ulong reasons);
+    [LibraryImport(Dll, EntryPoint = "nvmlDeviceGetCurrentClocksThrottleReasons")] public static partial int GetClocksThrottleReasons(IntPtr device, out ulong reasons);
+
     public static string Name(IntPtr device)
     {
         var buf = new byte[96];

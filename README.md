@@ -29,12 +29,16 @@ Pitwall runs as administrator (sensors and ETW require it). "Start with Windows"
 - `src/Pitwall` — .NET 10 WinForms (tray + WebView2 window).
   - Sensors: LibreHardwareMonitorLib 0.9.6 (PawnIO driver).
   - FPS: `tools/PresentMon.exe` read from stdout; FPS, frametime, 1% and 0.1% lows.
-  - WebSocket `ws://localhost:48123/ws` (HttpListener, origin allowlist) — a snapshot every `refreshMs`.
-  - CSV in `%LOCALAPPDATA%\Pitwall\logs`, flushed to disk on every line (useful when the PC crashes).
+  - WebSocket `ws://localhost:48123/ws` (HttpListener, per-run token + origin allowlist) — a snapshot every `refreshMs`.
+    Full message reference: [docs/protocol.md](docs/protocol.md).
+  - Optional phone view on the LAN (off by default): a separate, read-only server on port 48124 with device pairing.
+  - CSV in `%LOCALAPPDATA%\Pitwall\logs`, flushed to disk on every line (useful when the PC crashes); old logs are pruned
+    (30 days / 500 MB by default). A crash report shows the last 60 s before an unexpected shutdown.
   - GPU tuning through NVIDIA's official NVML only; restored on exit, on game exit and after a crash.
   - Wireless battery: bundled [WirelessBattery](https://github.com/krisgfx9/Wireless-Device-Battery-Monitor) (built from a
     reviewed commit, plus our AULA driver in `tools/battery-patches`) and [HeadsetControl](https://github.com/Sapd/HeadsetControl).
 - `web` — Angular 22: widget (`#/widget`) and settings (`#/settings`), served to WebView2 at `https://pitwall.local`.
+- `tests/Pitwall.Tests` — xUnit (`dotnet test`).
 - `installer` — Inno Setup script and build scripts.
 
 ## Building
