@@ -261,7 +261,10 @@ public sealed class TelemetryHub : IDisposable
                         var cur = _config.Current.Widget;
                         if (cfg.Widget.Monitor == cur.Monitor)
                             (cfg.Widget.X, cfg.Widget.Y, cfg.Widget.Width, cfg.Widget.Height) = (cur.X, cur.Y, cur.Width, cur.Height);
+                        ConfigStore.Sanitize(cfg);
                         if (!LogFolderAllowed(cfg.Log.Folder)) cfg.Log.Folder = _config.Current.Log.Folder;
+                        // Celulares pareados só mudam por startPairing/revokeDevice, nunca pelo config da página.
+                        cfg.Remote.PairedDevices = _config.Current.Remote.PairedDevices;
                         _config.Replace(cfg);
                     }
                     return null;
