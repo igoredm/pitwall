@@ -36,11 +36,18 @@ public sealed class RemoteServer : IDisposable
     public Func<IEnumerable<string>>? OnAuthenticated { get; set; }
     /// <summary>Celular novo pareado (o hub grava no config).</summary>
     public event Action<PairedDevice>? Paired;
+    /// <summary>Dispositivo autenticado e já na lista de conectados (id, true = acabou de parear).</summary>
+    public event Action<string, bool>? Authenticated;
+    /// <summary>Conexão autenticada encerrada (id do dispositivo).</summary>
+    public event Action<string>? Disconnected;
 
     public int Port { get; private set; }
     public bool Running => _listener != null;
     public string? LastError { get; private set; }
     public bool HasClients => !_clients.IsEmpty;
+
+    /// <summary>Ids dos dispositivos com conexão autenticada aberta agora.</summary>
+    public HashSet<string> OnlineDeviceIds() => _clients.Values.Select(c => c.DeviceId).ToHashSet();
 
     public RemoteServer(Func<IReadOnlyList<PairedDevice>> devices, PairingManager pairing)
     {
@@ -128,6 +135,14 @@ public sealed class RemoteServer : IDisposable
                 return;
             }
             if (req.HttpMethod is not ("GET" or "HEAD")) { Close(res, 405); return; }
+            if (RedirectFor(req.Url?.AbsolutePath) is { } location)
+            {
+                // Raiz → página do celular/TV. O fragmento não vai na requisição, então o destino não pode ser "/".
+                SecurityHeaders(res);
+                res.Redirect(location);
+                res.Close();
+                return;
+            }
             await ServeStatic(req, res);
         }
         catch
@@ -168,6 +183,7 @@ public sealed class RemoteServer : IDisposable
         catch { return; }
         var client = new WsClient(ws);
         var id = Guid.NewGuid();
+        string? deviceId = null;
         try
         {
             // 1) Primeira mensagem: auth (token) ou pair (código), em até 10 s
@@ -177,7 +193,7 @@ public sealed class RemoteServer : IDisposable
                 timeout.CancelAfter(AuthTimeout);
                 first = await Receive(ws, timeout.Token);
             }
-            var device = first == null ? null : await Authenticate(first, client, ip);
+            var (device, justPaired) = first == null ? (null, false) : await Authenticate(first, client, ip);
             if (device == null)
             {
                 await CloseSocket(ws, WebSocketCloseStatus.PolicyViolation, "unauthorized");
@@ -186,6 +202,8 @@ public sealed class RemoteServer : IDisposable
 
             // 2) Autenticado: recebe o fluxo; do cliente só aceita ping
             _clients[id] = (client, device.Id);
+            deviceId = device.Id;
+            try { Authenticated?.Invoke(device.Id, justPaired); } catch { }
             if (OnAuthenticated != null)
                 foreach (var msg in OnAuthenticated()) await client.SendAsync(msg);
             while (ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
@@ -202,10 +220,13 @@ public sealed class RemoteServer : IDisposable
         {
             _clients.TryRemove(id, out _);
             try { ws.Dispose(); } catch { }
+            if (deviceId != null)
+                try { Disconnected?.Invoke(deviceId); } catch { }
         }
     }
 
-    async Task<PairedDevice?> Authenticate(string raw, WsClient client, string ip)
+    /// <returns>Dispositivo autenticado (null = recusado) e se ele acabou de parear.</returns>
+    async Task<(PairedDevice? Device, bool Paired)> Authenticate(string raw, WsClient client, string ip)
     {
         var now = DateTime.UtcNow;
         JsonNode? node;
@@ -219,10 +240,10 @@ public sealed class RemoteServer : IDisposable
             {
                 _limiter.Fail(ip, now);
                 await client.SendAsync(JsonSerializer.Serialize(new { type = "auth", ok = false, error = "invalidToken" }));
-                return null;
+                return (null, false);
             }
             await client.SendAsync(JsonSerializer.Serialize(new { type = "auth", ok = true, deviceId = device.Id, name = device.Name }));
-            return device;
+            return (device, false);
         }
         if (type == "pair")
         {
@@ -236,15 +257,15 @@ public sealed class RemoteServer : IDisposable
                     ok = false,
                     error = err switch { PairError.Expired => "expired", PairError.NoPending => "noPending", _ => "invalidCode" },
                 }));
-                return null;
+                return (null, false);
             }
             _limiter.Succeed(ip);
             Paired?.Invoke(device);
             await client.SendAsync(JsonSerializer.Serialize(new { type = "paired", ok = true, deviceId = device.Id, name = device.Name, token }));
-            return device;
+            return (device, true);
         }
         _limiter.Fail(ip, now);
-        return null;
+        return (null, false);
     }
 
     static string? Str(JsonNode? node, string key)
@@ -331,16 +352,28 @@ public sealed class RemoteServer : IDisposable
             return;
         }
         res.ContentType = type;
-        res.Headers["X-Content-Type-Options"] = "nosniff";
-        res.Headers["X-Frame-Options"] = "DENY";
-        res.Headers["Referrer-Policy"] = "no-referrer";
-        res.Headers["Content-Security-Policy"] = "frame-ancestors 'none'";
-        res.Headers["Cache-Control"] = "no-cache";
+        SecurityHeaders(res);
         await using var fs = new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.Read, 16 * 1024, useAsync: true);
         res.ContentLength64 = fs.Length;
         if (req.HttpMethod == "GET") await fs.CopyToAsync(res.OutputStream);
         res.Close();
     }
+
+    static void SecurityHeaders(HttpListenerResponse res)
+    {
+        res.Headers["X-Content-Type-Options"] = "nosniff";
+        res.Headers["X-Frame-Options"] = "DENY";
+        res.Headers["Referrer-Policy"] = "no-referrer";
+        res.Headers["Content-Security-Policy"] = "frame-ancestors 'none'";
+        res.Headers["Cache-Control"] = "no-cache";
+    }
+
+    /// <summary>Página do celular/TV. A raiz redireciona para cá: quem digita só "ip:porta" cai na tela de código.</summary>
+    public const string MobilePath = "/index.html#/mobile";
+
+    /// <summary>Destino do redirecionamento (só a raiz e "/mobile"), ou null para servir o arquivo.</summary>
+    internal static string? RedirectFor(string? urlPath) =>
+        urlPath is "/" or "/mobile" or "/mobile/" ? MobilePath : null;
 
     /// <summary>Caminho da URL → arquivo dentro do wwwroot; null se tentar sair da pasta ou for estranho.</summary>
     internal static string? ResolveStatic(string root, string? urlPath)

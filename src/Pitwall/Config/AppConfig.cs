@@ -24,6 +24,11 @@ public sealed class AppConfig
     /// configs que já existiam viram true na migração v5, para quem já usa o app não ver o assistente.
     /// </summary>
     public bool FirstRunDone { get; set; }
+    /// <summary>
+    /// Tutorial das configurações já visto (ou pulado). Instalação nova = false; configs que já existiam viram true
+    /// na migração v6. "Rever tutorial" (bandeja ou mensagem replayTutorial) volta para false.
+    /// </summary>
+    public bool TutorialDone { get; set; }
     public bool AutoOpenWidgetOnGame { get; set; } = true;
 
     /// <summary>"auto" = GPU no slot PCIe principal (menor barramento); senão o identificador LHM.</summary>
@@ -40,6 +45,7 @@ public sealed class AppConfig
     public UpdateConfig Update { get; set; } = new();
     public AlertsConfig Alerts { get; set; } = new();
     public RemoteConfig Remote { get; set; } = new();
+    public FeaturesConfig Features { get; set; } = new();
     public List<MetricSetting> Metrics { get; set; } = [];
 }
 
@@ -53,6 +59,23 @@ public sealed class AlertsConfig
     public int MinIntervalMin { get; set; } = 5;
     /// <summary>Quanto tempo a métrica precisa ficar no vermelho antes do aviso (picos curtos não avisam).</summary>
     public int SustainSec { get; set; } = 10;
+}
+
+/// <summary>
+/// Recursos que podem ser desligados como uma métrica. Desligado = nada roda (custo ~0): sem buffer, sem arquivo, sem consulta.
+/// Os outros interruptores continuam nas seções deles (games.autoDetect, log.enabled, battery.enabled, gpuTuning.enabled,
+/// alerts.enabled, remote.enabled, update.autoCheck).
+/// </summary>
+public sealed class FeaturesConfig
+{
+    /// <summary>Buffer de 60 s em disco durante o jogo + relatório/balão de crash ao abrir.</summary>
+    public bool CrashReport { get; set; } = true;
+    /// <summary>"Marcar como jogo?" (olha o processo em foco).</summary>
+    public bool GameSuggestions { get; set; } = true;
+    /// <summary>Mín/máx da sessão (extremes) no widget e no celular.</summary>
+    public bool SessionPeaks { get; set; } = true;
+    /// <summary>Motivo do limite de clock (NVML): texts["gpu.perfcap"] e segundos por motivo na sessão.</summary>
+    public bool ClockReason { get; set; } = true;
 }
 
 /// <summary>Visualização no celular pela rede local (somente leitura). Desligada por padrão.</summary>
@@ -71,6 +94,8 @@ public sealed class PairedDevice
     /// <summary>SHA-256 (hex minúsculo) do token do dispositivo.</summary>
     public string TokenHash { get; set; } = "";
     public DateTime Created { get; set; }
+    /// <summary>Última vez que o dispositivo autenticou ou esteve conectado (atualizado no máximo 1x/min). null = nunca.</summary>
+    public DateTime? LastSeen { get; set; }
 }
 
 /// <summary>Perfil por jogo: aplicado quando o jogo começa e desfeito quando ele termina (nada fica salvo no meio).</summary>
@@ -130,8 +155,11 @@ public sealed class LogConfig
     public string Folder { get; set; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Pitwall", "logs");
     public int IntervalMs { get; set; } = 1000;
-    /// <summary>Apaga logs mais velhos que isso (dias). 0 = não apaga por idade.</summary>
+    /// <summary>Apaga logs mais velhos que isso (dias): 1, 5, 15, 30 ou 90. 0 = para sempre (não apaga por idade).</summary>
     public int KeepDays { get; set; } = 30;
+
+    /// <summary>Valores aceitos em <see cref="KeepDays"/> (0 = para sempre).</summary>
+    public static readonly int[] KeepDaysChoices = [1, 5, 15, 30, 90, 0];
     /// <summary>Teto do total da pasta (MB); apaga os mais antigos primeiro. 0 = sem teto.</summary>
     public int MaxTotalMb { get; set; } = 500;
 }

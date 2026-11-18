@@ -36,6 +36,12 @@ export interface AppConfig {
   startWithWindows: boolean;
   /** v0.7: assistente de primeira execução concluído (ou pulado). Config antiga vira true na migração v5. */
   firstRunDone?: boolean;
+  /**
+   * 1.0: tutorial das configurações visto (ou pulado). false → a página mostra o tutorial (depois do assistente, se
+   * firstRunDone também for false) e manda setConfig com true ao terminar. Instalação nova = false; config antiga = true
+   * (migração v6). "Rever tutorial" (bandeja ou { type: 'replayTutorial' }) volta para false.
+   */
+  tutorialDone?: boolean;
   autoOpenWidgetOnGame: boolean;
   primaryGpu: string;
   groupLabels: Record<string, string>;
@@ -54,8 +60,8 @@ export interface AppConfig {
     enabled: boolean;
     folder: string;
     intervalMs: number;
-    /** v0.7: apaga CSVs mais velhos que isso (dias). 0 = não apaga por idade. Padrão 30. */
-    keepDays?: number;
+    /** Apaga CSVs mais velhos que isso (dias). 1.0: só 1, 5, 15, 30, 90 ou 0 (= para sempre). Padrão 30. */
+    keepDays?: LogKeepDays;
     /** v0.7: teto do total da pasta (MB), apaga os mais antigos. 0 = sem teto. Padrão 500. */
     maxTotalMb?: number;
   };
@@ -75,7 +81,25 @@ export interface AppConfig {
   /** v0.7 (o backend sempre manda). */
   remote?: RemoteConfig;
   update?: UpdateConfig;
+  /** 1.0 (o backend sempre manda): recursos desligáveis. Ver docs/protocol.md, "Recursos / feature switches". */
+  features?: FeaturesConfig;
   metrics: MetricSetting[];
+}
+
+/** 1.0: valores aceitos em log.keepDays (0 = para sempre). Outro valor é ajustado pelo backend. */
+export type LogKeepDays = 0 | 1 | 5 | 15 | 30 | 90;
+export const LOG_KEEP_DAYS: LogKeepDays[] = [1, 5, 15, 30, 90, 0];
+
+/** 1.0: desligado = o backend não faz nada daquilo (custo ~0). Padrão: tudo true. */
+export interface FeaturesConfig {
+  /** Buffer de 60 s em disco durante o jogo + relatório/balão de crash. Off: catalog.crashReport some. */
+  crashReport: boolean;
+  /** "Marcar como jogo?". Off: snapshot.gameSuggestion sempre null. */
+  gameSuggestions: boolean;
+  /** Mín/máx da sessão. Off: sem mensagem extremes nem snapshot.extremes. */
+  sessionPeaks: boolean;
+  /** Motivo do limite de clock (NVML). Off: sem texts['gpu.perfcap'], snapshot.clockReasons nem session.clockReasonSec. */
+  clockReason: boolean;
 }
 
 /** v0.7: aviso do Windows quando uma métrica fica >= vermelho por 5 s. */
@@ -100,6 +124,10 @@ export interface PairedDevice {
   name: string;
   /** ISO 8601. */
   created: string;
+  /** 1.0: ISO 8601. Última autenticação ou presença (gravado no máximo 1x/min enquanto conectado). Ausente = nunca. */
+  lastSeen?: string;
+  /** 1.0: conectado agora ("Vendo agora"). Só na mensagem devices (não no config). */
+  online?: boolean;
 }
 
 export type TuningPreset = 'off' | 'balanced' | 'cool' | 'custom';
@@ -255,11 +283,20 @@ export interface GameSession {
   secondsAboveWarn?: Record<string, number>;
   /** Segundos com a métrica >= vermelho, por id. */
   secondsAboveCrit?: Record<string, number>;
+  /** 1.0: segundos por motivo do limite de clock na sessão (soma = tempo com leitura do NVML). */
+  clockReasonSec?: Partial<Record<PerfCapReason, number>>;
   csvFile?: string;
 }
 
 /** v0.7: valor de gpu.perfcap (snapshot.texts). */
 export type PerfCapReason = 'thermal' | 'power' | 'voltage' | 'idle' | 'sync' | 'none';
+
+/** 1.0: snapshot.clockReasons — segundos por motivo na sessão atual (live) ou, fora de jogo, na última. */
+export interface ClockReasonStats {
+  live: boolean;
+  exe: string;
+  sec: Partial<Record<PerfCapReason, number>>;
+}
 
 /** v0.7: [mín, máx] por id de métrica. */
 export type Extremes = Record<string, [number, number]>;
@@ -314,6 +351,8 @@ export type ServerMessage =
       profile?: { exe: string; tuningPreset?: TuningPreset; layout?: WidgetLayout } | null;
       /** v0.7: "Marcar como jogo?". */
       gameSuggestion?: { exe: string } | null;
+      /** 1.0: ausente sem dados ou com features.clockReason desligado. */
+      clockReasons?: ClockReasonStats;
       presentMonError?: string | null;
     }
   | { type: 'sessions'; sessions: GameSession[] }
@@ -326,7 +365,19 @@ export type ServerMessage =
 
 /** v0.7: resposta a startPairing (só para quem pediu). */
 export type PairingMessage =
-  | { type: 'pairing'; ok: true; url: string; urls: string[]; expiresAt: string }
+  | {
+      type: 'pairing';
+      ok: true;
+      /** 1.0: 6 dígitos, para mostrar grande ao lado do QR (digitar na TV/celular). */
+      code: string;
+      /** QR: http://<ip>:<porta>/index.html#/mobile?pair=<code> */
+      url: string;
+      urls: string[];
+      /** 1.0: endereço curto para digitar (http://<ip>:<porta>/), que abre a tela de código. */
+      typeUrl: string;
+      typeUrls: string[];
+      expiresAt: string;
+    }
   | { type: 'pairing'; ok: false; error: 'disabled' | 'notRunning' | 'noNetwork'; message?: string };
 
 /** v0.7: mensagens da página local para o backend. */
@@ -344,6 +395,8 @@ export type ClientMessage =
   | { type: 'startPairing' }
   | { type: 'listDevices' }
   | { type: 'revokeDevice'; id: string }
+  // 1.0
+  | { type: 'replayTutorial' }
   // atualizador
   | { type: 'checkUpdate' }
   | { type: 'installUpdate'; when: 'now' | 'exit' }

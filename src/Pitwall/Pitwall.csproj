@@ -13,7 +13,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <AssemblyName>Pitwall</AssemblyName>
     <RootNamespace>Pitwall</RootNamespace>
-    <Version>0.7.0</Version>
+    <Version>0.9.0</Version>
     <Authors>igoredm</Authors>
     <Company>igoredm</Company>
     <Product>Pitwall</Product>

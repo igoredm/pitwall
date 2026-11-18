@@ -26,6 +26,11 @@ public sealed class GameSession
     public Dictionary<string, double>? SecondsAboveWarn { get; set; }
     /// <summary>Segundos com a métrica >= limite vermelho, por id.</summary>
     public Dictionary<string, double>? SecondsAboveCrit { get; set; }
+    /// <summary>
+    /// 1.0: segundos por motivo do limite de clock da GPU (thermal | power | voltage | idle | sync | none) durante a
+    /// sessão. Ausente sem NVML ou com features.clockReason desligado. Base do "Por que o clock caiu".
+    /// </summary>
+    public Dictionary<string, double>? ClockReasonSec { get; set; }
     /// <summary>Nome do arquivo CSV da sessão (sem a pasta).</summary>
     public string? CsvFile { get; set; }
 }

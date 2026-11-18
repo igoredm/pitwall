@@ -122,6 +122,92 @@ public class ConfigMigrationTests
     }
 }
 
+public class ConfigV6Tests
+{
+    [Fact]
+    public void NewInstall_TutorialPendingAndFeaturesOn()
+    {
+        var c = ConfigStore.Parse(null);
+        Assert.Equal(6, ConfigStore.CurrentVersion);
+        Assert.False(c.TutorialDone);
+        Assert.False(c.FirstRunDone);
+        Assert.True(c.Features.CrashReport);
+        Assert.True(c.Features.GameSuggestions);
+        Assert.True(c.Features.SessionPeaks);
+        Assert.True(c.Features.ClockReason);
+    }
+
+    [Fact]
+    public void V5_MigratesTutorialDoneAndKeepsFirstRun()
+    {
+        var c = ConfigStore.Parse("""{ "version": 5, "firstRunDone": false, "log": { "keepDays": 7 } }""");
+        Assert.True(c.TutorialDone);       // quem já usa não vê o tutorial sozinho
+        Assert.False(c.FirstRunDone);      // semântica do assistente não muda
+        Assert.Equal(15, c.Log.KeepDays);  // 7 não é mais opção: sobe para 15
+        Assert.True(c.Features.CrashReport);
+        Assert.Equal(6, c.Version);
+
+        Assert.True(ConfigStore.Parse("""{ "version": 2 }""").TutorialDone);
+        Assert.True(ConfigStore.Parse("{ not json").TutorialDone);
+    }
+
+    [Fact]
+    public void V6_KeepsUserChoices()
+    {
+        var c = ConfigStore.Parse("""
+            { "version": 6, "tutorialDone": false,
+              "features": { "crashReport": false, "gameSuggestions": false, "sessionPeaks": false, "clockReason": false } }
+            """);
+        Assert.False(c.TutorialDone);
+        Assert.False(c.Features.CrashReport);
+        Assert.False(c.Features.GameSuggestions);
+        Assert.False(c.Features.SessionPeaks);
+        Assert.False(c.Features.ClockReason);
+    }
+
+    [Fact]
+    public void FeaturesNullOrPartial_GetDefaults()
+    {
+        Assert.True(ConfigStore.Parse("""{ "version": 6, "features": null }""").Features.SessionPeaks);
+        var c = ConfigStore.Parse("""{ "version": 6, "features": { "clockReason": false } }""");
+        Assert.False(c.Features.ClockReason);
+        Assert.True(c.Features.CrashReport);
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(5, 5)]
+    [InlineData(15, 15)]
+    [InlineData(30, 30)]
+    [InlineData(90, 90)]
+    [InlineData(0, 0)]       // para sempre
+    [InlineData(2, 5)]       // fora da lista: sobe para a próxima opção (nunca apaga antes)
+    [InlineData(7, 15)]
+    [InlineData(31, 90)]
+    [InlineData(60, 90)]
+    [InlineData(91, 0)]      // acima de 90: para sempre
+    [InlineData(3650, 0)]
+    [InlineData(-3, 0)]
+    public void KeepDays_SnapsToChoices(int given, int expected)
+    {
+        Assert.Equal(expected, ConfigStore.SnapKeepDays(given));
+        var c = ConfigStore.Parse($$"""{ "version": 6, "log": { "keepDays": {{given}}, "maxTotalMb": 0 } }""");
+        Assert.Equal(expected, c.Log.KeepDays);
+        Assert.Equal(0, c.Log.MaxTotalMb); // 0 = sem teto, continua valendo
+        Assert.Contains(c.Log.KeepDays, LogConfig.KeepDaysChoices);
+    }
+
+    [Fact]
+    public void PairedDeviceLastSeenRoundTrips()
+    {
+        var c = ConfigStore.Parse("""
+            { "version": 6, "remote": { "pairedDevices": [ { "id": "a", "name": "TV", "tokenHash": "abc", "lastSeen": "2026-11-18T21:04:05-03:00" }, { "id": "b", "name": "old", "tokenHash": "def" } ] } }
+            """);
+        Assert.NotNull(c.Remote.PairedDevices[0].LastSeen);
+        Assert.Null(c.Remote.PairedDevices[1].LastSeen);
+    }
+}
+
 public class LogFolderAllowedTests
 {
     static string Local => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);

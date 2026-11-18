@@ -42,6 +42,19 @@ public sealed class ConfigStore
         Changed?.Invoke(snapshot);
     }
 
+    /// <summary>
+    /// Grava sem disparar <see cref="Changed"/> (sem reenviar a config para as páginas). Só para dados de manutenção
+    /// que a página recebe por outra mensagem, como o "visto por último" dos celulares (vai em "devices").
+    /// </summary>
+    public void UpdateQuiet(Action<AppConfig> mutate)
+    {
+        lock (_gate)
+        {
+            mutate(_current);
+            Save(_current);
+        }
+    }
+
     public void Replace(AppConfig config)
     {
         Sanitize(config);
@@ -61,11 +74,12 @@ public sealed class ConfigStore
         fresh.Widget = Current.Widget;
         // Nem reabrir o assistente de primeira execução.
         fresh.FirstRunDone = Current.FirstRunDone;
+        fresh.TutorialDone = Current.TutorialDone;
         Replace(fresh);
     }
 
     /// <summary>Versão atual do formato do config.json.</summary>
-    public const int CurrentVersion = 5;
+    public const int CurrentVersion = 6;
 
     static AppConfig Load()
     {
@@ -85,7 +99,7 @@ public sealed class ConfigStore
         try
         {
             // Sem arquivo = instalação nova: já nasce na versão atual (as migrações são para configs antigas)
-            // e com FirstRunDone = false, para o assistente de primeira execução aparecer.
+            // e com FirstRunDone/TutorialDone = false, para o assistente e o tutorial aparecerem.
             config = json != null ? JsonSerializer.Deserialize<AppConfig>(json, Json) ?? new AppConfig() : new AppConfig { Version = CurrentVersion };
         }
         catch
@@ -126,6 +140,13 @@ public sealed class ConfigStore
             config.FirstRunDone = true;
             config.Version = 5;
         }
+        if (config.Version < 6)
+        {
+            // 1.0: tutorial das configurações (quem já usa não precisa) e recursos desligáveis (padrão: tudo ligado,
+            // vem do inicializador). A retenção de logs passou a aceitar só 1/5/15/30/90/0 — o Sanitize ajusta.
+            config.TutorialDone = true;
+            config.Version = 6;
+        }
     }
 
     /// <summary>Seções nunca null e valores dentro da faixa (vale para o arquivo e para o setConfig da tela).</summary>
@@ -138,6 +159,8 @@ public sealed class ConfigStore
         c.Games ??= new();
         c.Alerts ??= new();
         c.Remote ??= new();
+        c.Features ??= new();
+        c.Update ??= new();
         c.Metrics ??= [];
         c.Metrics.RemoveAll(m => m == null || string.IsNullOrEmpty(m.Id));
         c.GroupLabels ??= [];
@@ -149,7 +172,7 @@ public sealed class ConfigStore
         c.Remote.PairedDevices ??= [];
         c.Battery.Hidden ??= [];
 
-        c.Log.KeepDays = Math.Clamp(c.Log.KeepDays, 0, 3650);
+        c.Log.KeepDays = SnapKeepDays(c.Log.KeepDays);
         c.Log.MaxTotalMb = Math.Clamp(c.Log.MaxTotalMb, 0, 1_000_000);
         c.Alerts.MinIntervalMin = Math.Clamp(c.Alerts.MinIntervalMin, 1, 24 * 60);
         if (c.Remote.Port is < 1024 or > 65535 || c.Remote.Port == c.WebSocketPort) c.Remote.Port = 48124;
@@ -163,6 +186,18 @@ public sealed class ConfigStore
             if (p.TuningPreset != null && !presets.Contains(p.TuningPreset)) p.TuningPreset = null;
             if (p.Layout != null && !layouts.Contains(p.Layout)) p.Layout = null;
         }
+    }
+
+    /// <summary>
+    /// Retenção por idade → um dos valores aceitos (1, 5, 15, 30, 90; 0 = para sempre). Valor fora da lista sobe para o
+    /// próximo (nunca apaga antes do que o usuário escolheu); acima de 90 vira "para sempre"; negativo vira 0.
+    /// </summary>
+    internal static int SnapKeepDays(int days)
+    {
+        if (days <= 0) return 0;
+        foreach (var choice in LogConfig.KeepDaysChoices.Where(d => d > 0).Order())
+            if (days <= choice) return choice;
+        return 0;
     }
 
     static void Save(AppConfig config)
