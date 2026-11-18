@@ -27,7 +27,8 @@ public sealed class CsvLogger : IDisposable
         Close();
     }
 
-    public void Write(LogConfig cfg, IReadOnlyList<string> columns, IReadOnlyDictionary<string, double?> values, string? game)
+    public void Write(LogConfig cfg, IReadOnlyList<string> columns, IReadOnlyDictionary<string, double?> values,
+        IReadOnlyDictionary<string, string?> texts, string? game)
     {
         if (!cfg.Enabled)
         {
@@ -49,6 +50,8 @@ public sealed class CsvLogger : IDisposable
             sb.Append(',');
             if (values.TryGetValue(c, out var v) && v is { } d && double.IsFinite(d))
                 sb.Append(d.ToString("0.##", CultureInfo.InvariantCulture));
+            else if (texts.TryGetValue(c, out var t) && t != null)
+                sb.Append(t.Replace(',', ' ')); // métricas de texto (gpu.perfcap): palavras fixas, sem vírgula
         }
         sb.Append("\r\n");
         var bytes = Encoding.UTF8.GetBytes(sb.ToString());

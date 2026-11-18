@@ -45,7 +45,7 @@ public static class MetricCatalog
         new("gpu.fan", MetricGroup.Gpu, "Fan", "%"),
         new("gpu.fanRpm", MetricGroup.Gpu, "Fan", "RPM"),
         new("gpu.voltage", MetricGroup.Gpu, "Voltagem do núcleo", "V"),
-        // O LibreHardwareMonitor não expõe o motivo de limitação (PerfCap) da NVIDIA; aparece como "não disponível".
+        // Motivo de limitação (PerfCap): vem do NVML (thermal | power | voltage | idle | sync | none), só em NVIDIA.
         new("gpu.perfcap", MetricGroup.Gpu, "Motivo de limitação do clock", "text"),
 
         // CPU

@@ -28,6 +28,8 @@ public sealed class TelemetryHub : IDisposable
     readonly WsServer _ws;
     readonly CancellationTokenSource _cts = new();
     readonly Dictionary<string, double?> _values = [];
+    /// <summary>Métricas de texto (unit "text"), ex.: gpu.perfcap.</summary>
+    readonly Dictionary<string, string?> _texts = [];
     readonly List<MetricDefinition> _definitions;
     readonly HashSet<string> _available;
     readonly HashSet<string> _optionalIds;
@@ -58,6 +60,7 @@ public sealed class TelemetryHub : IDisposable
         _optionalIds = sensors.OptionalIds.ToHashSet();
         if (presentMon.Available)
             foreach (var d in MetricCatalog.Static.Where(d => d.Group == MetricGroup.Fps)) _available.Add(d.Id);
+        if (tuner.ClockReasonsMask() != null) _available.Add("gpu.perfcap");
 
         var dynamicMissing = sensors.DynamicDefinitions.Where(d => config.Current.Metrics.All(m => m.Id != d.Id)).ToList();
         if (dynamicMissing.Count > 0) config.Update(c => MetricCatalog.EnsureSettings(c, dynamicMissing));
@@ -90,7 +93,7 @@ public sealed class TelemetryHub : IDisposable
         var enabled = c.Metrics.Where(m => m.Enabled).Select(m => m.Id).ToHashSet();
         _sensors.SetActive(enabled);
         _logColumns = _definitions
-            .Where(d => _available.Contains(d.Id) && d.Unit is not ("graph" or "text"))
+            .Where(d => _available.Contains(d.Id) && d.Unit != "graph")
             .Where(d => !_optionalIds.Contains(d.Id) || enabled.Contains(d.Id))
             .Select(d => d.Id)
             .ToArray();
@@ -131,6 +134,8 @@ public sealed class TelemetryHub : IDisposable
     void Tick(AppConfig cfg)
     {
         _sensors.Read(_values);
+        if (_available.Contains("gpu.perfcap"))
+            _texts["gpu.perfcap"] = _tuner.ClockReasonsMask() is { } mask ? ClockReasons.Map(mask, _values.GetValueOrDefault("gpu.load")) : null;
 
         var game = _games.Update(cfg.Games);
         if (game?.Pid != CurrentGame?.Pid)
@@ -154,11 +159,13 @@ public sealed class TelemetryHub : IDisposable
         _values["fps.low01"] = has ? fps!.Value.Low01 : null;
         _values["fps.avg"] = has ? fps!.Value.SessionAvg : null;
 
-        _log.Write(cfg.Log, _logColumns, _values, game?.Exe);
+        _log.Write(cfg.Log, _logColumns, _values, _texts, game?.Exe);
 
         var values = new JsonObject();
         foreach (var (k, v) in _values)
             values[k] = v is { } d && double.IsFinite(d) ? Math.Round(d, 2) : null;
+        var texts = new JsonObject();
+        foreach (var (k, v) in _texts) texts[k] = v;
 
         var msg = new JsonObject
         {
@@ -166,6 +173,7 @@ public sealed class TelemetryHub : IDisposable
             ["t"] = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
             ["game"] = game == null ? null : new JsonObject { ["exe"] = game.Exe, ["mode"] = game.Mode },
             ["values"] = values,
+            ["texts"] = texts,
             ["presentMonError"] = _presentMon.Available ? null : _presentMon.LastError,
             ["fpsStatus"] = _presentMon.StatusText,
             ["batteries"] = cfg.Battery.Enabled ? JsonSerializer.SerializeToNode(_battery.Devices, ConfigStore.Json) : null,
@@ -224,7 +232,9 @@ public sealed class TelemetryHub : IDisposable
                 unit = d.Unit,
                 isTemperature = d.IsTemperature,
                 available = _available.Contains(d.Id),
-                source = d.Group == MetricGroup.Fps ? (_presentMon.Available ? "PresentMon (ETW)" : null) : _sensors.SourceOf(d.Id),
+                source = d.Group == MetricGroup.Fps ? (_presentMon.Available ? "PresentMon (ETW)" : null)
+                    : d.Id == "gpu.perfcap" ? (_available.Contains(d.Id) ? "NVML (clocks event reasons)" : null)
+                    : _sensors.SourceOf(d.Id),
                 defaultWarn = d.DefaultWarn,
                 defaultCrit = d.DefaultCrit,
             }),
