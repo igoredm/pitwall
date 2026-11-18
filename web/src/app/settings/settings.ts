@@ -302,10 +302,13 @@ export class Settings implements SettingsCtx {
   private scrollTo(anchor: string | null, pageChanged: boolean, flash: boolean, tries = 0) {
     requestAnimationFrame(() => {
       const main = this.main()?.nativeElement;
-      if (!main) return;
+      if (!main) {
+        if (tries < 40) this.scrollTo(anchor, pageChanged, flash, tries + 1);
+        return;
+      }
       const el = anchor ? main.querySelector<HTMLElement>(`[data-anchor="${CSS.escape(anchor)}"]`) : null;
       if (!el) {
-        if (anchor && tries < 20 && this.draft()) return this.scrollTo(anchor, pageChanged, flash, tries + 1);
+        if (anchor && tries < 40) return this.scrollTo(anchor, pageChanged, flash, tries + 1);
         if (pageChanged) main.scrollTop = 0;
         return;
       }

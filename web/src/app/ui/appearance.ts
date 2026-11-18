@@ -1,4 +1,4 @@
-import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
 import { TelemetryService } from '../telemetry.service';
 
 /**
@@ -20,6 +20,11 @@ export class AppAppearance {
   readonly cls = computed(() => (this.dark() ? 'app-dark' : 'app-light'));
 
   constructor() {
+    // Fundo da página no tom do app (o index.html já pintou pelo sistema; aqui vale a escolha da config)
+    effect(() => {
+      const bg = this.dark() ? '#0e1014' : '#f3f4f6';
+      if (/^#\/?(settings|wizard|mobile)/.test(location.hash)) document.documentElement.style.background = bg;
+    });
     const on = (e: MediaQueryListEvent) => this.systemLight.set(e.matches);
     this.mq.addEventListener('change', on);
     inject(DestroyRef).onDestroy(() => this.mq.removeEventListener('change', on));
