@@ -72,6 +72,9 @@ Filename: "{tmp}\PawnIO_setup.exe"; Parameters: "-install -silent"; StatusMsg: "
 Filename: "{app}\{#AppExe}"; Parameters: "--set-autostart on"; Flags: runhidden waituntilterminated; Tasks: autostart
 Filename: "{app}\{#AppExe}"; Parameters: "--set-autostart off"; Flags: runhidden waituntilterminated; Tasks: not autostart
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchApp}"; Flags: nowait postinstall skipifsilent shellexec
+; Atualização silenciosa pelo próprio app (/VERYSILENT ... /RESTARTAPPLICATIONS): reabre o Pitwall no fim.
+; Sem esse parâmetro (ex.: winget, instalação silenciosa manual) o app não é aberto.
+Filename: "{app}\{#AppExe}"; Flags: nowait; Check: RestartAfterSilentUpdate
 
 [UninstallRun]
 Filename: "{sys}\taskkill.exe"; Parameters: "/IM {#AppExe} /F"; Flags: runhidden waituntilterminated; RunOnceId: "KillApp"
@@ -97,11 +100,25 @@ begin
     (RegQueryStringValue(HKCU, 'Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv', Version) and (Version <> '') and (Version <> '0.0.0.0'));
 end;
 
+// Reabrir o app depois de uma atualização silenciosa iniciada pelo atualizador do Pitwall.
+function RestartAfterSilentUpdate: Boolean;
+begin
+  Result := WizardSilent and (Pos('/RESTARTAPPLICATIONS', Uppercase(GetCmdTail)) > 0);
+end;
+
 // Atualização por cima: fecha a instância em execução antes de copiar os arquivos.
+// Em modo silencioso quem chamou costuma ser o atualizador do app, que já está saindo sozinho (e restaura o
+// ajuste da GPU), então espera até 15 s o mutex de instância única sumir antes de recorrer ao taskkill.
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
-  Code: Integer;
+  Code, I: Integer;
 begin
+  if WizardSilent then
+    for I := 1 to 75 do
+    begin
+      if not CheckForMutexes('Global\Pitwall.SingleInstance') then Break;
+      Sleep(200);
+    end;
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM {#AppExe} /F', '', SW_HIDE, ewWaitUntilTerminated, Code);
   Sleep(800);
   Result := '';
