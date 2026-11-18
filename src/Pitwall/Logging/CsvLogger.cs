@@ -7,9 +7,14 @@ namespace Pitwall.Logging;
 /// <summary>
 /// Log CSV de todas as métricas disponíveis (visíveis ou não no widget).
 /// Cada linha é gravada com FlushFileBuffers para sobreviver a um desligamento abrupto.
+/// A primeira linha é um comentário com a versão do formato ("# pitwall-csv v2"); o cabeçalho vem logo depois.
+/// v1 (até 0.6): sem a linha de versão. v2 (0.7): fps.current = renderizado, fps.displayed novo, gpu.perfcap em texto.
 /// </summary>
 public sealed class CsvLogger : IDisposable
 {
+    public const int FormatVersion = 2;
+    public static string VersionLine => $"# pitwall-csv v{FormatVersion}";
+
     FileStream? _file;
     string[] _columns = [];
     string? _folder;
@@ -75,7 +80,7 @@ public sealed class CsvLogger : IDisposable
         _file = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read, 4096, FileOptions.WriteThrough);
         _folder = folder;
         _columns = [.. columns];
-        var header = "timestamp,game," + string.Join(',', _columns) + "\r\n";
+        var header = VersionLine + "\r\ntimestamp,game," + string.Join(',', _columns) + "\r\n";
         _file.Write(Encoding.UTF8.GetBytes(header));
         _file.Flush(true);
     }

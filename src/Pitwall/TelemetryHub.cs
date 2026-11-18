@@ -158,6 +158,7 @@ public sealed class TelemetryHub : IDisposable
         _values["fps.low1"] = has ? fps!.Value.Low1 : null;
         _values["fps.low01"] = has ? fps!.Value.Low01 : null;
         _values["fps.avg"] = has ? fps!.Value.SessionAvg : null;
+        _values["fps.displayed"] = has ? fps!.Value.Displayed : null;
 
         _log.Write(cfg.Log, _logColumns, _values, _texts, game?.Exe);
 
