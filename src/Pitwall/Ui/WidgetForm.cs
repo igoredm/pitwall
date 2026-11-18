@@ -23,7 +23,8 @@ public sealed class WidgetForm : Form
     readonly WebView2 _web = new() { Dock = DockStyle.Fill };
     readonly System.Windows.Forms.Timer _topmostTimer = new() { Interval = 1000 };
 
-    public event Action? SettingsRequested;
+    /// <summary>Página → host "openSettings" (page/anchor opcionais).</summary>
+    public event Action<string?, string?>? SettingsRequested;
 
     public WidgetForm(ConfigStore config, int port)
     {
@@ -62,12 +63,18 @@ public sealed class WidgetForm : Form
             using var doc = JsonDocument.Parse(e.WebMessageAsJson);
             switch (doc.RootElement.GetProperty("type").GetString())
             {
-                case "openSettings": SettingsRequested?.Invoke(); break;
+                case "openSettings":
+                    // page/anchor opcionais: abre direto numa página (o SettingsForm valida os dois)
+                    SettingsRequested?.Invoke(Str(doc.RootElement, "page"), Str(doc.RootElement, "anchor"));
+                    break;
                 case "hide": _config.Update(c => c.Widget.Visible = false); break;
             }
         }
         catch { }
     }
+
+    static string? Str(JsonElement root, string key) =>
+        root.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
 
     void ApplyConfig(AppConfig c)
     {

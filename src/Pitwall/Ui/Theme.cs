@@ -33,6 +33,20 @@ internal static class Theme
         };
     }
 
+    /// <summary>
+    /// Configurações (visual único do app, 1.0): escuro conforme config.appearance; "system" segue o tema de apps do
+    /// Windows (AppsUseLightTheme). Não depende do themeMode, que é só do widget.
+    /// </summary>
+    public static bool AppIsDark(AppConfig c) => c.Appearance switch
+    {
+        "light" => false,
+        "dark" => true,
+        _ => !SystemUsesLightTheme(),
+    };
+
+    /// <summary>--bg das configurações (docs/design-notes.md, "Tokens do app").</summary>
+    public static Color AppBackground(bool dark) => dark ? Color.FromArgb(0x0E, 0x10, 0x14) : Color.FromArgb(0xF3, 0xF4, 0xF6);
+
     static bool SystemUsesLightTheme()
     {
         try
