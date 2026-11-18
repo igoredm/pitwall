@@ -14,6 +14,15 @@ clocks, consumo, RAM, bateria de mouse/headset sem fio, log CSV por sessão de j
 - **Idiomas:** português e inglês (segue o Windows, ou escolha nas configurações).
 Spec: [docs/spec.md](docs/spec.md) · Design: [docs/design-notes.md](docs/design-notes.md)
 
+## Capturas de tela
+
+![Widget, layout completo, tema Lumen escuro](docs/screenshots/widget-full-lumen-dark.png)
+![Widget, layout completo, tema Splash](docs/screenshots/widget-full-splash.png)
+
+<img src="docs/screenshots/settings-games.png" width="620" alt="Configurações: resumo da sessão depois do jogo"> <img src="docs/screenshots/phone-lumen-dark.png" width="200" alt="Página do celular, só leitura, na rede local">
+
+Mais em [docs/screenshots](docs/screenshots) (todos os temas, layouts médio e compacto, Configurações).
+
 ## Arquitetura
 
 - `src/Pitwall` — .NET 10 WinForms (bandeja + janela WebView2), roda como administrador.

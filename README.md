@@ -14,6 +14,15 @@ memory junction), clocks, power, RAM, wireless mouse/headset battery, a CSV log 
 - **5 themes** (Lumen, Mínimo, Neon, Terminal, Splash), light/dark, and 3 layouts (full, medium, compact).
 - **Languages:** English and Portuguese (follows Windows, or pick one in Settings).
 
+## Screenshots
+
+![Widget, full layout, Lumen dark theme](docs/screenshots/widget-full-lumen-dark.png)
+![Widget, full layout, Splash theme](docs/screenshots/widget-full-splash.png)
+
+<img src="docs/screenshots/settings-games.png" width="620" alt="Settings: post-game session summary"> <img src="docs/screenshots/phone-lumen-dark.png" width="200" alt="Read-only phone page on the local network">
+
+More in [docs/screenshots](docs/screenshots) (every theme, medium and compact layouts, Settings).
+
 ## Install
 
 Download `Pitwall-Setup-<version>.exe` from [Releases](../../releases). The installer also sets up:
