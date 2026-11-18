@@ -887,7 +887,7 @@ const en: Dict = {
     peakDelta: 'peak Δ',
     yellowRed: 'time in yellow / red',
   },
-  colAvgFps: 'avg FPS',
+  colAvgFps: 'Avg FPS',
   pcShutDown: 'PC shut down',
   suggestIgnore: 'Ignore this app',
   suggestMark: 'Mark as game',

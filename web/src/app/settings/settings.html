@@ -15,11 +15,10 @@
       @if (g.group) {
         <div class="st-ng" [id]="'ng-' + g.group">{{ sx.navGroups[g.group] }}</div>
       }
-      <div class="st-nlist" role="list" [attr.aria-labelledby]="g.group ? 'ng-' + g.group : null">
+      <div class="st-nlist" [attr.role]="g.group ? 'group' : null" [attr.aria-labelledby]="g.group ? 'ng-' + g.group : null">
         @for (p of g.pages; track p) {
           <a
             class="st-ni"
-            role="listitem"
             [class.on]="nav.page() === p"
             [attr.aria-current]="nav.page() === p ? 'page' : null"
             [href]="nav.href(p)"
@@ -114,7 +113,7 @@
       @if (showWizard()) {
         <pw-wizard animate.enter="dlg-in" animate.leave="dlg-out" (done)="wizardDone($event)" (click)="$event.stopPropagation()" />
       } @else {
-      <div class="dialog st-invite" role="dialog" aria-modal="true" aria-labelledby="inv-t" animate.enter="dlg-in" animate.leave="dlg-out" (click)="$event.stopPropagation()">
+      <div class="dialog st-invite" role="dialog" aria-modal="true" aria-labelledby="inv-t" animate.enter="dlg-in" animate.leave="dlg-out" (click)="$event.stopPropagation()" (keydown)="trapTab($event)">
         <img src="pitwall-logo.png" alt="" width="48" height="48" />
         <h1 id="inv-t">{{ sx.inviteTitle }}</h1>
         <p class="pd">{{ sx.inviteBody }}</p>
@@ -135,7 +134,7 @@
 
   @if (dialog(); as dlg) {
     <div class="scrim" animate.enter="fade-in" animate.leave="fade-out" (click)="closeDialog(false)">
-      <div class="dialog st-confirm" role="alertdialog" aria-modal="true" aria-labelledby="dlg-t" animate.enter="dlg-in" animate.leave="dlg-out" (click)="$event.stopPropagation()">
+      <div class="dialog st-confirm" role="alertdialog" aria-modal="true" aria-labelledby="dlg-t" animate.enter="dlg-in" animate.leave="dlg-out" (click)="$event.stopPropagation()" (keydown)="trapTab($event)">
         <h2 id="dlg-t">{{ dlg.title }}</h2>
         @if (dlg.body) {
           <p class="ht">{{ dlg.body }}</p>

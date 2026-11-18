@@ -165,6 +165,11 @@ export class Settings implements SettingsCtx {
       });
     });
 
+    // Convite aberto: o foco vai para "Começar tour"
+    effect(() => {
+      if (this.invite()) requestAnimationFrame(() => document.querySelector<HTMLElement>('.st-invite .btn.pri')?.focus());
+    });
+
     const off = this.t.onHost((msg: HostMessage) => {
       if (msg?.type === 'folderPicked') this.update((c) => (c.log.folder = msg.path));
       else if (msg?.type === 'navigate' && PAGES.includes(msg.page)) this.go(msg.page, msg.anchor);
@@ -251,6 +256,23 @@ export class Settings implements SettingsCtx {
     const d = this.dialog();
     this.dialog.set(null);
     d?.resolve(ok);
+  }
+
+  /** Tab fica dentro do diálogo aberto. */
+  protected trapTab(e: KeyboardEvent) {
+    if (e.key !== 'Tab') return;
+    const box = e.currentTarget as HTMLElement;
+    const items = [...box.querySelectorAll<HTMLElement>('button, [href], input, select')];
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      last.focus();
+      e.preventDefault();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      first.focus();
+      e.preventDefault();
+    }
   }
 
   protected inviteLater() {
