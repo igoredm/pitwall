@@ -10,14 +10,22 @@ export const NAV: { group: 'widget' | 'game' | 'pitwall' | null; pages: Settings
 ];
 export const PAGES: SettingsPage[] = NAV.flatMap((g) => g.pages);
 
+/** Página real para um id vindo do backend ou de link antigo (null = desconhecido). */
+export function resolvePage(id: string): SettingsPage | null {
+  return PAGES.includes(id as SettingsPage) ? (id as SettingsPage) : (LEGACY[id]?.[0] ?? null);
+}
+
 /** Ids da 0.7 (?section=) → páginas da 1.0. */
-const LEGACY: Record<string, [SettingsPage, string?]> = {
+export const LEGACY: Record<string, [SettingsPage, string?]> = {
   metricas: ['metrics'],
   geral: ['widget'],
   gpu: ['gpu'],
   jogos: ['games'],
   log: ['sessions', 'csv'],
   celular: ['devices'],
+  // nomes usados pelo backend nos links diretos
+  appearance: ['widget'],
+  phone: ['devices'],
 };
 
 interface Target {
@@ -75,6 +83,9 @@ export class SettingsNav {
     const path = location.hash.replace(/^#\/?/, '').split('?')[0].split('/');
     if (path[0] === 'settings' && PAGES.includes(path[1] as SettingsPage))
       return { page: path[1] as SettingsPage, anchor: path[2] ? decodeURIComponent(path[2]) : null };
+    // Apelidos (ex.: appearance → widget, phone → devices), também em #/settings/<apelido>
+    const alias = path[0] === 'settings' ? LEGACY[path[1] ?? ''] : undefined;
+    if (alias) return { page: alias[0], anchor: path[2] ? decodeURIComponent(path[2]) : (alias[1] ?? null) };
     // 0.7: ?section=jogos na URL normal
     const legacy = LEGACY[new URLSearchParams(location.search).get('section') ?? ''];
     if (legacy) return { page: legacy[0], anchor: legacy[1] ?? null };

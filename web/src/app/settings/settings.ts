@@ -21,7 +21,7 @@ import { Widget } from '../widget/widget';
 import { Wizard } from '../wizard/wizard';
 import { fmtDuration, fmtMs } from './format';
 import { selectedMonitor } from './helpers';
-import { NAV, PAGES, SettingsNav } from './nav';
+import { resolvePage, NAV, PAGES, SettingsNav } from './nav';
 import { AlertsPage } from './pages/alerts';
 import { AppPage } from './pages/app-page';
 import { AppearancePage } from './pages/appearance';
@@ -175,7 +175,7 @@ export class Settings implements SettingsCtx {
 
     const off = this.t.onHost((msg: HostMessage) => {
       if (msg?.type === 'folderPicked') this.update((c) => (c.log.folder = msg.path));
-      else if (msg?.type === 'navigate' && PAGES.includes(msg.page)) this.go(msg.page, msg.anchor);
+      else if (msg?.type === 'navigate' && resolvePage(msg.page)) this.go(resolvePage(msg.page)!, msg.anchor);
       else if (msg?.type === 'startTutorial') this.startTour();
     });
     const keys = (e: KeyboardEvent) => this.keys(e);

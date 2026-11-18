@@ -23,6 +23,9 @@
   --tx2: #a3aab6;
   --tx3: #848c99;
   --ac: #4c8dff;
+  // Preenchimento de botões com texto branco: precisa de contraste AA (>= 4.5:1), mais escuro que o --ac
+  --acf: #2f6feb;
+  --rf: #c9353b;
   --act: #82aeff;
   --acs: rgba(76, 141, 255, 0.14);
   --acb: rgba(76, 141, 255, 0.28);
@@ -57,6 +60,8 @@
   --tx2: #4d5562;
   --tx3: #5f6876;
   --ac: #2f6feb;
+  --acf: #2f6feb;
+  --rf: #c62828;
   --act: #2257c4;
   --acs: rgba(47, 111, 235, 0.1);
   --acb: rgba(47, 111, 235, 0.26);
@@ -396,8 +401,8 @@
       box-shadow: 0 0 0 3px var(--acs);
     }
     &.pri {
-      background: var(--ac);
-      border-color: var(--ac);
+      background: var(--acf);
+      border-color: var(--acf);
       color: #fff;
       &:focus-visible {
         box-shadow: 0 0 0 3px var(--acb);
@@ -412,8 +417,8 @@
       color: var(--r);
     }
     &.dgf {
-      background: var(--r);
-      border-color: var(--r);
+      background: var(--rf);
+      border-color: var(--rf);
       color: #fff;
     }
     &.sm {
@@ -431,7 +436,7 @@
       background: var(--raise);
     }
     .btn.pri:hover:not(:disabled) {
-      background: var(--ac);
+      background: var(--acf);
       filter: brightness(1.08);
     }
     .btn.qt:hover:not(:disabled) {
@@ -439,7 +444,7 @@
       color: var(--tx);
     }
     .btn.dgf:hover:not(:disabled) {
-      background: var(--r);
+      background: var(--rf);
       filter: brightness(1.06);
     }
   }
