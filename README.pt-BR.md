@@ -1,3 +1,5 @@
+<img src="assets/logo/pitwall-256.png" width="96" alt="" align="right">
+
 # Pitwall
 
 [English](README.md) · **Português**
