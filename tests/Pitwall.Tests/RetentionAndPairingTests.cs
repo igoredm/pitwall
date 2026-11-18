@@ -19,6 +19,26 @@ public class LogRetentionTests
         Assert.Equal([@"C:\logs\pitwall_a.csv", @"C:\logs\pitwall_b.csv"], del);
     }
 
+    [Theory]
+    [InlineData(1, 5)]   // 2, 6, 20, 40, 100 dias: tudo acima de 1 dia (o mais novo, 0,5 dia, fica)
+    [InlineData(5, 4)]
+    [InlineData(15, 3)]
+    [InlineData(30, 2)]
+    [InlineData(90, 1)]
+    [InlineData(0, 0)]   // para sempre
+    public void KeepDaysChoices(int keepDays, int expectedDeleted)
+    {
+        var files = new[]
+        {
+            new LogFileInfo(@"C:\logs\pitwall_new.csv", Now.AddHours(-12), Mb),
+            F("pitwall_2.csv", 2), F("pitwall_6.csv", 6), F("pitwall_20.csv", 20), F("pitwall_40.csv", 40), F("pitwall_100.csv", 100),
+        };
+        var del = LogRetention.SelectForDeletion(files, Now, keepDays, 0, []);
+        Assert.Equal(expectedDeleted, del.Count);
+        Assert.DoesNotContain(@"C:\logs\pitwall_new.csv", del);
+        if (keepDays == 5) Assert.DoesNotContain(@"C:\logs\pitwall_2.csv", del);
+    }
+
     [Fact]
     public void NeverDeletesProtectedOrNewest()
     {
@@ -118,14 +138,70 @@ public class PairingTests
         Assert.Equal(PairError.NoPending, p.Redeem(code, null, Now.AddMinutes(2).AddSeconds(2), out _, out _));
     }
 
+    static string Other(string code) => code == "000000" ? "111111" : "000000";
+
     [Fact]
-    public void WrongCodesInvalidateTheCode()
+    public void CodeIsSixRandomDigits()
+    {
+        Assert.Equal(6, PairingManager.CodeLength);
+        var p = new PairingManager();
+        var codes = Enumerable.Range(0, 200).Select(_ => p.Start(Now).Code).ToList();
+        Assert.All(codes, c => Assert.Matches("^[0-9]{6}$", c));
+        Assert.True(codes.Distinct().Count() > 190); // aleatório (CSPRNG), não sequencial
+        Assert.Contains(codes, c => c.StartsWith('0') || c.Contains('9')); // usa todos os dígitos
+    }
+
+    [Theory]
+    [InlineData("123456", "123456")]
+    [InlineData(" 123 456 ", "123456")]
+    [InlineData("123-456", "123456")]
+    [InlineData("123 456", "123456")]
+    [InlineData(null, "")]
+    [InlineData("123456789012345678901234567890123", "")] // longo demais
+    public void TypedCodeIsNormalized(string? typed, string expected) =>
+        Assert.Equal(expected, PairingManager.NormalizeCode(typed));
+
+    [Fact]
+    public void TypedCodeWithSpacesRedeems()
     {
         var p = new PairingManager();
         var (code, _) = p.Start(Now);
+        Assert.Equal(PairError.None, p.Redeem($"{code[..3]} {code[3..]}", "TV da sala", Now, out var d, out _));
+        Assert.Equal("TV da sala", d!.Name);
+        Assert.NotNull(d.LastSeen);
+    }
+
+    [Fact]
+    public void WrongCodesInvalidateTheCode()
+    {
+        // Teto global: 20 erros com o mesmo código (de qualquer IP) e ele deixa de valer
+        Assert.Equal(20, PairingManager.MaxFailuresPerCode);
+        var p = new PairingManager();
+        var (code, _) = p.Start(Now);
         for (int i = 0; i < PairingManager.MaxFailuresPerCode; i++)
-            Assert.Equal(PairError.Invalid, p.Redeem("WRONG123", null, Now, out _, out _));
+            Assert.Equal(PairError.Invalid, p.Redeem(Other(code), null, Now, out _, out _));
         Assert.Equal(PairError.NoPending, p.Redeem(code, null, Now, out _, out _));
+    }
+
+    [Fact]
+    public void NineteenFailuresStillAllowTheRightCode()
+    {
+        var p = new PairingManager();
+        var (code, _) = p.Start(Now);
+        for (int i = 0; i < PairingManager.MaxFailuresPerCode - 1; i++)
+            Assert.Equal(PairError.Invalid, p.Redeem(Other(code), null, Now, out _, out _));
+        Assert.Equal(PairError.None, p.Redeem(code, null, Now, out _, out _));
+    }
+
+    [Fact]
+    public void NewCodeResetsTheFailureCount()
+    {
+        var p = new PairingManager();
+        var (first, _) = p.Start(Now);
+        for (int i = 0; i < PairingManager.MaxFailuresPerCode - 1; i++) p.Redeem(Other(first), null, Now, out _, out _);
+        var (code, _) = p.Start(Now);
+        Assert.Equal(PairError.Invalid, p.Redeem(Other(code), null, Now, out _, out _));
+        Assert.Equal(PairError.None, p.Redeem(code, null, Now, out _, out _));
     }
 
     [Fact]
@@ -170,7 +246,25 @@ public class PairingTests
         Assert.Equal("Phone\u00e9", PairingManager.CleanName(" Phone\u0007\u00e9\n "));
         Assert.Equal(40, PairingManager.CleanName(new string('x', 100)).Length);
         Assert.False(string.IsNullOrWhiteSpace(PairingManager.CleanName(null)));
+        Assert.False(string.IsNullOrWhiteSpace(PairingManager.CleanName("​‮\t")));    // só invisíveis → nome padrão
+        Assert.Equal("evil.exe", PairingManager.CleanName("evil‮.exe"));                  // sem inverter o texto
+        Assert.Equal("Galaxy S24 Chrome", PairingManager.CleanName("Galaxy\t S24 \r\n Chrome")); // espaços em sequência viram um
+        Assert.Equal("ab", PairingManager.CleanName("a\uD800b"));                              // surrogate solto
+        Assert.Equal("TV 📺", PairingManager.CleanName("TV 📺"));                         // emoji fica, uso privado sai
+        // 39 'x' + emoji (2 unidades UTF-16) não cabe em 40: corta antes, sem partir o emoji
+        var cut = PairingManager.CleanName(new string('x', 39) + "📺");
+        Assert.Equal(new string('x', 39), cut);
+        Assert.True(PairingManager.CleanName(new string('é', 80)).Length <= PairingManager.MaxNameLength);
     }
+
+    [Theory]
+    [InlineData("/", "/index.html#/mobile")]
+    [InlineData("/mobile", "/index.html#/mobile")]
+    [InlineData("/index.html", null)]
+    [InlineData("/main.js", null)]
+    [InlineData("/ws", null)]
+    public void RootRedirectsToMobilePage(string path, string? expected) =>
+        Assert.Equal(expected, RemoteServer.RedirectFor(path));
 
     [Fact]
     public void LimiterBlocksAfterFiveFailures()
