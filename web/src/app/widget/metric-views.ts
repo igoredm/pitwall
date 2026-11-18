@@ -1,5 +1,18 @@
 import type { Dict } from '../i18n';
-import { AppConfig, Catalog, Level, MetricDef, MetricGroup, MetricView, ThemeName } from '../models';
+import { AppConfig, Catalog, Extremes, Level, MetricDef, MetricGroup, MetricView, ThemeName } from '../models';
+
+/**
+ * Métricas com pico da sessão nos tiles do completo: temperaturas, consumo (W), clock (MHz) e fan.
+ * Uso (%), RAM e FPS não têm (mín/máx de FPS fica no resumo pós-jogo).
+ */
+export function hasPeak(def: MetricDef) {
+  return def.isTemperature || def.unit === 'W' || def.unit === 'MHz' || def.id.startsWith('gpu.fan');
+}
+
+/** Médio: só nos chips de temperatura, power e clock. */
+export function hasChipPeak(m: MetricView) {
+  return !!m.peak && (m.isTemperature || m.unit === 'W' || m.unit === 'MHz');
+}
 
 /** Métricas habilitadas e disponíveis de um grupo, na ordem configurada, prontas para exibir. */
 export function buildViews(
@@ -7,15 +20,18 @@ export function buildViews(
   defs: Map<string, MetricDef>,
   values: Record<string, number | null>,
   group: MetricGroup,
+  /** Mín/máx da sessão; null = sem picos (ocioso). */
+  extremes: Extremes | null = null,
 ): MetricView[] {
   const settings = config?.metrics ?? [];
   const out: MetricView[] = [];
   for (const s of [...settings].sort((a, b) => a.order - b.order)) {
     const def = defs.get(s.id);
-    if (!def || def.group !== group || !s.enabled || !def.available) continue;
+    if (!def || def.group !== group || !s.enabled || !def.available || def.unit === 'text') continue;
     const raw = values[s.id] ?? null;
     const fahrenheit = def.isTemperature && s.unit === 'F';
     const shown = raw == null ? null : fahrenheit ? (raw * 9) / 5 + 32 : raw;
+    const max = extremes && hasPeak(def) ? extremes[s.id]?.[1] : undefined;
     out.push({
       id: s.id,
       label: s.label || def.name,
@@ -25,6 +41,10 @@ export function buildViews(
       level: level(raw, s.warn, s.crit),
       sparkline: s.sparkline && def.isTemperature,
       isTemperature: def.isTemperature,
+      peak:
+        max == null
+          ? null
+          : { text: formatValue(fahrenheit ? (max * 9) / 5 + 32 : max, def.unit), level: level(max, s.warn, s.crit) },
     });
   }
   return out;

@@ -345,11 +345,25 @@ header {
   .c & { margin-top: u(3); font-size: u(10.5); }
 }
 .mini-batt {
-  margin: 0 0 0 u(8);
+  margin: 0;
   font-size: u(10);
   flex-wrap: nowrap;
-  gap: u(6);
+  justify-content: flex-end;
+  gap: u(5);
 }
+// Compacto: coluna à direita do FPS (extras em cima, bateria embaixo); nunca passa da borda
+.mini-side {
+  margin-left: auto;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: u(3);
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+}
+.mini-extras { display: flex; gap: u(6); white-space: nowrap; .mini-extra { margin: 0; } }
 .fps-note {
   position: relative;
   margin-top: u(10);
@@ -431,6 +445,172 @@ header {
 }
 .hud { display: none; }
 .statusbar { display: none; }
+
+// ---------------------------------------------------------------- v0.7: pico da sessão e limite de clock
+// Pico na linha do label do tile: text3, ou a cor do nível que o próprio pico alcançou (transição de 600 ms)
+.pk {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: f(calc(var(--label-size) - 1));
+  font-weight: 600;
+  color: var(--text3);
+  white-space: nowrap;
+  transition: color 600ms ease;
+  b { font-family: var(--font-num); font-weight: inherit; letter-spacing: 0; }
+  &.warn { color: var(--yellow); }
+  &.crit { color: var(--red); }
+  // Grade de 3 colunas (muitos tiles): "▴101" no lugar de "máx 101", para o nome do tile continuar visível
+  .many & .w { display: none; }
+  .many &::before { content: '▴'; margin-right: 0.15em; font-size: 0.85em; }
+}
+.t-neon .tiles.many .tag { letter-spacing: 0.04em; padding: u(1) u(4); }
+// Vertical com 3 colunas: tiles altos e estreitos — o pico desce para a linha de baixo do nome
+.v .tiles.many .t-label { flex-wrap: wrap; row-gap: 0; }
+.v .tiles.many .pk { margin-left: 0; flex-basis: 100%; }
+// Chip "Limite: …" ao lado do nome da GPU. Sem vermelho: limite não é alarme.
+.lim {
+  flex: 0 0 auto;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: u(5);
+  height: u(22);
+  padding: 0 u(9);
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: f(12);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background 600ms ease, color 600ms ease;
+  svg { width: u(12); height: u(12); fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  &.accent { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+  &.warn { background: color-mix(in srgb, var(--yellow) 16%, transparent); color: var(--yellow); }
+  &.neutral { background: color-mix(in srgb, var(--text) 7%, transparent); color: var(--text2); }
+}
+.lim-term {
+  margin-left: auto;
+  font-weight: 500;
+  &.warn { color: var(--yellow) !important; }
+  &.accent { color: var(--accent) !important; }
+  &.neutral { color: var(--text2) !important; }
+}
+// "Picos desde 21:02 · Zerar": faixa no pé da coluna do FPS, fora da região de arrasto (senão o WebView2 não
+// entrega o hover). A pílula aparece no hover e fica 2 s com "Picos zerados" depois de zerar.
+.peaks-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  height: u(40);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  app-region: no-drag;
+  .rst {
+    opacity: 0;
+    transform: translateY(u(6));
+    pointer-events: none;
+    transition: opacity 200ms ease, transform 200ms ease;
+  }
+  &:hover .rst,
+  .pw:hover & .rst,
+  &.done .rst {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+}
+.rst {
+  display: inline-flex;
+  align-items: center;
+  gap: u(8);
+  height: u(30);
+  box-sizing: border-box;
+  padding: 0 u(6) 0 u(12);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 8%, var(--bg));
+  border: 1px solid var(--surface-border);
+  font-family: var(--font-ui);
+  font-size: f(12);
+  font-weight: 600;
+  color: var(--text2);
+  white-space: nowrap;
+  svg { width: u(12); height: u(12); fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  button {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    gap: u(5);
+    height: u(22);
+    padding: 0 u(10);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent);
+    font-weight: 800;
+    cursor: pointer;
+    &:focus-visible { outline: 2px solid var(--accent); }
+  }
+  &.ok {
+    padding: 0 u(12);
+    color: var(--text);
+    svg { width: u(13); height: u(13); stroke: var(--ok); stroke-width: 2.6; }
+  }
+}
+.t-minimo, .t-neon, .t-terminal {
+  .rst, .rst button { border-radius: 0; }
+}
+.t-minimo .lim {
+  // Mínimo: sem pílula, o motivo vira texto ao lado do nome (igual às tags)
+  background: none;
+  padding: 0;
+  height: auto;
+  margin-left: u(6);
+  font-size: f(11);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  &.accent, &.neutral { color: var(--text2); }
+}
+.t-neon .lim {
+  border-radius: 0;
+  background: none;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+  padding: 0 u(8);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  box-shadow: 0 0 u(12) color-mix(in srgb, currentColor 25%, transparent);
+  &.neutral { color: var(--text2); }
+}
+.t-splash .lim {
+  height: u(24);
+  padding: 0 u(10);
+  background: #150a28;
+  color: #ffd23f;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.t-splash .pk {
+  color: inherit;
+  opacity: 0.72;
+  font-weight: 900;
+  &.warn, &.crit { opacity: 1; }
+}
+.t-splash .tile.crit .pk { color: #ff6b76; }
+
+// v0.7 (design): no Lumen o alerta do tile é um ponto colorido antes do nome (o tile já fica tingido),
+// o que deixa espaço para o "máx" na mesma linha. O texto continua lá para leitores de tela.
+.t-lumen .tile .tag {
+  order: -1;
+  width: u(7);
+  height: u(7);
+  padding: 0;
+  border-radius: 50%;
+  font-size: 0;
+  overflow: hidden;
+}
 
 // =========================================================================
 // Lumen — vidro fosco sobre "luzes" (gradientes estáticos, sem blur ao vivo)
@@ -900,7 +1080,7 @@ header {
   .t-splash & .kind { padding: u(1) u(6); background: rgba(20, 6, 40, 0.28); }
 }
 .c-name {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   font-size: u(11);
   font-weight: 700;
@@ -910,6 +1090,7 @@ header {
   text-overflow: ellipsis;
 }
 .c-head-val {
+  margin-left: auto;
   font-family: var(--font-num);
   font-size: u(15);
   font-weight: var(--val-weight);
@@ -954,6 +1135,22 @@ header {
   &.warn { color: var(--yellow); }
   &.crit { color: var(--red); }
 }
+.c-head .lim {
+  align-self: center;
+  height: u(15);
+  padding: 0 u(6);
+  gap: u(3);
+  font-size: u(9);
+  letter-spacing: 0;
+}
+.t-terminal .c-head .lim, .t-minimo .c-head .lim { background: none; padding: 0; border: 0; box-shadow: none; }
+.t-splash .c-head .lim { height: u(15); padding: 0 u(6); }
+.chip .pk {
+  margin: 0;
+  font-style: normal;
+  font-size: u(9.5);
+}
+.t-splash.c .chip .pk { color: inherit; }
 .c-split {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -984,6 +1181,8 @@ header {
   justify-content: center;
   gap: u(6);
   min-height: 0;
+  min-width: 0;
+  padding: 0 u(2);
   white-space: nowrap;
   .fps, .clock {
     font-family: var(--font-num);

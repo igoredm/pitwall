@@ -12,7 +12,7 @@ import { WirelessDevice } from '../models';
         class="dev"
         [class.low]="d.percent != null && d.percent <= low()"
         [class.asleep]="d.asleep"
-        [title]="d.name + ' · ' + d.via + (d.asleep ? ' · ' + s().battAsleepLast : '') + (d.charging ? ' · ' + s().battCharging : '')"
+        [title]="d.name + ' · ' + d.via + (d.percent != null ? ' · ' + d.percent + '%' : '') + (d.asleep ? ' · ' + s().battAsleepLast : '') + (d.charging ? ' · ' + s().battCharging : '')"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           @switch (d.kind) {
@@ -33,7 +33,7 @@ import { WirelessDevice } from '../models';
             }
           }
         </svg>
-        <span class="v">{{ d.percent != null ? d.percent + '%' : (d.levelText ?? '—') }}</span>
+        <span class="v">{{ d.percent != null ? d.percent + (bare() ? '' : '%') : (d.levelText ?? '—') }}</span>
         @if (d.charging) {
           <span class="chg" [attr.aria-label]="s().battCharging">⚡</span>
         }
@@ -66,6 +66,8 @@ export class BatteryRow {
   readonly low = input(15);
   /** Limite de itens (layouts menores). */
   readonly max = input(8);
+  /** Compacto (260×180): só o número, sem "%", para os 3 dispositivos caberem ao lado do FPS. */
+  readonly bare = input(false);
 
   protected readonly visible = computed(() =>
     this.devices()

@@ -18,14 +18,23 @@
         } @else if (t.game()) {
           <span class="fps">{{ fps().current?.text ?? '—' }}</span>
           <span class="mini-fps-label">FPS</span>
-          @for (m of fps().extras; track m.id) {
-            <span class="mini-extra"><b>{{ m.text }}</b> {{ short(m) }}</span>
-          }
         } @else {
           <span class="clock">{{ clock() }}</span>
         }
-        @if (battery().show) {
-          <pw-battery-row class="batt mini-batt" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" [max]="3" />
+        <!-- À direita, empilhados: 1% low etc. e a bateria (numa linha só, os 3 dispositivos não cabiam em 260 px) -->
+        @if ((t.connected() && t.game() && fps().extras.length) || battery().show) {
+          <span class="mini-side">
+            @if (t.connected() && t.game() && fps().extras.length) {
+              <span class="mini-extras">
+                @for (m of fps().extras; track m.id) {
+                  <span class="mini-extra"><b>{{ m.text }}</b> {{ short(m) }}</span>
+                }
+              </span>
+            }
+            @if (battery().show) {
+              <pw-battery-row class="batt mini-batt" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" [max]="3" [bare]="true" />
+            }
+          </span>
         }
       </section>
       @for (row of miniRows(); track $index) {
@@ -128,6 +137,21 @@
         @if (battery().show) {
           <pw-battery-row class="batt" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" />
         }
+        @if (t.game() && !locked()) {
+          <!-- Faixa fora da região de arrasto: no WebView2 a área de arrasto não recebe hover -->
+          <div class="peaks-zone" [class.done]="resetDone()">
+            @if (resetDone()) {
+              <span class="rst ok" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>{{ s().peaksReset }}</span>
+            } @else {
+              <span class="rst">
+                {{ peaksSince() }}
+                <button type="button" (click)="resetPeaks()">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" /><path d="M3.5 4v5h5" /></svg>{{ s().resetPeaks }}
+                </button>
+              </span>
+            }
+          </div>
+        }
       </section>
 
       <div class="side">
@@ -157,6 +181,9 @@
     @if (theme() === 'terminal') {
       <header class="term-head">
         <span>■ {{ b.kind }} :: {{ b.label }}@if (hiddenCount(b)) {<span class="more">+{{ hiddenCount(b) }}</span>}</span>
+        @if (b.key === 'gpu' && limit(); as l) {
+          <span [class]="'lim-term ' + l.tone" [title]="l.title">lim={{ l.reason === 'voltage' ? 'voltage(est)' : l.reason }}</span>
+        }
         @if (b.head; as h) {
           <span [class]="h.level">{{ label(h) }} {{ h.text }}{{ h.unit }}</span>
         }
@@ -169,6 +196,12 @@
         <div class="title">
           <span class="kind">{{ b.kind }}</span>
           <span class="name">{{ b.label }}</span>
+          @if (b.key === 'gpu' && limit(); as l) {
+            <span [class]="'lim ' + l.tone" [title]="l.title">
+              @if (l.reason !== 'idle' && theme() !== 'minimo') {<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" /></svg>}
+              {{ theme() === 'splash' ? l.word : theme() === 'lumen' ? l.label : l.dotted }}
+            </span>
+          }
           @if (hiddenCount(b)) {
             <span class="more" [title]="s().hiddenMetrics">+{{ hiddenCount(b) }}</span>
           }
@@ -193,6 +226,9 @@
               @if (tagFor(m); as tag) {
                 <span class="tag">{{ tag }}</span>
               }
+              @if (m.peak; as pk) {
+                <span [class]="'pk ' + pk.level"><span class="w">{{ theme() === 'terminal' ? 'max=' : s().peakMax + ' ' }}</span><b>{{ pk.text }}</b></span>
+              }
             </div>
             <div class="t-row">
               <span class="t-val">{{ m.text }}<small>{{ m.unit }}</small></span>
@@ -213,6 +249,9 @@
     <div class="c-head">
       <span class="kind">{{ b.kind }}</span>
       <span class="c-name">{{ b.label }}</span>
+      @if (b.key === 'gpu' && limit(); as l) {
+        <span [class]="'lim ' + l.tone" [title]="l.title">{{ theme() === 'terminal' ? 'lim=' + l.reason : l.word }}</span>
+      }
       @if (b.head; as h) {
         <span [class]="'c-head-val ' + h.level">{{ h.text }}<small>{{ h.unit }}</small></span>
       }
@@ -229,6 +268,9 @@
           <span [class]="'chip ' + m.level" [title]="m.label">
             <span class="c-k">{{ short(m) }}</span>
             <span class="c-v">{{ m.text }}<small>{{ shortUnit(m) }}</small></span>
+            @if (chipPeak(m)) {
+              <i [class]="'pk ' + m.peak!.level">▴{{ m.peak!.text }}</i>
+            }
           </span>
         }
       </div>
