@@ -70,9 +70,11 @@ jobs:
       - name: Checksums
         shell: pwsh
         run: |
-          Get-ChildItem artifacts/installer/*.exe | ForEach-Object {
+          # Quebra de linha LF: o formato do sha256sum (sha256sum -c funciona em qualquer sistema)
+          $lines = Get-ChildItem artifacts/installer/*.exe | ForEach-Object {
             "$((Get-FileHash $_ -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
-          } | Set-Content artifacts/installer/SHA256SUMS.txt
+          }
+          [IO.File]::WriteAllText("$PWD/artifacts/installer/SHA256SUMS.txt", (($lines -join "`n") + "`n"))
 
       - uses: actions/upload-artifact@v7
         with:
