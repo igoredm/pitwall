@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Pitwall.Config;
 using Pitwall.Games;
 using Pitwall.Logging;
@@ -380,7 +380,8 @@ public class DeepLinkAndAboutTests
 
     [Fact]
     public void PagesMatchTheContract() =>
-        Assert.Equal(["overview", "appearance", "metrics", "alerts", "games", "sessions", "gpu", "phone", "features", "app"], SettingsForm.Pages);
+        // Ids do contrato + os nomes de página do frontend (widget = appearance, devices = phone)
+        Assert.Equal(["overview", "widget", "appearance", "metrics", "alerts", "games", "sessions", "gpu", "devices", "phone", "features", "app"], SettingsForm.Pages);
 
     [Theory]
     [InlineData("2.3.0.0", "2.3.0.0")]
