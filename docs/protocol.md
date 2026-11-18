@@ -1,7 +1,8 @@
-# Pitwall — protocolo WebSocket (v0.7)
+# Pitwall — protocolo WebSocket (v0.7 + 1.0)
 
 Referência para o frontend (Angular, `web/`). Os tipos TypeScript estão em `web/src/app/models.ts`
-(`ServerMessage`, `ClientMessage`, `RemoteServerMessage`, `RemoteClientMessage`). O que é novo na 0.7 vem marcado com **[0.7]**.
+(`ServerMessage`, `ClientMessage`, `RemoteServerMessage`, `RemoteClientMessage`). O que é novo na 0.7 vem marcado com **[0.7]**;
+o que mudou para a 1.0 está resumido na seção [7. Pitwall 1.0](#7-pitwall-10) (e marcado com **[1.0]** onde altera o texto antigo).
 
 Há **dois** sockets, com regras diferentes:
 
@@ -61,7 +62,7 @@ Campos novos **[0.7]** (sempre presentes; o backend corrige `null` e valores for
 ```jsonc
 {
   "log": { "enabled": true, "folder": "C:\\Users\\...\\Pitwall\\logs", "intervalMs": 1000,
-           "keepDays": 30,      // 0 = não apaga por idade (0–3650)
+           "keepDays": 30,      // [1.0] só 1 | 5 | 15 | 30 | 90 | 0 (0 = para sempre); ver 7.1
            "maxTotalMb": 500 }, // 0 = sem teto
   "games": { "autoDetect": true, "include": [], "ignore": ["explorer.exe", "..."],
              "profiles": { "FC25.exe": { "tuningPreset": "cool", "layout": "compact" } },
@@ -160,21 +161,24 @@ Uma sessão também fica "sem fim" se o app for morto no meio do jogo (ex.: Gere
   "csvFile": "pitwall_2026-10-22_21-00-00_FC25.csv" }
 ```
 
-### 2.7 `pairing` **[0.7]** (resposta a `startPairing`)
+### 2.7 `pairing` **[0.7]** (resposta a `startPairing`) — **[1.0]** código de 6 dígitos, ver 7.3
 ```json
-{ "type": "pairing", "ok": true, "url": "http://192.168.0.20:48124/index.html#/mobile?pair=K7QX2MPA",
-  "urls": ["http://192.168.0.20:48124/index.html#/mobile?pair=K7QX2MPA"], "expiresAt": "2026-11-18T21:06:05Z" }
+{ "type": "pairing", "ok": true, "code": "482913", "expiresAt": "2026-11-18T21:06:05Z",
+  "url": "http://192.168.0.20:48124/index.html#/mobile?pair=482913",
+  "urls": ["http://192.168.0.20:48124/index.html#/mobile?pair=482913"],
+  "typeUrl": "http://192.168.0.20:48124/", "typeUrls": ["http://192.168.0.20:48124/"] }
 ```
 ```json
 { "type": "pairing", "ok": false, "error": "disabled" }
 ```
 - `url`: o frontend desenha o QR desta URL (o backend não gera imagem). `urls`: alternativas (outros adaptadores), melhor primeiro.
-- O código vale **2 minutos**, uma vez só; um novo `startPairing` invalida o anterior; 5 erros com o mesmo código também.
+- O código vale **2 minutos**, uma vez só; um novo `startPairing` invalida o anterior; **[1.0]** 20 erros com o mesmo código
+  (somando todos os IPs) também.
 - `error`: `disabled` (ligar `remote.enabled` primeiro), `notRunning` (porta ocupada etc.; `message` traz o erro), `noNetwork`.
 
 ### 2.8 `devices` **[0.7]**
-`{ type: "devices", devices: [{ id, name, created }], paired?: string }` — resposta a `listDevices` e broadcast quando um celular
-pareia (`paired` = id dele) ou é revogado.
+`{ type: "devices", devices: [{ id, name, created, lastSeen?, online }], paired?: string }` — resposta a `listDevices` e broadcast
+quando um celular pareia (`paired` = id dele), é revogado, **[1.0]** conecta (autentica) ou desconecta. `lastSeen`/`online`: ver 7.3.
 
 ### 2.9 `error`
 `{ type: "error", message }` — exceção no tick (broadcast) ou mensagem inválida (só para quem mandou).
@@ -211,7 +215,7 @@ pareia (`paired` = id dele) ou é revogado.
   (pausas de até 5 s não zeram), fora de `include`/`ignore`/`dismissedSuggestions` e que não é o jogo atual.
 - **Perfis** **[0.7]**: `tuningPreset` vale só enquanto o jogo roda (`off` desliga o ajuste geral naquele jogo); `custom` usa
   `gpuTuning.powerLimitW/maxClockMhz`. Ao sair do jogo (ou se o app cair) o `GpuTuner` desfaz, como no ajuste normal.
-- **Retenção de logs** **[0.7]**: ao abrir e 1x/dia; só `pitwall_*.csv` da pasta; nunca o arquivo atual, o da sessão mais recente,
+- **Retenção de logs** **[0.7]**: ao abrir, 1x/dia e **[1.0]** ~5 s depois de mudar `keepDays`, `maxTotalMb` ou `folder`; só `pitwall_*.csv` da pasta; nunca o arquivo atual, o da sessão mais recente,
   o mais novo da pasta nem o do relatório de crash.
 - **CSV** **[0.7]**: primeira linha `# pitwall-csv v2`, depois o cabeçalho `timestamp,game,<ids>`. Novas colunas `fps.displayed` e
   `gpu.perfcap` (texto). Para ler no pandas: `read_csv(path, comment="#")`.
@@ -224,7 +228,8 @@ pareia (`paired` = id dele) ou é revogado.
 `remote.enabled = true` sobe um segundo servidor em `http://+:<remote.port>/` (padrão 48124) e cria a regra de firewall
 `Pitwall-PhoneView` (TCP, só `localsubnet`). Desligar remove a regra; o desinstalador também.
 
-- `GET/HEAD /…` → arquivos do `wwwroot` (o mesmo build do Angular). `/` = `/index.html`. Só extensões conhecidas
+- **[1.0]** `GET/HEAD /` (e `/mobile`) → **302** para `/index.html#/mobile` (ver 7.3).
+- `GET/HEAD /…` → arquivos do `wwwroot` (o mesmo build do Angular). Só extensões conhecidas
   (html, js, css, json, webmanifest, ico, png, jpg, svg, webp, woff, woff2, ttf, txt); `..`, `\`, `:`, arquivos com `.` no
   início → 404. Cabeçalhos: `nosniff`, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, `Referrer-Policy: no-referrer`,
   `Cache-Control: no-cache`.
@@ -245,13 +250,14 @@ pareia (`paired` = id dele) ou é revogado.
 → ou `{ "type": "auth", "ok": false, "error": "invalidToken" }` e fecha (1008).
 
 ```json
-{ "type": "pair", "code": "K7QX2MPA", "name": "Pixel 8" }
+{ "type": "pair", "code": "482913", "name": "Pixel 8" }
 ```
 → `{ "type": "paired", "ok": true, "deviceId": "04388cc23d523135", "name": "Pixel 8", "token": "<43 caracteres base64url>" }`
 → ou `{ "type": "paired", "ok": false, "error": "invalidCode" | "expired" | "noPending" }` e fecha.
 
-- O código vem do fragmento da URL do QR (`#/mobile?pair=<código>`; o fragmento não vai em requisições HTTP nem no Referer).
-  Maiúsculas/minúsculas tanto faz. `name` é opcional (até 40 caracteres; sugestão: derivar do user agent).
+- O código vem do fragmento da URL do QR (`#/mobile?pair=<código>`; o fragmento não vai em requisições HTTP nem no Referer)
+  **ou é digitado** **[1.0]** (6 dígitos; espaços e hífens são ignorados). `name` é opcional (o backend limpa: até 40 caracteres
+  imprimíveis; sugestão: derivar do user agent, ou deixar a pessoa digitar, ex.: "TV da sala").
 - Após `paired ok`, a conexão já está autenticada. A página deve guardar `token` no `localStorage` e usar `auth` nas próximas
   vezes; o backend só guarda o SHA-256 do token. `invalidToken` = dispositivo revogado → voltar para a tela de parear.
 
@@ -273,9 +279,9 @@ Ao ser revogado, a conexão fecha com 1008 `revoked`.
 ---
 
 ## 6. Mensagens do host nativo (WebView2, fora do WebSocket)
-Sem mudança na 0.7. Página → host via `chrome.webview.postMessage`: `openSettings`, `hide` (widget); `pickFolder`, `pickExe`,
-`identifyMonitors`, `openLogFolder`, `openLogFile`, `showWidget` (configurações). Host → página: `folderPicked { path }`,
-`exePicked { name }`.
+Página → host via `chrome.webview.postMessage`: `openSettings`, `hide` (widget); `pickFolder`, `pickExe`,
+`identifyMonitors`, `openLogFolder`, `openLogFile { file? }`, `showWidget` (configurações). Host → página: `folderPicked { path }`,
+`exePicked { name }`, **[1.0]** `startTutorial` (ver 7.4).
 
 ## Adições finais da v0.7
 
@@ -285,3 +291,108 @@ Sem mudança na 0.7. Página → host via `chrome.webview.postMessage`: `openSet
 - Mensagem do host (WebView2, não WebSocket) `{ "type": "openLogFile", "file": "pitwall_....csv" }`: seleciona o CSV no Explorer.
   Só aceita um nome de arquivo `.csv` dentro da pasta de logs; sem `file`, abre o log atual; se não existir, abre a pasta.
 - Instalação nova (`firstRunDone: false`): o app abre as configurações sozinho e o assistente aparece por cima.
+
+---
+
+## 7. Pitwall 1.0
+
+Versão do app nesta etapa: `0.9.0` (`catalog.version`); o dono corta a `1.0.0` no fim. Config passa para a **v6**
+(migração automática; nada para a página fazer além de mandar os campos novos de volta no `setConfig`).
+
+### 7.1 Retenção dos CSVs
+- `log.keepDays` aceita só **`1`, `5`, `15`, `30`, `90`** ou **`0` (= para sempre)**. Padrão `30`.
+  Outro valor (config antiga ou `setConfig`) é ajustado pelo backend: sobe para a próxima opção (nunca apaga antes do que
+  foi escolhido: `7 → 15`, `60 → 90`), acima de 90 vira `0`, negativo vira `0`. O `config` que volta já vem corrigido.
+- `log.maxTotalMb` continua: MB, `0` = sem teto (0–1.000.000).
+- A limpeza roda ~5 s depois de mudar `keepDays`, `maxTotalMb` ou `folder` (além de ao abrir e 1x/dia). Regras de proteção
+  iguais (seção 4). Nada vai pelo socket.
+- Sugestão de UI: um seletor com as 6 opções (`1 dia`, `5 dias`, `15 dias`, `30 dias`, `90 dias`, `Para sempre`); a lista
+  está em `LOG_KEEP_DAYS` no `models.ts`.
+
+### 7.2 Recursos / feature switches
+Uma página "Recursos" pode ligar todos os interruptores do app. Os quatro novos ficam em `config.features` (padrão `true`);
+os antigos continuam onde estavam. Tudo muda pelo `setConfig` normal.
+
+| Recurso | Campo no config | Desligado = |
+|---|---|---|
+| Relatório de crash **[1.0]** | `features.crashReport` | sem buffer de 60 s (nem memória nem `crash-ring.json`), sem detecção ao abrir, sem balão; `catalog.crashReport` some (o `catalog` é reenviado ao mudar) |
+| "Marcar como jogo?" **[1.0]** | `features.gameSuggestions` | não olha a janela em foco; `snapshot.gameSuggestion` sempre `null` (a pendente some) |
+| Picos da sessão (mín/máx) **[1.0]** | `features.sessionPeaks` | sem rastreio; sem mensagem `extremes` (nem ao conectar) e sem `snapshot.extremes`; `resetExtremes` é ignorado. Ao religar chega um `extremes` completo com `epoch` novo (vazio) |
+| Motivo do limite de clock **[1.0]** | `features.clockReason` | não consulta o NVML; `texts["gpu.perfcap"]` some, sem `snapshot.clockReasons` nem `session.clockReasonSec`. A coluna `gpu.perfcap` do CSV fica (vazia) para não partir o arquivo da sessão. `catalog.metrics[gpu.perfcap].available` continua dizendo se o hardware suporta |
+| Detectar jogos | `games.autoDetect` | só `games.include` conta como jogo |
+| Log CSV | `log.enabled` | não grava CSV |
+| Bateria sem fio | `battery.enabled` | `snapshot.batteries = null` |
+| Ajuste da GPU | `gpuTuning.enabled` | não aplica limite de consumo/clock (perfil `tuningPreset` ainda pode ligar durante um jogo) |
+| Avisos no vermelho | `alerts.enabled` | sem balão de alerta |
+| Celular / TV na rede | `remote.enabled` | servidor da rede e regra do firewall desligados |
+| Procurar atualizações | `update.autoCheck` | não consulta o GitHub sozinho (`checkUpdate` manual continua) |
+
+Custo desligado: ~0 (o tick só testa o booleano). Ligar/desligar vale no próximo tick, sem reiniciar.
+
+```jsonc
+"features": { "crashReport": true, "gameSuggestions": true, "sessionPeaks": true, "clockReason": true }
+```
+
+### 7.3 Pareamento por código digitado (celular ou TV)
+- **Código**: 6 dígitos (`"000000"`–`"999999"`, aleatório por CSPRNG), uso único, vale 2 min. Um `startPairing` novo
+  invalida o anterior. Limites: 5 erros/min por IP → IP bloqueado 5 min (HTTP 429), e **20 erros no total com o mesmo código**
+  (qualquer IP) → o código deixa de valer (a próxima tentativa recebe `noPending`; gerar outro).
+- **`startPairing` → `pairing`** (ver 2.7): `code` (mostrar grande ao lado do QR, ex.: `482 913`), `expiresAt`, `url`/`urls`
+  (QR, com o código no fragmento) e `typeUrl`/`typeUrls` (`http://<ip>:<porta>/`, curto para digitar na TV).
+- **Raiz do servidor da rede**: `GET http://<ip>:<porta>/` responde **302** para `/index.html#/mobile` (também `/mobile`).
+  O fragmento não vai na requisição, por isso o destino é `/index.html` e não `/`. Assim quem digita só `ip:porta` cai na página
+  do celular/TV. Os cabeçalhos de segurança são os mesmos dos arquivos.
+- **Página `#/mobile` sem `?pair=` e sem token salvo**: mostra a entrada do código (6 dígitos, teclado numérico:
+  `inputmode="numeric"`) e, opcionalmente, um nome; ao enviar, abre o WebSocket e manda como 1ª mensagem
+  `{ "type": "pair", "code": "482913", "name": "TV da sala" }`. Respostas iguais às da 5.2 (`paired ok` com `token` → guardar no
+  `localStorage`; erro → fecha o socket com 1008, a página reconecta para tentar de novo). Com `?pair=` continua automático.
+- **`name`**: vem do cliente; o backend tira caracteres de controle e invisíveis (ex.: U+202E), junta espaços repetidos e corta
+  em 40 caracteres sem partir emoji. Vazio → "Celular"/"Phone".
+- **`lastSeen`** (ISO 8601, por dispositivo): gravado ao autenticar (`auth` ou `pair`) e no máximo 1x/min enquanto conectado.
+  Vai em `devices` e em `config.remote.pairedDevices` (no `config` pode estar até um minuto atrasado: atualizar o "visto há" não
+  reenvia a config; use a mensagem `devices`). Ausente = nunca conectou depois da 1.0.
+- **`online`** (só em `devices`): conexão autenticada aberta agora → "Vendo agora". O backend manda `devices` sempre que um
+  aparelho conecta ou desconecta, então a lista fica ao vivo sem polling.
+
+```json
+{ "type": "devices", "devices": [
+  { "id": "04388cc23d523135", "name": "iPhone · Safari", "created": "2026-11-12T20:00:00-03:00", "lastSeen": "2026-11-18T21:04:05-03:00", "online": true },
+  { "id": "5be2c0a9d14f7e30", "name": "TV da sala", "created": "2026-11-16T19:30:00-03:00", "online": false } ] }
+```
+
+### 7.4 Tutorial (rever)
+- `config.tutorialDone` (bool): instalação nova = `false`; configs que já existiam viram `true` (migração v6). `firstRunDone`
+  não muda de sentido (assistente de primeira execução).
+- **Regra da página de configurações**: com `tutorialDone === false`, mostrar o tutorial (depois do assistente, se
+  `firstRunDone` também for `false`); ao terminar ou pular, `setConfig` com `tutorialDone: true`.
+- Gatilhos para começar **agora** (além da regra acima): o hash `#/settings?tutorial=1` (janela aberta pela bandeja) e a mensagem
+  do host `{ "type": "startTutorial" }` via `chrome.webview` (janela que já estava aberta). Tratar os gatilhos como idempotentes:
+  se o tutorial já está na tela, não reiniciar.
+- **Bandeja → "Rever tutorial" / "Replay tutorial"**: grava `tutorialDone = false` (broadcast `config`), abre as configurações e
+  manda o gatilho acima (URL se a janela era nova, `startTutorial` se já existia).
+- **Cliente → servidor** `{ "type": "replayTutorial" }`: grava `tutorialDone = false` → broadcast `config` (a página reage pela regra).
+
+### 7.5 "Por que o clock caiu": segundos por motivo
+- `GameSession.clockReasonSec?: Record<"thermal"|"power"|"voltage"|"idle"|"sync"|"none", number>` — segundos (inteiros) em cada
+  motivo durante a sessão (só ticks com leitura do NVML). Salvo a cada ~30 s e no fim, como as outras estatísticas.
+  Percentual = valor / soma de todos.
+- `snapshot.clockReasons?: { live: boolean, exe: string, sec: Record<motivo, number> }` — em jogo, a sessão atual (`live: true`,
+  atualizado a cada snapshot); fora de jogo, a última sessão que tem esses dados (`live: false`). Ausente sem dados, sem NVML ou
+  com `features.clockReason` desligado. Também vai para o celular.
+
+```json
+"clockReasons": { "live": true, "exe": "FC25.exe", "sec": { "voltage": 1490, "power": 812, "thermal": 166, "none": 228 } }
+```
+
+### 7.6 Abrir o CSV de uma sessão
+Já existe (verificado na 1.0): mensagem do host `{ "type": "openLogFile", "file": session.csvFile }` → Explorer com o arquivo
+selecionado. Só aceita nome de arquivo `.csv` sem pasta, procurado dentro de `log.folder`; sem `file` abre o log atual; se o
+arquivo não existir (ex.: apagado pela retenção) abre a pasta.
+
+### 7.7 Resumo das mudanças de tipos (`models.ts`)
+- `AppConfig`: `tutorialDone?`, `features?: FeaturesConfig`, `log.keepDays?: LogKeepDays`.
+- `PairedDevice`: `lastSeen?`, `online?`.
+- `GameSession`: `clockReasonSec?`. Snapshot: `clockReasons?: ClockReasonStats`.
+- `PairingMessage` (ok): `code`, `typeUrl`, `typeUrls`.
+- `ClientMessage`: `{ type: 'replayTutorial' }`.
+- Demo (`?demo=v07`): `scene=tutorial`, `features=a,b`, dispositivos com `lastSeen`/`online`, código de 6 dígitos, `clockReasons`.

@@ -7,6 +7,8 @@
  *   scene=idle       sem jogo (relógio; "Última sessão" mostra a sessão terminada)
  *   scene=empty      sem sessões, sem relatório, sem celulares, atualizador em dia
  *   scene=firstrun   config sem firstRunDone (abre o assistente)
+ *   scene=tutorial   1.0: só tutorialDone = false (o tutorial das configurações aparece)
+ *   features=crashReport,sessionPeaks   1.0: só esses recursos ligados (sem o parâmetro, todos ligados)
  *   scene=reconnect  celular: para de receber depois de 3 s (banner "Sem conexão")
  *   scene=revoked    celular: acesso revogado
  *   scene=nopair     celular: aberto sem código de pareamento
@@ -17,16 +19,26 @@
 import {
   AppConfig,
   Catalog,
+  ClockReasonStats,
   CrashReport,
+  FeaturesConfig,
   GameSession,
   MetricDef,
   MetricGroup,
   MetricSetting,
   PairedDevice,
+  PerfCapReason,
   UpdateState,
   WirelessDevice,
 } from './models';
 import { TelemetryService, urlParam } from './telemetry.service';
+
+/** 1.0: ?features=a,b liga só a e b; sem o parâmetro, tudo ligado (padrão do backend). */
+function demoFeatures(): FeaturesConfig {
+  const on = urlParam('features')?.split(',');
+  const has = (k: keyof FeaturesConfig) => !on || on.includes(k);
+  return { crashReport: has('crashReport'), gameSuggestions: has('gameSuggestions'), sessionPeaks: has('sessionPeaks'), clockReason: has('clockReason') };
+}
 
 type Def = [id: string, group: MetricGroup, name: string, unit: string, on?: boolean, warn?: number, crit?: number, spark?: boolean];
 
@@ -161,7 +173,7 @@ export function startDemo(t: TelemetryService) {
 
   const catalog: Catalog = {
     type: 'catalog',
-    version: '0.7.0',
+    version: '0.9.0',
     lang: 'pt-BR',
     admin: true,
     presentMon: true,
@@ -192,9 +204,13 @@ export function startDemo(t: TelemetryService) {
   const devices: PairedDevice[] = empty
     ? []
     : [
-        { id: '04388cc23d523135', name: 'iPhone · Safari', created: iso(now - 6 * 86_400_000) },
-        { id: '9a1f0c77e2b04d11', name: 'Android · Chrome', created: iso(now - 16 * 86_400_000) },
+        { id: '04388cc23d523135', name: 'iPhone · Safari', created: iso(now - 6 * 86_400_000), lastSeen: iso(now - 30_000) },
+        { id: '9a1f0c77e2b04d11', name: 'Android · Chrome', created: iso(now - 16 * 86_400_000), lastSeen: iso(now - 3 * 86_400_000) },
+        { id: '5be2c0a9d14f7e30', name: 'TV da sala', created: iso(now - 2 * 86_400_000) },
       ];
+  /** 1.0: a mensagem devices traz online (só o iPhone está "vendo agora" na demo). */
+  const devicesWithStatus = (): PairedDevice[] =>
+    config.remote!.pairedDevices.map((d) => ({ ...d, online: d.id === '04388cc23d523135' }));
   let config: AppConfig = {
     refreshMs: 1000,
     webSocketPort: 48123,
@@ -205,6 +221,7 @@ export function startDemo(t: TelemetryService) {
     language: 'auto',
     startWithWindows: true,
     firstRunDone: scene !== 'firstrun',
+    tutorialDone: scene !== 'firstrun' && scene !== 'tutorial',
     autoOpenWidgetOnGame: true,
     primaryGpu: 'auto',
     groupLabels: {},
@@ -226,8 +243,11 @@ export function startDemo(t: TelemetryService) {
     alerts: { enabled: true, sound: false, minIntervalMin: 5 },
     remote: { enabled: !empty, port: 48124, pairedDevices: devices },
     update: { autoCheck: true, channel: 'stable' },
+    features: demoFeatures(),
     metrics: settings,
   };
+  // Recurso desligado: o backend não manda o relatório de queda
+  if (!config.features?.crashReport) catalog.crashReport = undefined;
 
   // ------------------------------------------------------------------ sessões
   const today = new Date(now);
@@ -247,6 +267,7 @@ export function startDemo(t: TelemetryService) {
     peakGpuPower: 342,
     secondsAboveWarn: { 'gpu.hotspot': 372, 'gpu.hotspotDelta': 290 },
     secondsAboveCrit: { 'gpu.hotspot': 48 },
+    clockReasonSec: { voltage: 1490, power: 812, thermal: 166, sync: 4, none: 228 },
     csvFile: 'pitwall_2026-11-18_21-02-00_FC25.csv',
   };
   const sunday = new Date(now - 3 * 86_400_000);
@@ -303,18 +324,24 @@ export function startDemo(t: TelemetryService) {
       case 'startPairing':
         if (!config.remote?.enabled) send({ type: 'pairing', ok: false, error: 'disabled' });
         else {
-          const code = Math.random().toString(36).slice(2, 10).toUpperCase().padEnd(8, 'X');
+          // 1.0: 6 dígitos (o backend usa CSPRNG; aqui tanto faz)
+          const code = String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
           const url = `http://192.168.0.20:48124/index.html#/mobile?pair=${code}`;
-          send({ type: 'pairing', ok: true, url, urls: [url], expiresAt: iso(Date.now() + 120_000) });
+          const typeUrl = 'http://192.168.0.20:48124/';
+          send({ type: 'pairing', ok: true, code, url, urls: [url], typeUrl, typeUrls: [typeUrl], expiresAt: iso(Date.now() + 120_000) });
         }
         break;
       case 'listDevices':
-        send({ type: 'devices', devices: config.remote!.pairedDevices });
+        send({ type: 'devices', devices: devicesWithStatus() });
         break;
       case 'revokeDevice':
         config.remote!.pairedDevices = config.remote!.pairedDevices.filter((d) => d.id !== msg.id);
         send({ type: 'config', config: structuredClone(config) });
-        send({ type: 'devices', devices: config.remote!.pairedDevices });
+        send({ type: 'devices', devices: devicesWithStatus() });
+        break;
+      case 'replayTutorial':
+        config.tutorialDone = false;
+        send({ type: 'config', config: structuredClone(config) });
         break;
       case 'checkUpdate':
         update = { ...update, status: 'checking' };
@@ -366,9 +393,10 @@ export function startDemo(t: TelemetryService) {
   send({ ...catalog });
   send({ type: 'config', config: structuredClone(config) });
   if (!t.remoteMode) send({ type: 'sessions', sessions });
-  send({ type: 'extremes', epoch, values: {} });
+  if (config.features?.sessionPeaks !== false) send({ type: 'extremes', epoch, values: {} });
 
   // ------------------------------------------------------------------ snapshots
+  const reasonSec: Partial<Record<PerfCapReason, number>> = { voltage: 410, power: 205, thermal: 38, none: 22 };
   const caps = ['power', 'power', 'power', 'thermal', 'voltage', 'sync', 'none'];
   let capIdx = 0;
   let capLeft = 0;
@@ -425,9 +453,19 @@ export function startDemo(t: TelemetryService) {
       cap = caps[capIdx];
     }
 
+    // 1.0: segundos por motivo do limite de clock (sessão atual ao vivo; fora de jogo, a última)
+    if (g && cap) reasonSec[cap as PerfCapReason] = (reasonSec[cap as PerfCapReason] ?? 0) + 1;
+    const clockReasons: ClockReasonStats | undefined = !config.features?.clockReason
+      ? undefined
+      : g
+        ? { live: true, exe, sec: { ...reasonSec } }
+        : finished.clockReasonSec
+          ? { live: false, exe: finished.exe, sec: finished.clockReasonSec }
+          : undefined;
+
     // picos: mín/máx só durante o jogo; manda no snapshot as chaves que mudaram
     let delta: Record<string, [number, number]> | undefined;
-    if (g) {
+    if (g && config.features?.sessionPeaks !== false) {
       for (const [key, val] of Object.entries(v)) {
         if (val == null) continue;
         const cur = ext[key];
@@ -454,10 +492,11 @@ export function startDemo(t: TelemetryService) {
       t: Date.now(),
       game: g ? { exe, mode: 'fullscreen' } : null,
       values: v,
-      texts: { 'gpu.perfcap': cap },
+      texts: config.features?.clockReason === false ? {} : { 'gpu.perfcap': cap },
+      clockReasons,
       extremes: delta ? { epoch, values: delta } : undefined,
       profile: g && config.games.profiles?.[exe] ? { exe, ...config.games.profiles[exe] } : null,
-      gameSuggestion: suggestion,
+      gameSuggestion: config.features?.gameSuggestions === false ? null : suggestion,
       batteries: BATTERIES,
       tuning: g ? { active: true, powerLimitW: 260, clockMaxMhz: 1700 } : { active: false },
       log: { file: 'pitwall_2026-11-18_21-48-00_FC25.csv', size: 1_482_331 + k * 420 },
