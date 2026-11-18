@@ -42,6 +42,10 @@ export interface AppConfig {
    * (migração v6). "Rever tutorial" (bandeja ou { type: 'replayTutorial' }) volta para false.
    */
   tutorialDone?: boolean;
+  /** 1.0: progresso do tour das configurações. tutorialDone continua como apelido de tour.done; replayTutorial zera. */
+  tour?: TourState;
+  /** 1.0: visual das configurações, do assistente e do tour (o widget usa widgetTheme/themeMode). Padrão "system". */
+  appearance?: AppAppearance;
   autoOpenWidgetOnGame: boolean;
   primaryGpu: string;
   groupLabels: Record<string, string>;
@@ -86,6 +90,16 @@ export interface AppConfig {
   metrics: MetricSetting[];
 }
 
+/** 1.0: tema das configurações. "system" segue o prefers-color-scheme do Windows. */
+export type AppAppearance = 'system' | 'light' | 'dark';
+
+/** 1.0: tour de 8 passos. step = último passo visto (0 = nunca começou). */
+export interface TourState {
+  step: number;
+  done: boolean;
+  dismissed: boolean;
+}
+
 /** 1.0: valores aceitos em log.keepDays (0 = para sempre). Outro valor é ajustado pelo backend. */
 export type LogKeepDays = 0 | 1 | 5 | 15 | 30 | 90;
 export const LOG_KEEP_DAYS: LogKeepDays[] = [1, 5, 15, 30, 90, 0];
@@ -128,7 +142,11 @@ export interface PairedDevice {
   lastSeen?: string;
   /** 1.0: conectado agora ("Vendo agora"). Só na mensagem devices (não no config). */
   online?: boolean;
+  /** 1.0: tipo pelo user agent, para o ícone. Ausente = "unknown". */
+  kind?: DeviceKind;
 }
+
+export type DeviceKind = 'phone' | 'tv' | 'desktop' | 'unknown';
 
 export type TuningPreset = 'off' | 'balanced' | 'cool' | 'custom';
 
@@ -204,7 +222,52 @@ export interface Catalog {
   crashReport?: CrashReport;
   /** v0.7: estado do servidor do celular (só no socket local). */
   remote?: { running: boolean; port?: number; error?: string };
+  /** 1.0: versões dos componentes, para App › Sobre. Ausente = backend antigo. */
+  about?: AboutInfo;
 }
+
+/** 1.0: versões mostradas em App › Sobre (texto livre vindo do backend; ausente/null = não encontrado). */
+export interface AboutInfo {
+  app: string;
+  dotnet?: string | null;
+  webView2?: string | null;
+  presentMon?: string | null;
+  pawnIO?: string | null;
+}
+
+/** 1.0: resposta a getLogStats. Com keepDays/maxTotalMb hipotéticos, "wouldDelete*" é a prévia da próxima limpeza. */
+export interface LogStats {
+  type: 'logStats';
+  totalBytes: number;
+  files: number;
+  /** ISO 8601 do CSV mais antigo; null sem arquivos. */
+  oldest: string | null;
+  wouldDeleteFiles: number;
+  wouldDeleteBytes: number;
+}
+
+/** 1.0: resposta a getSessions (histórico paginado, mais novas primeiro). */
+export interface SessionsPage {
+  type: 'sessionsPage';
+  total: number;
+  offset: number;
+  sessions: GameSession[];
+}
+
+/** 1.0: erros do pareamento por código (resposta "paired" com ok: false). */
+export type PairError = 'invalidCode' | 'expired' | 'noPending' | 'blocked';
+
+/** 1.0: páginas das configurações (ids estáveis, usados nos deep links #/settings/<page>/<anchor>). */
+export type SettingsPage = 'overview' | 'widget' | 'metrics' | 'alerts' | 'games' | 'sessions' | 'gpu' | 'devices' | 'features' | 'app';
+
+/** Mensagens do host nativo (WebView2) para a página. */
+export type HostMessage =
+  | { type: 'folderPicked'; path: string }
+  | { type: 'exePicked'; name: string }
+  /** 1.0: abre uma página das configurações (balão de queda → sessions/crash, aviso de alerta → sessions). */
+  | { type: 'navigate'; page: SettingsPage; anchor?: string }
+  /** 1.0: "Rever tutorial" na bandeja com a janela já aberta. */
+  | { type: 'startTutorial' };
 
 /** v0.7: ids das séries do relatório de crash. */
 export type CrashSeriesId = 'gpu.temp' | 'gpu.hotspot' | 'gpu.power' | 'gpu.clock' | 'fps.current' | 'cpu.temp';
@@ -356,6 +419,8 @@ export type ServerMessage =
       presentMonError?: string | null;
     }
   | { type: 'sessions'; sessions: GameSession[] }
+  | SessionsPage
+  | LogStats
   | { type: 'update'; update: UpdateState }
   | { type: 'error'; message: string }
   // v0.7
@@ -397,6 +462,10 @@ export type ClientMessage =
   | { type: 'revokeDevice'; id: string }
   // 1.0
   | { type: 'replayTutorial' }
+  /** Uso da pasta de CSV; com valores hipotéticos devolve a prévia do que a próxima limpeza apagaria. */
+  | { type: 'getLogStats'; keepDays?: LogKeepDays; maxTotalMb?: number }
+  /** Histórico paginado (limit ≤ 100), opcionalmente de um jogo só. */
+  | { type: 'getSessions'; offset: number; limit: number; exe?: string }
   // atualizador
   | { type: 'checkUpdate' }
   | { type: 'installUpdate'; when: 'now' | 'exit' }
@@ -429,7 +498,7 @@ export type RemoteServerMessage =
   | { type: 'auth'; ok: true; deviceId: string; name: string }
   | { type: 'auth'; ok: false; error: 'invalidToken' }
   | { type: 'paired'; ok: true; deviceId: string; name: string; token: string }
-  | { type: 'paired'; ok: false; error: 'invalidCode' | 'expired' | 'noPending' }
+  | { type: 'paired'; ok: false; error: PairError; /** 1.0: tentativas antes do bloqueio */ attemptsLeft?: number; /** 1.0: segundos até desbloquear */ retryAfterSec?: number }
   | { type: 'pong'; t: number }
   | Catalog
   | { type: 'config'; config: RemoteViewConfig }

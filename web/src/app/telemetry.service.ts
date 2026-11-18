@@ -5,7 +5,10 @@ import {
   Extremes,
   GameInfo,
   GameSession,
+  LogKeepDays,
+  LogStats,
   LogStatus,
+  PairError,
   PairedDevice,
   PairingMessage,
   PerfCapReason,
@@ -18,6 +21,7 @@ import {
   MetricSetting,
   RemoteServerMessage,
   ServerMessage,
+  SessionsPage,
 } from './models';
 import { PerfCapFilter, PerfCapShown } from './perfcap';
 
@@ -39,6 +43,17 @@ const DEMO_BATTERIES: WirelessDevice[] = [
  * (revogado / código vencido) ou sem código de pareamento.
  */
 export type RemoteState = 'connecting' | 'live' | 'reconnecting' | 'revoked' | 'needPair';
+
+/**
+ * 1.0: tela de código (celular/TV). checking = esperando a resposta do PC; error = o PC recusou (ou não respondeu).
+ * retryAt = hora (ms) em que o bloqueio acaba.
+ */
+export interface PairEntryState {
+  status: 'idle' | 'checking' | 'error';
+  error?: PairError | 'network';
+  attemptsLeft?: number;
+  retryAt?: number;
+}
 
 /** Parâmetros da query que fica dentro do hash (#/mobile?pair=K7QX2MPA). */
 export function hashParams(): URLSearchParams {
@@ -115,8 +130,14 @@ export class TelemetryService {
   /** Página do celular: socket da rede (ws://<host>/ws), autenticação por token do dispositivo. */
   readonly remoteMode = location.hash.startsWith('#/mobile');
   readonly remote = signal<RemoteState>('connecting');
-  /** ?demo=v07: dados de exemplo da 0.7, sem backend (teste de layout). */
-  readonly demo = urlParam('demo') === 'v07';
+  /** ?demo=1 (ou o antigo ?demo=v07): dados de exemplo, sem backend (teste de layout). */
+  readonly demo = urlParam('demo') === 'v07' || urlParam('demo') === '1';
+  /** 1.0: tela de código do celular/TV. */
+  readonly pairEntry = signal<PairEntryState>({ status: 'idle' });
+  /** 1.0: nome com que o aparelho acabou de parear (a página mostra "Pareado" por um instante). */
+  readonly pairedName = signal<string | null>(null);
+  /** 1.0: última resposta a getLogStats sem valores hipotéticos (uso atual da pasta de CSV). */
+  readonly logStats = signal<LogStats | null>(null);
 
   /** ?batteries=demo na URL: dispositivos de exemplo para pré-visualizar o visual em dev. */
   private readonly demoBatteries = urlParam('batteries') === 'demo';
@@ -153,6 +174,11 @@ export class TelemetryService {
   private perfcapFlushAt = 0;
   /** Modo demo: quem responde às mensagens que a página manda. */
   private demoHandler?: (msg: any) => void;
+  /** Respostas sem id chegam na ordem dos pedidos (um socket só): cada pedido espera a sua na fila. */
+  private readonly logStatsWaiters: { current: boolean; resolve: (s: LogStats) => void }[] = [];
+  private readonly sessionsWaiters: ((p: SessionsPage) => void)[] = [];
+  /** 1.0: código digitado esperando o socket abrir. */
+  private pendingCode: { code: string; name: string } | null = null;
 
   constructor() {
     if (this.demo) {
@@ -197,6 +223,56 @@ export class TelemetryService {
     return () => this.hostListeners.delete(listener);
   }
 
+  /** Modo demo: simula uma mensagem do host nativo (ex.: startTutorial, navigate). */
+  emitHost(msg: unknown) {
+    for (const l of this.hostListeners) l(msg);
+  }
+
+  /**
+   * 1.0: uso da pasta de CSV. Sem parâmetros = como está agora (também guarda em logStats); com keepDays/maxTotalMb =
+   * prévia do que a próxima limpeza apagaria com esses valores.
+   */
+  requestLogStats(preview?: { keepDays?: LogKeepDays; maxTotalMb?: number }): Promise<LogStats> {
+    return new Promise((resolve) => {
+      this.logStatsWaiters.push({ current: !preview, resolve });
+      this.send({ type: 'getLogStats', ...preview });
+    });
+  }
+
+  /** 1.0: uma página do histórico de sessões (mais novas primeiro). */
+  requestSessions(offset: number, limit: number, exe?: string): Promise<SessionsPage> {
+    return new Promise((resolve) => {
+      this.sessionsWaiters.push(resolve);
+      this.send({ type: 'getSessions', offset, limit: Math.min(100, limit), ...(exe ? { exe } : {}) });
+    });
+  }
+
+  /** 1.0: celular/TV sem token: manda o código digitado como primeira mensagem do socket da rede. */
+  pairWithCode(code: string, name = deviceName()) {
+    if (this.pairEntry().status === 'checking') return;
+    this.pairEntry.set({ status: 'checking' });
+    if (this.demoHandler) {
+      this.demoHandler({ type: 'pair', code, name });
+      return;
+    }
+    this.pendingCode = { code, name };
+    this.stopped = false;
+    const old = this.ws;
+    this.ws = undefined;
+    old?.close();
+    this.connect();
+  }
+
+  /** "Tentar agora" do aviso de sem conexão: não espera o próximo intervalo de reconexão. */
+  reconnectNow() {
+    if (this.demo || this.connected()) return;
+    this.retryMs = 500;
+    const old = this.ws;
+    this.ws = undefined;
+    old?.close();
+    this.connect();
+  }
+
   /** Modo demo: liga o simulador (recebe o que a página manda). */
   attachDemo(handler: (msg: any) => void) {
     this.demoHandler = handler;
@@ -219,10 +295,13 @@ export class TelemetryService {
         this.connected.set(true);
         return;
       }
-      // Celular: a primeira mensagem precisa ser pair (código do QR) ou auth (token guardado)
+      // Celular: a primeira mensagem precisa ser pair (código do QR ou digitado) ou auth (token guardado)
       const code = hashParams().get('pair');
       const token = storageGet(TOKEN_KEY);
-      if (code) ws.send(JSON.stringify({ type: 'pair', code, name: deviceName() }));
+      const typed = this.pendingCode;
+      this.pendingCode = null;
+      if (typed) ws.send(JSON.stringify({ type: 'pair', code: typed.code, name: typed.name }));
+      else if (code) ws.send(JSON.stringify({ type: 'pair', code, name: deviceName() }));
       else if (token) ws.send(JSON.stringify({ type: 'auth', token }));
       else {
         this.stopped = true;
@@ -234,6 +313,13 @@ export class TelemetryService {
     ws.onclose = () => {
       this.connected.set(false);
       if (this.ws !== ws) return;
+      // Código digitado sem resposta (PC fora do ar ou IP bloqueado por HTTP 429): volta para a tela de código
+      if (this.pairEntry().status === 'checking') {
+        this.stopped = true;
+        this.pairEntry.set({ status: 'error', error: 'network' });
+        this.remote.set('needPair');
+        return;
+      }
       if (this.stopped) return;
       if (this.remoteMode && this.remote() === 'live') this.remote.set('reconnecting');
       setTimeout(() => this.connect(), this.retryMs);
@@ -265,9 +351,27 @@ export class TelemetryService {
             storageSet(TOKEN_KEY, msg.token);
             // Tira o código da URL: recarregar a página não tenta parear de novo com um código já usado
             history.replaceState(null, '', location.pathname + location.search + '#/mobile');
+            this.pairedName.set(msg.name);
+            this.pairEntry.set({ status: 'idle' });
           }
           this.connected.set(true);
           this.remote.set('live');
+        } else if (msg.type === 'paired' && this.pairEntry().status === 'checking') {
+          // 1.0: código digitado recusado → continua na tela de código, com o motivo
+          this.stopped = true;
+          this.pairEntry.set({
+            status: 'error',
+            error: msg.error,
+            attemptsLeft: msg.attemptsLeft,
+            retryAt: msg.retryAfterSec != null ? Date.now() + msg.retryAfterSec * 1000 : undefined,
+          });
+          this.remote.set('needPair');
+        } else if (msg.type === 'paired') {
+          // Código do QR recusado (vencido, já usado...): cai na tela de código para digitar outro
+          this.stopped = true;
+          history.replaceState(null, '', location.pathname + location.search + '#/mobile');
+          this.pairEntry.set({ status: 'error', error: msg.error, attemptsLeft: msg.attemptsLeft });
+          this.remote.set('needPair');
         } else {
           if (msg.type === 'auth') storageSet(TOKEN_KEY, null);
           this.stopped = true;
@@ -283,6 +387,15 @@ export class TelemetryService {
         break;
       case 'sessions':
         this.sessions.set(msg.sessions);
+        break;
+      case 'logStats': {
+        const w = this.logStatsWaiters.shift();
+        if (!w || w.current) this.logStats.set(msg);
+        w?.resolve(msg);
+        break;
+      }
+      case 'sessionsPage':
+        this.sessionsWaiters.shift()?.(msg);
         break;
       case 'update':
         this.update.set(msg.update);
