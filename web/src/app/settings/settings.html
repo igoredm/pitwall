@@ -1,0 +1,613 @@
+<div [class]="rootClass()" [style.--accent]="draft()?.accent || null">
+  <div class="glow" aria-hidden="true"></div>
+
+  <nav class="sidebar" aria-label="Seções">
+    <div class="brand">
+      <svg viewBox="0 0 64 64" class="logo" aria-hidden="true">
+        <circle cx="32" cy="32" r="30" class="logo-bg" />
+        <path d="M17 47 A21 21 0 1 1 47 47" class="logo-ring" />
+        <path d="M32 32 L45 20" class="logo-needle" />
+      </svg>
+      <div>
+        <div class="brand-name">Pitwall</div>
+        <div class="brand-sub">Configurações</div>
+      </div>
+    </div>
+
+    @for (s of [['metricas', 'Métricas'], ['geral', 'Geral'], ['gpu', 'GPU'], ['log', 'Log'], ['jogos', 'Jogos']]; track s[0]) {
+      <button class="nav" [class.sel]="section() === s[0]" (click)="section.set($any(s[0]))">{{ s[1] }}</button>
+    }
+
+    <div class="grow"></div>
+
+    <div class="status-card">
+      <div class="status-title"><i [class.on]="draft()?.widget?.visible"></i>{{ status().title }}</div>
+      <div>{{ status().line1 }}</div>
+      <div>{{ status().line2 }}</div>
+    </div>
+    <button class="btn ghost reset" [class.danger]="confirmReset()" (click)="restoreDefaults()">
+      {{ confirmReset() ? 'Clique de novo para confirmar' : 'Restaurar padrão' }}
+    </button>
+    <div class="foot">
+      v{{ t.catalog()?.version ?? '—' }}{{ t.catalog()?.admin ? ' · executando como administrador' : '' }}
+      @if (!t.connected()) {
+        <br /><span class="err">desconectado do Pitwall</span>
+      }
+    </div>
+  </nav>
+
+  <main>
+    @if (draft(); as d) {
+      @switch (section()) {
+        <!-- ======================================================= MÉTRICAS -->
+        @case ('metricas') {
+          <header class="page-head">
+            <div>
+              <h1>Métricas</h1>
+              <p>
+                A ordem é a prioridade: o <b>compacto</b> mostra as 4 primeiras da GPU, 3 da CPU e 1 da RAM; o <b>médio</b> 6 / 4 / 2;
+                o <b>completo</b> mostra tudo o que couber na janela. "Outros" só aparece no completo. O log grava tudo, mesmo o que está oculto.
+              </p>
+            </div>
+            <div class="head-actions">
+              <input class="input search" type="search" placeholder="Buscar métrica…" [value]="search()" (input)="search.set($any($event.target).value)" />
+              <button class="btn" (click)="preview.set(true)">Pré-visualizar widget</button>
+            </div>
+          </header>
+
+          @for (g of groups(); track g.key) {
+            <section class="panel group">
+              <div class="group-head">
+                <button class="collapse" (click)="toggleGroup(g.key)" [attr.aria-expanded]="!collapsed().has(g.key) || !!search()">
+                  <span class="chev" [class.open]="!collapsed().has(g.key) || !!search()">›</span>
+                  <span class="g-name">{{ g.name }}</span>
+                  <span class="g-count">{{ g.active }} de {{ g.total }} ativas</span>
+                </button>
+                @if (g.key !== 'fps') {
+                  <label class="g-label">
+                    Nome no widget
+                    <input class="input small" [value]="d.groupLabels?.[g.key] ?? ''" [placeholder]="g.label" (change)="setGroupLabel(g.key, $any($event.target).value)" />
+                  </label>
+                }
+              </div>
+
+              @if (!collapsed().has(g.key) || search()) {
+                <div class="table">
+                  <div class="tr th">
+                    <span></span><span>Exibir</span><span>Label</span><span>Sensor</span><span>Unidade</span><span>Amarelo</span><span>Vermelho</span><span>Gráfico</span><span>Aparece em</span>
+                  </div>
+                  <div cdkDropList [cdkDropListData]="g.rows" (cdkDropListDropped)="drop(g, $event)" [cdkDropListDisabled]="!!search()">
+                    @for (r of g.rows; track r.s.id) {
+                      <div class="tr" cdkDrag cdkDragLockAxis="y" [class.na]="!r.def.available" [class.off]="!r.s.enabled">
+                        <span class="handle" cdkDragHandle title="Arrastar">⋮⋮</span>
+                        <span>
+                          <button class="switch" role="switch" [attr.aria-checked]="r.s.enabled" [disabled]="!r.def.available" [class.on]="r.s.enabled && r.def.available" (click)="setMetric(r.s.id, { enabled: !r.s.enabled })"><i></i></button>
+                        </span>
+                        <span>
+                          <input class="input small" [value]="r.s.label ?? ''" [placeholder]="r.def.name" [disabled]="!r.def.available" (change)="setMetric(r.s.id, { label: $any($event.target).value || undefined })" />
+                        </span>
+                        <span class="sensor">
+                          @if (r.def.available) {
+                            <span [title]="r.def.source ?? ''">{{ r.def.source ?? r.def.name }}</span>
+                          } @else {
+                            <span class="na-tag">não disponível</span>
+                          }
+                        </span>
+                        <span>
+                          @if (r.def.isTemperature) {
+                            <span class="seg tiny">
+                              <button [class.sel]="r.s.unit !== 'F'" (click)="setMetric(r.s.id, { unit: 'C' })">°C</button>
+                              <button [class.sel]="r.s.unit === 'F'" (click)="setMetric(r.s.id, { unit: 'F' })">°F</button>
+                            </span>
+                          } @else {
+                            <span class="muted">{{ unitOf(r.def) || '—' }}</span>
+                          }
+                        </span>
+                        @if (r.def.unit !== 'graph' && r.def.unit !== 'text' && r.def.group !== 'fps') {
+                          <span class="thr">
+                            <i class="dot y"></i>
+                            <input class="input small num" inputmode="decimal" [value]="r.s.warn ?? ''" placeholder="—" [disabled]="!r.def.available" (change)="setMetric(r.s.id, { warn: numberOrNull($any($event.target).value) })" />
+                          </span>
+                          <span class="thr">
+                            <i class="dot r"></i>
+                            <input class="input small num" inputmode="decimal" [value]="r.s.crit ?? ''" placeholder="—" [disabled]="!r.def.available" (change)="setMetric(r.s.id, { crit: numberOrNull($any($event.target).value) })" />
+                          </span>
+                        } @else {
+                          <span class="muted">—</span><span class="muted">—</span>
+                        }
+                        <span>
+                          @if (r.def.isTemperature) {
+                            <button class="switch" role="switch" [attr.aria-checked]="r.s.sparkline" [disabled]="!r.def.available" [class.on]="r.s.sparkline && r.def.available" (click)="setMetric(r.s.id, { sparkline: !r.s.sparkline })"><i></i></button>
+                          } @else {
+                            <span class="muted">—</span>
+                          }
+                        </span>
+                        <span class="where">
+                          @switch (placement().get(r.s.id)) {
+                            @case ('compact') {
+                              <span class="pill-c">compacto</span><span class="pill-m">médio</span>
+                            }
+                            @case ('mid') {
+                              <span class="pill-m">médio</span>
+                            }
+                            @case ('full') {
+                              <span class="muted">completo</span>
+                            }
+                            @default {
+                              <span class="muted">—</span>
+                            }
+                          }
+                        </span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </section>
+          }
+        }
+
+        <!-- ======================================================= GERAL -->
+        @case ('geral') {
+          <header class="page-head">
+            <div>
+              <h1>Geral</h1>
+              <p>Aparência e comportamento do widget. As mudanças são aplicadas na hora.</p>
+            </div>
+            <div class="head-actions">
+              <button class="btn" (click)="preview.set(true)">Pré-visualizar widget</button>
+            </div>
+          </header>
+
+          <div class="cols">
+            <div class="col">
+              <section class="panel">
+                <h2>Aparência</h2>
+                <div class="field">
+                  <div class="f-label">Tema do app</div>
+                  <div class="seg wide">
+                    @for (th of themes; track th.id) {
+                      <button [class.sel]="d.appTheme === th.id" (click)="patch('appTheme', th.id)">{{ th.name }}</button>
+                    }
+                  </div>
+                </div>
+                <div class="field">
+                  <div class="f-label">Tema do widget <span class="hint">Independente do tema do app.</span></div>
+                  <div class="seg wide">
+                    @for (th of themes; track th.id) {
+                      <button [class.sel]="d.widgetTheme === th.id" (click)="patch('widgetTheme', th.id)">{{ th.name }}</button>
+                    }
+                  </div>
+                </div>
+                <div class="field row">
+                  <div>
+                    <div class="f-label">Variante</div>
+                    @if (isDarkOnly(d.widgetTheme) && isDarkOnly(d.appTheme)) {
+                      <div class="hint">Neon e Terminal existem só no escuro.</div>
+                    }
+                  </div>
+                  <div class="seg">
+                    <button [class.sel]="d.themeMode === 'light'" (click)="patch('themeMode', 'light')">Clara</button>
+                    <button [class.sel]="d.themeMode === 'dark'" (click)="patch('themeMode', 'dark')">Escura</button>
+                    <button [class.sel]="d.themeMode === 'system'" (click)="patch('themeMode', 'system')">Sistema</button>
+                  </div>
+                </div>
+                <div class="field">
+                  <div class="f-label">Cor de destaque</div>
+                  <div class="swatches">
+                    @for (a of accents; track a.value) {
+                      <button class="swatch" [class.sel]="(d.accent || '') === a.value" [class.theme-default]="!a.value" [style.background]="a.value || null" [title]="a.name" (click)="patch('accent', a.value)"></button>
+                    }
+                    <label class="swatch custom" title="Personalizada" [class.sel]="isCustomAccent(d.accent)">
+                      +
+                      <input type="color" [value]="d.accent || '#4c8dff'" (change)="patch('accent', $any($event.target).value.toUpperCase())" />
+                    </label>
+                    <span class="hint">{{ d.accent || 'padrão do tema' }}</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <h2>Comportamento</h2>
+                <div class="field row">
+                  <div>
+                    <div class="f-label">Taxa de atualização</div>
+                    <div class="hint">Frequência de leitura dos sensores e envio ao widget.</div>
+                  </div>
+                  <div class="seg">
+                    @for (r of refreshRates; track r) {
+                      <button [class.sel]="d.refreshMs === r" (click)="patch('refreshMs', r)">{{ fmtMs(r) }}</button>
+                    }
+                  </div>
+                </div>
+                <div class="field row">
+                  <div>
+                    <div class="f-label">Iniciar com o Windows</div>
+                    <div class="hint">Pelo Agendador de Tarefas, como administrador.</div>
+                  </div>
+                  <button class="switch" role="switch" [attr.aria-checked]="d.startWithWindows" [class.on]="d.startWithWindows" (click)="flip('startWithWindows')"><i></i></button>
+                </div>
+                <div class="field row">
+                  <div>
+                    <div class="f-label">Abrir widget ao detectar jogo</div>
+                    <div class="hint">Mostra o widget se ele estiver oculto.</div>
+                  </div>
+                  <button class="switch" role="switch" [attr.aria-checked]="d.autoOpenWidgetOnGame" [class.on]="d.autoOpenWidgetOnGame" (click)="flip('autoOpenWidgetOnGame')"><i></i></button>
+                </div>
+              </section>
+            </div>
+
+            <div class="col">
+              <section class="panel">
+                <h2>Periféricos sem fio</h2>
+                <div class="field row">
+                  <div>
+                    <div class="f-label">Mostrar bateria perto do FPS</div>
+                    <div class="hint">
+                      Mouse, headset, teclado e controle. Lido a cada minuto direto do dispositivo, sem software do fabricante,
+                      pelo <span class="mono">WirelessBattery</span> (GPL-3.0, por krisgfx9) e HeadsetControl.
+                    </div>
+                  </div>
+                  <button class="switch" role="switch" [attr.aria-checked]="d.battery.enabled" [class.on]="d.battery.enabled" (click)="flip('battery.enabled')"><i></i></button>
+                </div>
+                @if (d.battery.enabled) {
+                  <div class="field">
+                    @for (dev of t.batteries(); track dev.key) {
+                      <div class="dev-row">
+                        <div>
+                          <div class="strong">{{ dev.name }}</div>
+                          <div class="hint">
+                            {{ dev.via }} ·
+                            {{ !dev.connected ? 'desligado' : dev.asleep ? 'dormindo' : dev.percent != null ? dev.percent + '%' : (dev.levelText ?? '—') }}{{ dev.charging ? ' · carregando' : '' }}
+                          </div>
+                        </div>
+                        <button class="switch" role="switch" [attr.aria-checked]="!d.battery.hidden.includes(dev.key)" [class.on]="!d.battery.hidden.includes(dev.key)" (click)="toggleBatteryDevice(dev.key)"><i></i></button>
+                      </div>
+                    } @empty {
+                      <div class="muted">
+                        Nenhum dispositivo com bateria reconhecido.
+                        <a class="link" href="https://github.com/krisgfx9/Wireless-Device-Battery-Monitor#supported-devices" target="_blank" rel="noopener">Ver modelos suportados</a>
+                      </div>
+                    }
+                    <button class="link" style="margin-top: 8px" (click)="t.send({ type: 'refreshBatteries' })">Atualizar agora</button>
+                  </div>
+                }
+              </section>
+
+              <section class="panel">
+                <h2>Widget</h2>
+                <div class="field">
+                  <div class="f-label">Monitor do widget</div>
+                  <div class="monitors" [style]="monitorsBoxStyle()">
+                    @for (m of monitors().list; track m.device) {
+                      <button class="mon" [class.sel]="selectedMonitor()?.device === m.device" [style]="monitorStyle(m)" (click)="setMonitor(m)" [title]="monitorLabel(m)">
+                        {{ m.index }}
+                      </button>
+                    }
+                  </div>
+                  <div class="mon-foot">
+                    <span class="hint">{{ monitorLabel(selectedMonitor()) }}</span>
+                    @if (t.inHost) {
+                      <button class="link" (click)="t.host({ type: 'identifyMonitors' })">Identificar monitores</button>
+                    }
+                  </div>
+                </div>
+                <div class="field row">
+                  <div>
+                    <div class="f-label">Layout</div>
+                    <div class="hint">Automático: vira compacto quando a janela é pequena.</div>
+                  </div>
+                  <div class="seg tiny">
+                    <button [class.sel]="(d.widget.layout ?? 'auto') === 'auto'" (click)="patch('widget.layout', 'auto')">Automático</button>
+                    <button [class.sel]="d.widget.layout === 'full'" (click)="patch('widget.layout', 'full')">Completo</button>
+                    <button [class.sel]="d.widget.layout === 'mid'" (click)="patch('widget.layout', 'mid')">Médio</button>
+                    <button [class.sel]="d.widget.layout === 'compact'" (click)="patch('widget.layout', 'compact')">Compacto</button>
+                  </div>
+                </div>
+                <div class="field row">
+                  <div>
+                    <div class="f-label">Posicionar no canto</div>
+                    <div class="hint">Canto superior direito do monitor escolhido — para quem tem 2 monitores e usa o Discord ao lado. Compacto 260×180, médio 300×300.</div>
+                  </div>
+                  <div class="btn-pair">
+                    <button class="btn" (click)="t.send({ type: 'placeTopRight', layout: 'compact' })">Compacto</button>
+                    <button class="btn" (click)="t.send({ type: 'placeTopRight', layout: 'mid' })">Médio</button>
+                  </div>
+                </div>
+                <div class="field row">
+                  <div>
+                    <div class="f-label">Mostrar widget</div>
+                  </div>
+                  <button class="switch" role="switch" [attr.aria-checked]="d.widget.visible" [class.on]="d.widget.visible" (click)="flip('widget.visible')"><i></i></button>
+                </div>
+                <div class="field row">
+                  <div>
+                    <div class="f-label">Travar posição do widget</div>
+                    <div class="hint">Impede arrastar e redimensionar. Monitor, posição e tamanho ficam salvos.</div>
+                  </div>
+                  <button class="switch" role="switch" [attr.aria-checked]="d.widget.locked" [class.on]="d.widget.locked" (click)="flip('widget.locked')"><i></i></button>
+                </div>
+                <div class="field row">
+                  <div>
+                    <div class="f-label">Sempre no topo</div>
+                    <div class="hint">Não fica por cima de apps em tela cheia.</div>
+                  </div>
+                  <button class="switch" role="switch" [attr.aria-checked]="d.widget.alwaysOnTop" [class.on]="d.widget.alwaysOnTop" (click)="flip('widget.alwaysOnTop')"><i></i></button>
+                </div>
+              </section>
+            </div>
+          </div>
+        }
+
+        <!-- ======================================================= LOG -->
+        @case ('gpu') {
+          <header class="page-head">
+            <div>
+              <h1>Ajuste da GPU</h1>
+              <p>
+                "Undervolt" seguro pela API oficial da NVIDIA: limita o consumo e trava o clock máximo — com o clock mais baixo, o driver
+                usa menos voltagem. Menos calor no hot spot, quase sem perder FPS. Nada é gravado na placa: volta ao normal ao desligar,
+                ao fechar o Pitwall ou ao reiniciar o PC. Não toca no jogo (seguro para anti-cheat).
+              </p>
+            </div>
+          </header>
+
+          @if (t.catalog()?.tuning; as caps) {
+            @if (!caps.supported) {
+              <section class="panel narrow">
+                <div class="muted">Não disponível nesta máquina: {{ caps.error || 'precisa de uma GPU NVIDIA' }}.</div>
+              </section>
+            } @else {
+              <div class="cols">
+                <div class="col">
+                  <section class="panel">
+                    <div class="field row">
+                      <div>
+                        <div class="f-label">Ativar ajuste da GPU</div>
+                        <div class="hint">{{ caps.gpu }} · padrão de fábrica {{ caps.powerDefaultW }} W · até {{ caps.maxClockMhz }} MHz</div>
+                      </div>
+                      <button class="switch" role="switch" [attr.aria-checked]="d.gpuTuning.enabled" [class.on]="d.gpuTuning.enabled" (click)="flip('gpuTuning.enabled')"><i></i></button>
+                    </div>
+                    <div class="field row">
+                      <div>
+                        <div class="f-label">Quando aplicar</div>
+                        <div class="hint">"Só em jogos" volta ao normal no desktop e liga sozinho quando um jogo é detectado.</div>
+                      </div>
+                      <div class="seg">
+                        <button [class.sel]="d.gpuTuning.onlyInGames" (click)="patch('gpuTuning.onlyInGames', true)">Só em jogos</button>
+                        <button [class.sel]="!d.gpuTuning.onlyInGames" (click)="patch('gpuTuning.onlyInGames', false)">Sempre</button>
+                      </div>
+                    </div>
+                    <div class="field">
+                      <div class="f-label">Perfil</div>
+                      <div class="seg wide">
+                        <button [class.sel]="d.gpuTuning.preset === 'balanced'" (click)="patch('gpuTuning.preset', 'balanced')">
+                          Equilibrado · {{ t.catalog()?.tuningPresets?.['balanced']?.powerW }} W · {{ t.catalog()?.tuningPresets?.['balanced']?.clockMhz }} MHz
+                        </button>
+                        <button [class.sel]="d.gpuTuning.preset === 'cool'" (click)="patch('gpuTuning.preset', 'cool')">
+                          Frio · {{ t.catalog()?.tuningPresets?.['cool']?.powerW }} W · {{ t.catalog()?.tuningPresets?.['cool']?.clockMhz }} MHz
+                        </button>
+                        <button [class.sel]="d.gpuTuning.preset === 'custom'" (click)="patch('gpuTuning.preset', 'custom')">Personalizado</button>
+                      </div>
+                      <div class="hint" style="margin-top: 6px">
+                        O que mais derruba o calor é o teto de clock (menos voltagem). Equilibrado: ~2–4% menos FPS sem limite de quadros; com FPS travado (ex.: 120 no EA FC) a diferença costuma sumir. Frio: para quando a placa está esquentando demais — pode custar ~8–10% em jogos pesados.
+                      </div>
+                    </div>
+                    @if (tuningTarget(); as tg) {
+                      <div class="field">
+                        <div class="f-label">Limite de consumo · {{ tg.powerW }} W ({{ pctOfDefault(tg.powerW) }}% do padrão)</div>
+                        <input class="range" type="range" [min]="caps.powerMinW" [max]="caps.powerMaxW" step="1" [value]="tg.powerW" (change)="setCustom({ powerLimitW: +$any($event.target).value })" />
+                      </div>
+                      <div class="field">
+                        <div class="f-label">Clock máximo · {{ tg.clockMhz ? tg.clockMhz + ' MHz' : 'sem teto' }}</div>
+                        <input class="range" type="range" min="1200" [max]="caps.maxClockMhz" step="15" [value]="tg.clockMhz || caps.maxClockMhz" (change)="setCustom({ maxClockMhz: +$any($event.target).value >= caps.maxClockMhz ? 0 : +$any($event.target).value })" />
+                        <div class="hint">Arraste até o fim para "sem teto" (só limite de consumo).</div>
+                      </div>
+                    }
+                  </section>
+                </div>
+                <div class="col">
+                  <section class="panel">
+                    <h2>Agora</h2>
+                    <div class="focus-now">
+                      <div>
+                        @if (t.tuning()?.active) {
+                          <div class="strong">Ativo · {{ t.tuning()?.powerLimitW }} W@if (t.tuning()?.clockMaxMhz) { · até {{ t.tuning()?.clockMaxMhz }} MHz}</div>
+                        } @else if (d.gpuTuning.enabled && d.gpuTuning.onlyInGames) {
+                          <div class="muted">Aguardando um jogo</div>
+                        } @else {
+                          <div class="muted">Desligado · placa no limite original ({{ caps.powerStartW }} W)</div>
+                        }
+                        @if (t.tuning()?.error; as err) {
+                          <div class="err" style="font-size: 12px">{{ err }}</div>
+                        }
+                      </div>
+                      <span class="badge" [class.on]="!!t.tuning()?.active">{{ t.tuning()?.active ? 'Aplicado' : 'Inativo' }}</span>
+                    </div>
+                    <div class="live">
+                      @for (k of [['gpu.hotspot', 'Hot spot', '°C'], ['gpu.hotspotDelta', 'Δ hot spot − núcleo', '°C'], ['gpu.temp', 'Núcleo', '°C'], ['gpu.power', 'Consumo', 'W'], ['gpu.clock', 'Clock', 'MHz'], ['gpu.fan', 'Fan', '%']]; track k[0]) {
+                        <div class="live-item">
+                          <div class="hint">{{ k[1] }}</div>
+                          <div class="strong mono">{{ t.values()[k[0]] != null ? round(t.values()[k[0]]!) : '—' }} {{ k[2] }}</div>
+                        </div>
+                      }
+                    </div>
+                    <p class="hint">Compare o hot spot e o Δ com o ajuste ligado e desligado durante uma partida. O log CSV registra tudo.</p>
+                  </section>
+                </div>
+              </div>
+            }
+          } @else {
+            <section class="panel narrow"><div class="muted">Carregando…</div></section>
+          }
+        }
+
+        @case ('log') {
+          <header class="page-head">
+            <div>
+              <h1>Log</h1>
+              <p>Registro em CSV para investigar travamentos e desligamentos. Cada sessão de jogo gera um arquivo.</p>
+            </div>
+          </header>
+          <section class="panel narrow">
+            <div class="field row">
+              <div>
+                <div class="f-label">Gravar log em CSV</div>
+                <div class="hint">Grava todas as métricas de CPU, GPU e RAM (mesmo ocultas no widget) e os "Outros" habilitados, com flush em disco a cada linha — os últimos segundos não se perdem num desligamento.</div>
+              </div>
+              <button class="switch" role="switch" [attr.aria-checked]="d.log.enabled" [class.on]="d.log.enabled" (click)="flip('log.enabled')"><i></i></button>
+            </div>
+            <div class="field">
+              <div class="f-label">Pasta de destino</div>
+              <div class="path-row">
+                <input class="input mono" [value]="d.log.folder" (change)="patch('log.folder', $any($event.target).value)" />
+                @if (t.inHost) {
+                  <button class="btn" (click)="t.host({ type: 'pickFolder' })">Alterar…</button>
+                  <button class="btn ghost" (click)="t.host({ type: 'openLogFolder' })">Abrir</button>
+                }
+              </div>
+            </div>
+            <div class="field row">
+              <div>
+                <div class="f-label">Intervalo</div>
+              </div>
+              <div class="seg">
+                @for (i of logIntervals; track i) {
+                  <button [class.sel]="d.log.intervalMs === i" (click)="patch('log.intervalMs', i)">{{ fmtMs(i) }}</button>
+                }
+              </div>
+            </div>
+            <div class="field">
+              <div class="hint">
+                @if (t.log(); as l) {
+                  Arquivo atual:
+                  @if (t.inHost) {
+                    <button class="link mono" (click)="t.host({ type: 'openLogFile' })">{{ l.file }}</button>
+                  } @else {
+                    <span class="mono">{{ l.file }}</span>
+                  }
+                  · {{ fmtSize(l.size) }}
+                } @else {
+                  {{ d.log.enabled ? 'Aguardando o primeiro registro…' : 'Log desligado.' }}
+                }
+              </div>
+            </div>
+          </section>
+        }
+
+        <!-- ======================================================= JOGOS -->
+        @case ('jogos') {
+          <header class="page-head">
+            <div>
+              <h1>Jogos</h1>
+              <p>Controle quando o widget considera que há um jogo rodando.</p>
+            </div>
+          </header>
+
+          <section class="panel">
+            <h2>Detecção automática</h2>
+            <div class="field row">
+              <div>
+                <div class="f-label">Detectar jogos automaticamente</div>
+                <div class="hint">Usa o processo em foco que estiver em tela cheia exclusiva ou sem bordas e renderizando frames. Regras manuais têm prioridade.</div>
+              </div>
+              <button class="switch" role="switch" [attr.aria-checked]="d.games.autoDetect" [class.on]="d.games.autoDetect" (click)="flip('games.autoDetect')"><i></i></button>
+            </div>
+            <div class="focus-now">
+              <div>
+                <div class="hint">Em foco agora</div>
+                @if (t.game(); as g) {
+                  <div class="mono strong">{{ g.exe }} · {{ g.mode }}@if (t.values()['fps.current'] != null) { · {{ round(t.values()['fps.current']!) }} FPS}</div>
+                } @else {
+                  <div class="muted">Nenhum jogo detectado</div>
+                }
+              </div>
+              <span class="badge" [class.on]="!!t.game()">{{ t.game() ? 'Jogo detectado' : 'Ocioso' }}</span>
+            </div>
+            @if (t.fpsStatus(); as st) {
+              <div class="fps-warn">{{ st }}</div>
+            }
+          </section>
+
+          <div class="cols games">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Executáveis</h2>
+                  <p class="hint">Inclua jogos que não são detectados ou ignore apps em tela cheia.</p>
+                </div>
+                <div class="seg tiny">
+                  <button [class.sel]="ruleFilter() === 'all'" (click)="ruleFilter.set('all')">Todos · {{ ruleCounts().include + ruleCounts().ignore }}</button>
+                  <button [class.sel]="ruleFilter() === 'include'" (click)="ruleFilter.set('include')">Incluir · {{ ruleCounts().include }}</button>
+                  <button [class.sel]="ruleFilter() === 'ignore'" (click)="ruleFilter.set('ignore')">Ignorar · {{ ruleCounts().ignore }}</button>
+                </div>
+              </div>
+              <div class="add-row">
+                <input class="input mono" placeholder="jogo.exe" [value]="newExe()" (input)="newExe.set($any($event.target).value)" (keydown.enter)="addRule()" />
+                <span class="seg tiny">
+                  <button [class.sel]="newRule() === 'include'" (click)="newRule.set('include')">Incluir</button>
+                  <button [class.sel]="newRule() === 'ignore'" (click)="newRule.set('ignore')">Ignorar</button>
+                </span>
+                @if (t.inHost) {
+                  <button class="btn ghost" (click)="t.host({ type: 'pickExe' })">Procurar…</button>
+                }
+                <button class="btn primary" (click)="addRule()">Adicionar</button>
+              </div>
+              <div class="rules">
+                <div class="rule th"><span>Executável</span><span>Regra</span><span>Origem</span><span></span></div>
+                @for (r of rules(); track r.exe) {
+                  <div class="rule">
+                    <span class="mono" [title]="r.exe">{{ r.exe }}</span>
+                    <span class="seg tiny">
+                      <button [class.sel]="r.rule === 'include'" [disabled]="r.fixed" (click)="setRule(r.exe, 'include')">Incluir</button>
+                      <button [class.sel]="r.rule === 'ignore'" [disabled]="r.fixed" (click)="setRule(r.exe, 'ignore')">Ignorar</button>
+                    </span>
+                    <span class="muted">{{ r.origin }}</span>
+                    <span>
+                      @if (!r.fixed) {
+                        <button class="icon-btn" title="Remover" (click)="removeRule(r.exe)">×</button>
+                      }
+                    </span>
+                  </div>
+                }
+              </div>
+            </section>
+
+            <section class="panel">
+              <h2>Sessões recentes</h2>
+              <p class="hint">Cada sessão gera um arquivo de log.</p>
+              <div class="sessions">
+                @for (s of t.sessions(); track s.start) {
+                  <div class="session">
+                    <div class="mono strong">{{ s.exe }}</div>
+                    <div class="hint">{{ sessionWhen(s.start) }} · {{ sessionDuration(s.start, s.end) }}</div>
+                  </div>
+                } @empty {
+                  <div class="muted">Nenhuma sessão ainda.</div>
+                }
+              </div>
+            </section>
+          </div>
+        }
+      }
+    } @else {
+      <div class="loading">Conectando ao Pitwall…</div>
+    }
+  </main>
+
+  @if (preview()) {
+    <div class="modal" (click)="preview.set(false)">
+      <div class="modal-body" (click)="$event.stopPropagation()">
+        <div class="modal-head">
+          <h2>Pré-visualização · {{ monitorLabel(selectedMonitor()) }}</h2>
+          <button class="icon-btn" (click)="preview.set(false)">×</button>
+        </div>
+        @let vert = (selectedMonitor()?.height ?? 0) > (selectedMonitor()?.width ?? 1);
+        @let lay = draft()?.widget?.layout ?? 'auto';
+        <div class="preview-box" [class.vertical]="vert && (lay === 'auto' || lay === 'full')" [class.square]="lay === 'mid'" [class.small]="lay === 'compact'">
+          <pw-widget [previewTheme]="$any(draft()?.widgetTheme)" [previewVertical]="vert" [previewLayout]="lay === 'auto' ? 'full' : $any(lay)" />
+        </div>
+      </div>
+    </div>
+  }
+</div>

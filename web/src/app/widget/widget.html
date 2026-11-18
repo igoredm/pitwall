@@ -1,0 +1,237 @@
+<div
+  class="pw"
+  [class]="'pw t-' + theme() + (dark() ? ' dark' : ' light') + modeClass() + (locked() ? '' : ' drag')"
+  [style.--accent]="accent()"
+>
+  <div class="backdrop">
+    @if (theme() === 'splash') {
+      <pw-splash-blobs [vertical]="vertical()" [dark]="dark()" />
+    }
+  </div>
+
+  @if (mode() === 'compact') {
+    <!-- Compacto: sem enfeite. FPS + grade de números (linha 1: GPU, linha 2: CPU + RAM) -->
+    <div class="mini">
+      <section class="mini-top">
+        @if (!t.connected()) {
+          <span class="mini-extra">Conectando…</span>
+        } @else if (t.game()) {
+          <span class="fps">{{ fps().current?.text ?? '—' }}</span>
+          <span class="mini-fps-label">FPS</span>
+          @for (m of fps().extras; track m.id) {
+            <span class="mini-extra"><b>{{ m.text }}</b> {{ short(m) }}</span>
+          }
+        } @else {
+          <span class="clock">{{ clock() }}</span>
+        }
+        @if (battery().show) {
+          <pw-battery-row class="batt mini-batt" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" [max]="3" />
+        }
+      </section>
+      @for (row of miniRows(); track $index) {
+        <div class="mini-row" [style.grid-template-columns]="'repeat(' + row.length + ', minmax(0, 1fr))'">
+          @for (c of row; track c.id) {
+            <div [class]="'cell grp-' + c.group + ' ' + c.level">
+              <span class="v">{{ c.text }}<small>{{ c.unit }}</small></span>
+              <span class="k">{{ c.label }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  } @else if (mode() === 'mid') {
+    <!-- Médio (~300 px): FPS em cima, GPU (6), CPU (4) | RAM (2) -->
+    <div class="compact" pwFitScale>
+      <section class="c-top" [class.idle]="!t.game()">
+        @if (!t.connected()) {
+          <div class="c-sub">Conectando…</div>
+        } @else if (t.game(); as game) {
+          <div class="fps">{{ fps().current?.text ?? '—' }}<span class="c-fps-label">FPS</span></div>
+          @if (fpsBlocked()) {
+            <div class="c-sub fps-note" [title]="t.fpsStatus()">FPS bloqueado pelo anti-cheat</div>
+          }
+          <!-- uma linha só (quebra se faltar largura): jogo · 1% · frametime · bateria -->
+          <div class="c-info">
+            <span class="c-game" [title]="game.exe"><i></i>{{ game.exe }}</span>
+            @for (m of fps().extras; track m.id) {
+              <span class="c-x"><span class="k">{{ short(m) }}</span><span class="n">{{ m.text }}</span>{{ m.unit ? ' ' + m.unit : '' }}</span>
+            }
+            @if (battery().show) {
+              <pw-battery-row class="batt-inline" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" [max]="3" />
+            }
+          </div>
+          @if (fps().graph) {
+            <pw-frame-graph class="frame-graph" [frames]="t.frames" [tick]="t.historyTick()" />
+          }
+        } @else {
+          <div class="clock">{{ clock() }}</div>
+          @if (battery().show) {
+            <pw-battery-row class="batt" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" [max]="4" />
+          } @else {
+            <div class="c-sub">{{ theme() === 'terminal' ? '// sem jogo' : 'Nenhum jogo' }}</div>
+          }
+        }
+      </section>
+      <div class="c-rows">
+        @if (gpu().head || gpu().tiles.length) {
+          <ng-container *ngTemplateOutlet="row; context: { $implicit: gpu() }" />
+        }
+        @if (splitBlocks().length) {
+          <div class="c-split">
+            @for (b of splitBlocks(); track b.key) {
+              <ng-container *ngTemplateOutlet="row; context: { $implicit: b }" />
+            }
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="layout">
+      <ng-container *ngTemplateOutlet="card; context: { $implicit: gpu() }" />
+
+      <section class="center" [class.idle]="!t.game()">
+        @if (theme() === 'neon') {
+          <svg class="hud" viewBox="0 0 200 200" aria-hidden="true">
+            <circle cx="100" cy="100" r="96" class="ring" />
+            <circle cx="100" cy="100" r="84" class="ring dashed" />
+            <path d="M100 0v10M100 190v10M0 100h10M190 100h10" class="ticks" />
+          </svg>
+        }
+
+        @if (!t.connected()) {
+          <div class="status-pill">Conectando ao Pitwall…</div>
+        } @else if (t.game(); as game) {
+          <div class="game-chip"><i></i>{{ theme() === 'terminal' ? '> ' + game.exe : game.exe }}</div>
+          <div class="fps">{{ fps().current?.text ?? '—' }}</div>
+          <div class="fps-label">FPS</div>
+        @if (fpsBlocked()) {
+          <div class="fps-note" [title]="t.fpsStatus()">FPS bloqueado pelo anti-cheat · feche e abra o jogo</div>
+        }
+          @if (fps().extras.length) {
+            <div class="fps-extras">
+              @for (m of fps().extras; track m.id) {
+                <span class="pill">
+                  <span class="k">{{ label(m) }}</span>
+                  <span class="n">{{ m.text }}</span>@if (m.unit) {<span class="u">{{ m.unit }}</span>}
+                </span>
+              }
+            </div>
+          }
+          @if (fps().graph) {
+            <pw-frame-graph class="frame-graph" [frames]="t.frames" [tick]="t.historyTick()" />
+          }
+        } @else {
+          <div class="clock">{{ clock() }}</div>
+          <div class="date">{{ date() }}</div>
+          <div class="status-pill">{{ theme() === 'terminal' ? '// nenhum jogo detectado' : 'Nenhum jogo detectado' }}</div>
+        }
+        @if (battery().show) {
+          <pw-battery-row class="batt" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" />
+        }
+      </section>
+
+      <div class="side">
+        <ng-container *ngTemplateOutlet="card; context: { $implicit: cpu() }" />
+        <ng-container *ngTemplateOutlet="card; context: { $implicit: ram() }" />
+        @if (other().tiles.length) {
+          <ng-container *ngTemplateOutlet="card; context: { $implicit: other() }" />
+        }
+      </div>
+    </div>
+  }
+
+  @if (theme() === 'terminal' && mode() === 'full') {
+    <footer class="statusbar">
+      <span class="prompt">pitwall&#64;localhost:~$</span>
+      <span>watch -n {{ (config()?.refreshMs ?? 500) / 1000 }} sensors</span>
+      <span class="grow"></span>
+      <span [class.ok]="t.connected()" [class.crit]="!t.connected()">ws:{{ t.connected() ? 'up' : 'down' }}</span>
+      <span [class.warn]="alerts() > 0">alertas:{{ alerts() }}</span>
+      <span>{{ clock() }}</span>
+    </footer>
+  }
+</div>
+
+<ng-template #card let-b>
+  <section [class]="'card card-' + b.key">
+    @if (theme() === 'terminal') {
+      <header class="term-head">
+        <span>■ {{ b.kind }} :: {{ b.label }}@if (hiddenCount(b)) {<span class="more">+{{ hiddenCount(b) }}</span>}</span>
+        @if (b.head; as h) {
+          <span [class]="h.level">{{ label(h) }} {{ h.text }}{{ h.unit }}</span>
+        }
+      </header>
+      @if (b.head; as h) {
+        <div class="ascii" [class]="'ascii ' + h.level">[{{ ascii(h) }}]</div>
+      }
+    } @else {
+      <header>
+        <div class="title">
+          <span class="kind">{{ b.kind }}</span>
+          <span class="name">{{ b.label }}</span>
+          @if (hiddenCount(b)) {
+            <span class="more" title="Métricas escondidas por falta de espaço">+{{ hiddenCount(b) }}</span>
+          }
+        </div>
+        @if (b.head; as h) {
+          <div [class]="'head-val ' + h.level">{{ h.text }}<small>{{ h.unit }}</small></div>
+        }
+      </header>
+      @if (b.head; as h) {
+        <div [class]="'bar ' + h.level"><i [style.transform]="'scaleX(' + barWidth(h) / 100 + ')'"></i></div>
+      }
+    }
+    @if (b.sub) {
+      <div class="sub">{{ b.sub }}</div>
+    }
+    @if (b.tiles.length) {
+      <div class="tiles" pwFitTiles (capacity)="setCap(b.key, $event)" [class.single]="b.tiles.length === 1" [class.many]="b.tiles.length > 4">
+        @for (m of visibleTiles(b); track m.id) {
+          <div [class]="'tile ' + m.level">
+            <div class="t-label">
+              <span class="t-name">{{ label(m) }}</span>
+              @if (tagFor(m); as tag) {
+                <span class="tag">{{ tag }}</span>
+              }
+            </div>
+            <div class="t-row">
+              <span class="t-val">{{ m.text }}<small>{{ m.unit }}</small></span>
+              @if (m.sparkline) {
+                <pw-sparkline class="spark" [data]="t.historyOf(m.id)" [tick]="t.historyTick()" [step]="theme() === 'terminal'" />
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </section>
+</ng-template>
+
+<!-- Linha do compacto/médio: cabeçalho (tipo + nome + uso) + barra + chips -->
+<ng-template #row let-b>
+  <section [class]="'card c-row card-' + b.key">
+    <div class="c-head">
+      <span class="kind">{{ b.kind }}</span>
+      <span class="c-name">{{ b.label }}</span>
+      @if (b.head; as h) {
+        <span [class]="'c-head-val ' + h.level">{{ h.text }}<small>{{ h.unit }}</small></span>
+      }
+    </div>
+    @if (b.head; as h) {
+      <div [class]="'bar ' + h.level"><i [style.transform]="'scaleX(' + barWidth(h) / 100 + ')'"></i></div>
+    }
+    @if (b.tiles.length || b.sub) {
+      <div class="chips">
+        @if (b.sub) {
+          <span class="chip"><span class="c-v">{{ b.sub }}</span></span>
+        }
+        @for (m of b.tiles; track m.id) {
+          <span [class]="'chip ' + m.level" [title]="m.label">
+            <span class="c-k">{{ short(m) }}</span>
+            <span class="c-v">{{ m.text }}<small>{{ shortUnit(m) }}</small></span>
+          </span>
+        }
+      </div>
+    }
+  </section>
+</ng-template>

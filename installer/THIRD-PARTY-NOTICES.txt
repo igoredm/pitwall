@@ -1,0 +1,39 @@
+Pitwall inclui ou instala os seguintes componentes de terceiros:
+
+PresentMon (console) — Intel Corporation
+  Licença: MIT — https://github.com/GameTechDev/PresentMon
+  Usado para medir FPS via eventos ETW do Windows (sem acesso ao processo do jogo).
+
+PawnIO — namazso
+  Licença: GPL-2.0 (driver) / LGPL — https://pawnio.eu / https://github.com/namazso/PawnIO.Setup
+  Instalador oficial, sem modificações. Driver assinado usado pelo LibreHardwareMonitor
+  para ler sensores da CPU (substitui o antigo WinRing0).
+  Desinstalação: "Adicionar ou remover programas" > PawnIO (não é removido junto com o Pitwall,
+  pois outros programas podem usá-lo).
+
+LibreHardwareMonitorLib — LibreHardwareMonitor contributors
+  Licença: MPL-2.0 — https://github.com/LibreHardwareMonitor/LibreHardwareMonitor
+
+Microsoft Edge WebView2 Runtime / SDK — Microsoft Corporation
+  https://developer.microsoft.com/microsoft-edge/webview2/
+
+Nunito (fonte) — The Nunito Project Authors
+  Licença: SIL Open Font License 1.1 — https://github.com/googlefonts/nunito
+
+Angular — Google LLC
+  Licença: MIT — https://angular.dev
+
+WirelessBattery (Wireless Device Battery Monitor) — krisgfx9
+  Licença: GPL-3.0 — https://github.com/krisgfx9/Wireless-Device-Battery-Monitor
+  Programa separado em tools\battery\, executado como "WirelessBattery.exe --list" para ler a bateria
+  de mouses, headsets, teclados e controles sem fio. Compilado a partir do commit
+  5b872f8f5217a18d5adbbb3b7cc96419b62b9317 com UMA modificação do Pitwall: um driver novo para mouses AULA
+  no receptor 38A6 "AULA Receiver" (Kunlun X5, L9, SC880, SC900 V2...), src/drivers/aula_infortech.cpp
+  (também GPL-3.0). O código-fonte correspondente, já com a modificação e o diff (PITWALL-CHANGES.diff),
+  acompanha a instalação (tools\battery\WirelessBattery-source-5b872f8-pitwall.zip), assim como o texto da
+  licença (tools\battery\LICENSE-GPL-3.0.txt).
+
+HeadsetControl — Denis Arnst (Sapd) e colaboradores
+  Licença: GPL-3.0 — https://github.com/Sapd/HeadsetControl
+  Binário oficial 4.3.0 (assinatura PGP verificada), usado pelo WirelessBattery para mais headsets.
+  Código-fonte: tools\battery\headsetcontrol-4.3.0-source.tar.gz

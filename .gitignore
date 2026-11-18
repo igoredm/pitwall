@@ -1,0 +1,22 @@
+# Saídas de build
+bin/
+obj/
+artifacts/
+web/dist/
+web/.angular/
+web/node_modules/
+*.user
+.vs/
+
+# Binários de terceiros: baixados/compilados por installer/fetch-deps.ps1 e installer/build-battery.ps1
+tools/PresentMon.exe
+tools/battery/
+installer/redist/
+
+# Dumps de hardware da máquina local
+docs/sensores*.txt
+docs/gpu-tuning-test.txt
+*.dump.txt
+
+# Ferramentas locais
+.claude/

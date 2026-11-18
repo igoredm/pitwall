@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>pitwall.ico</ApplicationIcon>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <AssemblyName>Pitwall</AssemblyName>
+    <RootNamespace>Pitwall</RootNamespace>
+    <Version>0.1.0</Version>
+    <Authors>igoredm</Authors>
+    <Company>igoredm</Company>
+    <Product>Pitwall</Product>
+    <Copyright>© 2026 igoredm</Copyright>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="pitwall.ico" LogicalName="pitwall.ico" />
+  </ItemGroup>
+
+  <!-- PresentMon console (Intel, MIT): lê eventos ETW, não toca no processo do jogo -->
+  <ItemGroup>
+    <None Include="..\..\tools\PresentMon.exe" Condition="Exists('..\..\tools\PresentMon.exe')" Link="tools\PresentMon.exe" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Bateria de periféricos sem fio: WirelessBattery + HeadsetControl (GPL-3.0, programas separados; ver installer/build-battery.ps1) -->
+  <ItemGroup>
+    <None Include="..\..\tools\battery\**\*" Link="tools\battery\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Frontend Angular compilado (web/dist) -->
+  <ItemGroup>
+    <None Include="..\..\web\dist\pitwall\browser\**\*" Link="wwwroot\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

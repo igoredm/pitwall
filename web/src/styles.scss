@@ -1,0 +1,286 @@
+// Fontes (só latin, pesos usados pelos temas)
+@use '@fontsource/nunito/latin-200.css' as n200;
+@use '@fontsource/nunito/latin-300.css' as n300;
+@use '@fontsource/nunito/latin-400.css' as n400;
+@use '@fontsource/nunito/latin-600.css' as n600;
+@use '@fontsource/nunito/latin-700.css' as n700;
+@use '@fontsource/nunito/latin-800.css' as n800;
+@use '@fontsource/nunito/latin-900.css' as n900;
+@use '@fontsource/manrope/latin-200.css' as m200;
+@use '@fontsource/manrope/latin-300.css' as m300;
+@use '@fontsource/manrope/latin-500.css' as m500;
+@use '@fontsource/manrope/latin-700.css' as m700;
+@use '@fontsource/orbitron/latin-500.css' as o500;
+@use '@fontsource/orbitron/latin-600.css' as o600;
+@use '@fontsource/orbitron/latin-700.css' as o700;
+@use '@fontsource/rajdhani/latin-500.css' as r500;
+@use '@fontsource/rajdhani/latin-600.css' as r600;
+@use '@fontsource/rajdhani/latin-700.css' as r700;
+@use '@fontsource/jetbrains-mono/latin-400.css' as j400;
+@use '@fontsource/jetbrains-mono/latin-500.css' as j500;
+@use '@fontsource/jetbrains-mono/latin-700.css' as j700;
+@use '@fontsource/baloo-2/latin-600.css' as b600;
+@use '@fontsource/baloo-2/latin-800.css' as b800;
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+// ============================================================================
+// Tokens por tema (docs/design-notes.md). Aplicados como classes:
+//   .t-lumen | .t-minimo | .t-neon | .t-terminal | .t-splash   +   .dark | .light
+// --accent vem da configuração (ou do padrão do tema, --accent-default).
+// ============================================================================
+
+.t-lumen {
+  --font-ui: 'Nunito', ui-rounded, system-ui, sans-serif;
+  --font-num: 'Nunito', ui-rounded, system-ui, sans-serif;
+  --fps-weight: 200;
+  --val-weight: 300;
+  --label-transform: none;
+  --label-tracking: 0;
+  --kind-tracking: 0.14em;
+  --r-card: 30;
+  --r-tile: 20;
+  --r-ctl: 10px;
+  --r-btn: 11px;
+  --r-panel: 22px;
+
+  &.dark {
+    --accent-default: #4c8dff;
+    --bg: #0a0d13;
+    --text: #f4f6fa;
+    --text2: rgba(228, 233, 242, 0.66);
+    --text3: rgba(228, 233, 242, 0.44);
+    --surface: rgba(255, 255, 255, 0.07);
+    --surface-solid: #141925;
+    --surface-border: rgba(255, 255, 255, 0.12);
+    --surface-shadow: 0 18px 44px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --tile: rgba(255, 255, 255, 0.05);
+    --track: rgba(255, 255, 255, 0.1);
+    --hair: rgba(255, 255, 255, 0.08);
+    --input: rgba(255, 255, 255, 0.06);
+    --yellow: #ffc53d;
+    --red: #ff6166;
+    --ok: #3ddc84;
+    --warn-tint: rgba(255, 197, 61, 0.14);
+    --crit-tint: rgba(255, 97, 102, 0.16);
+    --glow-2: #8b5cf6;
+    --glow-3: #2dd4bf;
+    --glow-opacity: 0.45;
+  }
+  &.light {
+    --accent-default: #2f6feb;
+    --bg: #e8ecf3;
+    --text: #0f1320;
+    --text2: #4f586b;
+    --text3: #7c8599;
+    --surface: rgba(255, 255, 255, 0.52);
+    --surface-solid: #f6f8fb;
+    --surface-border: rgba(255, 255, 255, 0.85);
+    --surface-shadow: 0 14px 36px rgba(24, 39, 75, 0.12), 0 1px 2px rgba(24, 39, 75, 0.06);
+    --tile: rgba(255, 255, 255, 0.55);
+    --track: rgba(15, 19, 32, 0.08);
+    --hair: rgba(15, 19, 32, 0.07);
+    --input: rgba(255, 255, 255, 0.7);
+    --yellow: #a86400;
+    --red: #d12a36;
+    --ok: #1f9d55;
+    --warn-tint: rgba(255, 197, 61, 0.22);
+    --crit-tint: rgba(255, 97, 102, 0.2);
+    --glow-2: #c4a8ff;
+    --glow-3: #7fe3d0;
+    --glow-opacity: 0.55;
+  }
+}
+
+.t-minimo {
+  --font-ui: 'Manrope', system-ui, sans-serif;
+  --font-num: 'Manrope', system-ui, sans-serif;
+  --fps-weight: 200;
+  --val-weight: 300;
+  --label-transform: uppercase;
+  --label-tracking: 0.16em;
+  --kind-tracking: 0.16em;
+  --r-card: 0;
+  --r-tile: 0;
+  --r-ctl: 0;
+  --r-btn: 0;
+  --r-panel: 0;
+  --surface-shadow: none;
+  --glow-opacity: 0;
+
+  &.dark {
+    --accent-default: #ededee;
+    --bg: #0f0f10;
+    --text: #ededee;
+    --text2: #9a9a9f;
+    --text3: #6a6a70;
+    --surface: transparent;
+    --surface-solid: #0f0f10;
+    --surface-border: #26262a;
+    --tile: transparent;
+    --track: #26262a;
+    --hair: #26262a;
+    --input: transparent;
+    --yellow: #e8b931;
+    --red: #ff5c5c;
+    --ok: #9a9a9f;
+    --warn-tint: transparent;
+    --crit-tint: transparent;
+  }
+  &.light {
+    --accent-default: #111112;
+    --bg: #fafaf9;
+    --text: #111112;
+    --text2: #5e5e63;
+    --text3: #8e8e93;
+    --surface: transparent;
+    --surface-solid: #fafaf9;
+    --surface-border: #e4e4e2;
+    --tile: transparent;
+    --track: #e4e4e2;
+    --hair: #e4e4e2;
+    --input: transparent;
+    --yellow: #9a6700;
+    --red: #c62828;
+    --ok: #5e5e63;
+    --warn-tint: transparent;
+    --crit-tint: transparent;
+  }
+}
+
+// Neon e Terminal só existem no escuro (a classe .light é ignorada)
+.t-neon {
+  --font-ui: 'Rajdhani', system-ui, sans-serif;
+  --font-num: 'Orbitron', system-ui, sans-serif;
+  --fps-weight: 600;
+  --val-weight: 500;
+  --label-transform: uppercase;
+  --label-tracking: 0.22em;
+  --kind-tracking: 0.22em;
+  --r-card: 0;
+  --r-tile: 0;
+  --r-ctl: 0;
+  --r-btn: 0;
+  --r-panel: 0;
+  --accent-default: #00e5ff;
+  --bg: #04050b;
+  --text: #e4fbff;
+  --text2: #7fb3c4;
+  --text3: #4c7888;
+  --surface: rgba(8, 20, 32, 0.55);
+  --surface-solid: #08121c;
+  --surface-border: color-mix(in srgb, var(--accent) 16%, transparent);
+  --surface-shadow: inset 0 0 32px color-mix(in srgb, var(--accent) 16%, transparent);
+  --tile: linear-gradient(90deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%);
+  --track: rgba(0, 229, 255, 0.1);
+  --hair: color-mix(in srgb, var(--accent) 14%, transparent);
+  --input: rgba(0, 229, 255, 0.04);
+  --yellow: #ffd84d;
+  --red: #ff3b6b;
+  --ok: #00e5ff;
+  --warn-tint: transparent;
+  --crit-tint: transparent;
+  --glow-opacity: 0;
+}
+
+.t-terminal {
+  --font-ui: 'JetBrains Mono', ui-monospace, monospace;
+  --font-num: 'JetBrains Mono', ui-monospace, monospace;
+  --fps-weight: 500;
+  --val-weight: 500;
+  --label-transform: none;
+  --label-tracking: 0;
+  --kind-tracking: 0.04em;
+  --r-card: 0;
+  --r-tile: 0;
+  --r-ctl: 0;
+  --r-btn: 0;
+  --r-panel: 0;
+  --accent-default: #4af626;
+  --bg: #0b0d0e;
+  --text: #cfe3d6;
+  --text2: #7d958a;
+  --text3: #4f6258;
+  --surface: #0e1211;
+  --surface-solid: #0e1211;
+  --surface-head: #121816;
+  --surface-border: #253029;
+  --surface-shadow: none;
+  --tile: transparent;
+  --track: #253029;
+  --hair: #253029;
+  --input: #0b0f0e;
+  --info: #56d6e0;
+  --yellow: #f4d35e;
+  --red: #ff5f56;
+  --ok: #4af626;
+  --warn-tint: transparent;
+  --crit-tint: transparent;
+  --glow-opacity: 0;
+}
+
+.t-splash {
+  --font-ui: 'Nunito', ui-rounded, system-ui, sans-serif;
+  --font-num: 'Baloo 2', 'Nunito', system-ui, sans-serif;
+  --fps-weight: 800;
+  --val-weight: 800;
+  --label-transform: none;
+  --label-tracking: 0;
+  --kind-tracking: 0.12em;
+  --r-card: 32;
+  --r-tile: 22;
+  --r-ctl: 12px;
+  --r-btn: 14px;
+  --r-panel: 26px;
+  --accent-default: #ff2e88;
+  --magenta: #ff2e88;
+  --orange: #ff7a1a;
+  --sun: #ffd23f;
+  --cyan: #00d4ff;
+  --lime: #9be22e;
+  --violet: #7b5cff;
+  --teal: #00c9a7;
+  --ok: #9be22e;
+  --warn-tint: transparent;
+  --crit-tint: transparent;
+
+  &.dark {
+    --bg: #140a26;
+    --text: #fff7fb;
+    --text2: rgba(255, 240, 250, 0.72);
+    --text3: rgba(255, 240, 250, 0.52);
+    --surface: #1f1238;
+    --surface-solid: #1f1238;
+    --surface-border: rgba(255, 255, 255, 0.08);
+    --surface-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
+    --tile: rgba(20, 6, 40, 0.22);
+    --track: rgba(20, 6, 40, 0.3);
+    --hair: rgba(255, 255, 255, 0.08);
+    --input: rgba(255, 255, 255, 0.06);
+    --yellow: #ffd400;
+    --red: #ff6b76;
+    --glow-opacity: 0.55;
+  }
+  &.light {
+    --bg: #fff4e6;
+    --text: #150a28;
+    --text2: #4a3a63;
+    --text3: #6e5f86;
+    --surface: #ffffff;
+    --surface-solid: #ffffff;
+    --surface-border: #150a28;
+    --surface-shadow: 6px 6px 0 #150a28;
+    --tile: rgba(20, 6, 40, 0.1);
+    --track: rgba(20, 6, 40, 0.18);
+    --hair: rgba(21, 10, 40, 0.12);
+    --input: #fff;
+    --yellow: #ffd400;
+    --red: #d12a36;
+    --glow-opacity: 0.95;
+  }
+}
