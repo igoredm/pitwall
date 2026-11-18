@@ -93,7 +93,8 @@ export class CrashReport {
       const st = settings.get(id);
       const fmt = (v: number | null) => {
         const txt = formatValue(v, unit === '°C' ? '°C' : unit);
-        return v == null ? txt : unit ? `${txt} ${unit}` : txt;
+        // espaço inquebrável: a unidade não desce sozinha para a linha de baixo ("1868" / "MHz")
+        return v == null ? txt : unit ? `${txt}\u00a0${unit}` : txt;
       };
       return [
         {
