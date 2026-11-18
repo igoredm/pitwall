@@ -66,6 +66,25 @@ Gera `artifacts/installer/Pitwall-Setup-<versão>.exe`.
 
 O GitHub Actions (`.github/workflows/build.yml`) faz o mesmo a cada push; uma tag `v*` gera um rascunho de release com o instalador.
 
+## Política de assinatura de código
+
+Assinatura de código gratuita fornecida por [SignPath.io](https://about.signpath.io), certificado da [SignPath Foundation](https://signpath.org).
+
+- Commits e revisão: [igoredm](https://github.com/igoredm)
+- Aprovação: [igoredm](https://github.com/igoredm)
+
+Toda release é compilada pelo workflow público do GitHub Actions deste repositório (`.github/workflows/build.yml`) a partir do
+commit da tag. Os programas de terceiros incluídos no instalador mantêm suas próprias assinaturas e licenças
+(ver [installer/THIRD-PARTY-NOTICES.txt](installer/THIRD-PARTY-NOTICES.txt)).
+
+## Privacidade
+
+O Pitwall não coleta nem envia dados pessoais e não tem telemetria. Ele só acessa a internet para procurar atualizações no
+GitHub Releases (nenhum dado do usuário é enviado; dá para desligar em Configurações › App) e, depois que você aceita, para
+baixar a atualização do GitHub. Sensores, logs e configurações ficam no seu PC (`%APPDATA%\Pitwall`,
+`%LOCALAPPDATA%\Pitwall`). A visualização no celular/TV vem desligada e só funciona na sua rede local, depois de parear
+com um código.
+
 ## Licença
 
 Código do Pitwall: [MIT](LICENSE). `tools/battery-patches/` é GPL-3.0 (modifica o WirelessBattery).

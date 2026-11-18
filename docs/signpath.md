@@ -70,7 +70,7 @@ as a separate executable. No proprietary components are part of the signed code.
 | PresentMon 2.6.0 (console) | github.com/GameTechDev/PresentMon release | pinned SHA-256 in `fetch-deps.ps1` | MIT |
 | PawnIO 2.2.0 setup | github.com/namazso/PawnIO.Setup release | pinned SHA-256; official signed installer, run unmodified | GPL-2.0 / LGPL |
 | WebView2 Evergreen bootstrapper | go.microsoft.com (Microsoft) | Authenticode signature must be valid and issued to Microsoft Corporation | Microsoft |
-| WirelessBattery | built in CI from commit `5b872f8` + our patch | source pinned by commit hash; source zip + diff shipped (GPL) | GPL-3.0 |
+| WirelessBattery | built in CI from reviewed commit `958a60a` + our patches (AULA driver; network code and PATH lookup removed) | source pinned by commit hash; source zip + diff shipped (GPL) | GPL-3.0 |
 | HeadsetControl 4.3.0 | github.com/Sapd/HeadsetControl release | pinned SHA-256 (upstream PGP signature checked when the pin was set) | GPL-3.0 |
 | LibreHardwareMonitorLib 0.9.6, WebView2 SDK | NuGet | NuGet package signatures | MPL-2.0 / Microsoft |
 

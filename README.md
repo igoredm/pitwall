@@ -69,6 +69,25 @@ push; a `v*` tag creates a draft release with the installer and SHA-256 checksum
 Useful flags: `Pitwall.exe --dump-sensors [file]` lists every sensor and the mapping. For frontend dev with live data, run
 `npx ng serve` and open `http://localhost:4200/?port=48123#/widget` with the app running (`&theme=neon&mode=light&lang=en` to preview).
 
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+- Committers and reviewers: [igoredm](https://github.com/igoredm)
+- Approvers: [igoredm](https://github.com/igoredm)
+
+Every release is built by the public GitHub Actions workflow in this repository (`.github/workflows/build.yml`) from the tagged
+commit. Third-party programs bundled in the installer keep their own signatures and licenses
+(see [installer/THIRD-PARTY-NOTICES.txt](installer/THIRD-PARTY-NOTICES.txt)).
+
+## Privacy
+
+Pitwall does not collect or transfer any personal data and has no telemetry. It only connects to the internet to check
+GitHub Releases for updates (no user data is sent; it can be turned off in Settings › App) and, after you agree, to
+download the update from GitHub. Sensor data, logs and settings stay on your PC (`%APPDATA%\Pitwall`,
+`%LOCALAPPDATA%\Pitwall`). The optional phone/TV view is off by default and only reachable from your local network,
+after pairing with a code.
+
 ## License
 
 Pitwall's code: [MIT](LICENSE). `tools/battery-patches/` is GPL-3.0 (it modifies WirelessBattery).
