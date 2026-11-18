@@ -123,8 +123,9 @@ export class Settings implements SettingsCtx {
     const g = this.t.game();
     const live = this.t.sessions()[0];
     const fps = this.t.values()['fps.current'];
-    // Sem conexão: o rodapé não pode continuar dizendo "ao vivo" com o último jogo e FPS
-    if (!this.t.connected()) return { visible: false, offline: true, title: s.sideOffline, line: s.sideOfflineLine };
+    // Sem conexão (depois de já ter carregado, como o aviso do topo): o rodapé não pode continuar dizendo
+    // "ao vivo" com o último jogo e FPS. Antes da primeira conexão fica o estado normal de carregamento.
+    if (!this.t.connected() && d) return { visible: false, offline: true, title: s.sideOffline, line: s.sideOfflineLine };
     let line: string;
     if (g) {
       const dur = live && !live.end && live.exe === g.exe ? fmtDuration((Date.now() - new Date(live.start).getTime()) / 1000) : '';

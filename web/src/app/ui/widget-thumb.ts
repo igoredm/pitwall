@@ -95,12 +95,18 @@ import { ThemeName } from '../models';
     }
     .wt-tiles {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      // minmax(0, …): o rótulo "Hot spot" não alarga o tile para fora do card da GPU
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: calc(2px * var(--u));
     }
     .wt-tile {
       display: flex;
       flex-direction: column;
+      min-width: 0;
+      // como no design: o rótulo quebra ("Hot / spot") em vez de vazar ou ser cortado
+      .wt-l {
+        white-space: normal;
+      }
       gap: calc(2px * var(--u));
       padding: calc(3px * var(--u));
     }
