@@ -8,7 +8,7 @@
 
 #define AppName "Pitwall"
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "1.0.1"
 #endif
 #define AppExe "Pitwall.exe"
 
@@ -119,7 +119,7 @@ Filename: "{app}\{#AppExe}"; Parameters: "--set-autostart off"; Flags: runhidden
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchApp}"; Flags: nowait postinstall skipifsilent shellexec
 ; Atualização silenciosa pelo próprio app (/VERYSILENT ... /RESTARTAPPLICATIONS): reabre o Pitwall no fim.
 ; Sem esse parâmetro (ex.: winget, instalação silenciosa manual) o app não é aberto.
-Filename: "{app}\{#AppExe}"; Flags: nowait; Check: RestartAfterSilentUpdate
+Filename: "{app}\{#AppExe}"; Parameters: "--updated"; Flags: nowait; Check: RestartAfterSilentUpdate
 
 [UninstallRun]
 Filename: "{sys}\taskkill.exe"; Parameters: "/IM {#AppExe} /F"; Flags: runhidden waituntilterminated; RunOnceId: "KillApp"

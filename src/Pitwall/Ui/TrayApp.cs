@@ -87,6 +87,14 @@ public sealed class TrayApp : ApplicationContext
             if (_hub.CurrentGame == null) OpenSettings("sessions", "last");
         }, null);
         if (hub.PendingCrashReport is { } pending) ShowCrashBalloon(pending);
+        // Reaberto pelo instalador depois de uma atualização: volta para a tela (não só para a bandeja) e avisa
+        if (Program.JustUpdated)
+            _ui.Post(_ =>
+            {
+                OpenSettings("app", "updates");
+                var ver = typeof(TrayApp).Assembly.GetName().Version?.ToString(3);
+                ShowBalloon(6000, "Pitwall", L.T($"Atualizado para a versão {ver}.", $"Updated to version {ver}."), ToolTipIcon.Info, "app", "updates");
+            }, null);
 
         // Sincroniza a flag com o Agendador (pode ter sido removida por fora)
         _autostartState = Autostart.IsEnabled();

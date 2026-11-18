@@ -8,6 +8,9 @@ namespace Pitwall;
 
 static class Program
 {
+    /// <summary>Aberto pelo instalador no fim de uma atualização silenciosa (--updated).</summary>
+    public static bool JustUpdated { get; private set; }
+
     [STAThread]
     static int Main(string[] args)
     {
@@ -65,8 +68,15 @@ static class Program
             return 0;
         }
 
+        JustUpdated = args.Contains("--updated");
         using var mutex = new Mutex(true, @"Global\Pitwall.SingleInstance", out var first);
-        if (!first) return 0;
+        if (!first)
+        {
+            // Depois de atualizar, a versão anterior pode ainda estar terminando de sair: espera em vez de desistir
+            if (!JustUpdated) return 0;
+            try { if (!mutex.WaitOne(TimeSpan.FromSeconds(15))) return 0; }
+            catch (AbandonedMutexException) { }
+        }
 
         ApplicationConfiguration.Initialize();
 

@@ -21,7 +21,21 @@ internal static class WebViewHost
 
     public static async Task<CoreWebView2> Init(WebView2 web, bool nonClientDrag)
     {
-        await web.EnsureCoreWebView2Async(await Environment());
+        // Logo depois de uma atualização os processos do WebView2 da versão anterior podem ainda estar fechando e
+        // segurando a pasta de dados: a criação falha. Tenta de novo por até ~15 s em vez de deixar a janela vazia.
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await web.EnsureCoreWebView2Async(await Environment());
+                break;
+            }
+            catch when (attempt < 10)
+            {
+                _env = null;
+                await Task.Delay(1500);
+            }
+        }
         var core = web.CoreWebView2;
         core.Settings.IsNonClientRegionSupportEnabled = nonClientDrag;
         core.Settings.AreDefaultContextMenusEnabled = false;
