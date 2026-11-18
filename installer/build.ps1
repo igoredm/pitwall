@@ -1,6 +1,6 @@
 # Gera o instalador: build do Angular -> publish .NET self-contained -> Inno Setup.
-# Uso: powershell -ExecutionPolicy Bypass -File installer\build.ps1 [-Version 0.1.0]
-param([string]$Version = "0.1.0")
+# Uso: powershell -ExecutionPolicy Bypass -File installer\build.ps1 [-Version 0.7.0]
+param([string]$Version = "0.7.0")
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot

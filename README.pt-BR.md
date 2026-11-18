@@ -44,7 +44,7 @@ cd src/Pitwall && dotnet build  # app; rodar bin/Debug/.../Pitwall.exe (pede UAC
 ```bash
 powershell -ExecutionPolicy Bypass -File installer/fetch-deps.ps1      # PresentMon, PawnIO, WebView2 (versões fixas, verificadas)
 powershell -ExecutionPolicy Bypass -File installer/build-battery.ps1   # WirelessBattery (requer MinGW) + HeadsetControl
-powershell -ExecutionPolicy Bypass -File installer/build.ps1 -Version 0.1.0
+powershell -ExecutionPolicy Bypass -File installer/build.ps1 -Version 0.7.0
 ```
 
 Gera `artifacts/installer/Pitwall-Setup-<versão>.exe`.

@@ -45,7 +45,7 @@ Requirements: .NET 10 SDK, Node 24, Inno Setup 6, MinGW-w64 (for the battery rea
 cd web && npm ci && npx ng build
 powershell -ExecutionPolicy Bypass -File installer/fetch-deps.ps1      # PresentMon, PawnIO, WebView2 (pinned, verified)
 powershell -ExecutionPolicy Bypass -File installer/build-battery.ps1   # WirelessBattery + HeadsetControl
-powershell -ExecutionPolicy Bypass -File installer/build.ps1 -Version 0.1.0
+powershell -ExecutionPolicy Bypass -File installer/build.ps1 -Version 0.7.0
 ```
 
 Output: `artifacts/installer/Pitwall-Setup-<version>.exe`. GitHub Actions (`.github/workflows/build.yml`) does the same on every
