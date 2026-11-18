@@ -1,3 +1,4 @@
+using Pitwall.Localization;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -26,7 +27,7 @@ public sealed partial class SettingsForm : Form
         _config = config;
         _port = port;
         _logPath = logPath;
-        Text = "Pitwall — Configurações";
+        Text = L.T("Pitwall — Configurações", "Pitwall — Settings");
         Icon = AppIcon.Large();
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(960, 640);
@@ -82,7 +83,7 @@ public sealed partial class SettingsForm : Form
                 {
                     using var dlg = new FolderBrowserDialog
                     {
-                        Description = "Pasta do log CSV",
+                        Description = L.T("Pasta do log CSV", "CSV log folder"),
                         UseDescriptionForTitle = true,
                         InitialDirectory = _config.Current.Log.Folder,
                     };
@@ -92,7 +93,7 @@ public sealed partial class SettingsForm : Form
                 }
                 case "pickExe":
                 {
-                    using var dlg = new OpenFileDialog { Filter = "Executáveis (*.exe)|*.exe", Title = "Escolher executável" };
+                    using var dlg = new OpenFileDialog { Filter = L.T("Executáveis (*.exe)|*.exe", "Executables (*.exe)|*.exe"), Title = L.T("Escolher executável", "Choose executable") };
                     if (dlg.ShowDialog(this) == DialogResult.OK)
                         Reply(new { type = "exePicked", name = Path.GetFileName(dlg.FileName) });
                     break;

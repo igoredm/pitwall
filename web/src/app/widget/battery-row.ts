@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { I18n } from '../i18n';
 import { WirelessDevice } from '../models';
 
 /** Bateria dos periféricos sem fio, discreta, perto do FPS: ícone + %, ⚡ carregando, vermelho quando baixa. */
@@ -11,7 +12,7 @@ import { WirelessDevice } from '../models';
         class="dev"
         [class.low]="d.percent != null && d.percent <= low()"
         [class.asleep]="d.asleep"
-        [title]="d.name + ' · ' + d.via + (d.asleep ? ' · dormindo (último valor)' : '') + (d.charging ? ' · carregando' : '')"
+        [title]="d.name + ' · ' + d.via + (d.asleep ? ' · ' + s().battAsleepLast : '') + (d.charging ? ' · ' + s().battCharging : '')"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           @switch (d.kind) {
@@ -34,7 +35,7 @@ import { WirelessDevice } from '../models';
         </svg>
         <span class="v">{{ d.percent != null ? d.percent + '%' : (d.levelText ?? '—') }}</span>
         @if (d.charging) {
-          <span class="chg" aria-label="carregando">⚡</span>
+          <span class="chg" [attr.aria-label]="s().battCharging">⚡</span>
         }
       </span>
     }
@@ -59,6 +60,7 @@ import { WirelessDevice } from '../models';
   `,
 })
 export class BatteryRow {
+  protected readonly s = inject(I18n).s;
   readonly devices = input.required<readonly WirelessDevice[]>();
   readonly hidden = input<readonly string[]>([]);
   readonly low = input(15);

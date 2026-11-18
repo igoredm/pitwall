@@ -1,3 +1,4 @@
+using Pitwall.Localization;
 using Pitwall.Config;
 using Pitwall.Fps;
 using Pitwall.Sensors;
@@ -70,6 +71,9 @@ static class Program
         ApplicationConfiguration.Initialize();
 
         var config = new ConfigStore();
+        // Idioma primeiro: os handlers de Changed abaixo (bandeja, hub) já leem o idioma novo
+        L.Set(config.Current.Language);
+        config.Changed += c => L.Set(c.Language);
         using var sensorService = new SensorService(config.Current.PrimaryGpu);
         using var presentMon = new PresentMonService();
         presentMon.Start();

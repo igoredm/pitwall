@@ -1,3 +1,4 @@
+using Pitwall.Localization;
 using System.Security.Principal;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -71,9 +72,12 @@ public sealed class TelemetryHub : IDisposable
         config.Changed += c =>
         {
             ApplyActive(c);
+            if (_lang != L.Lang) { _lang = L.Lang; _ws.Broadcast(CatalogMessage()); }
             _ws.Broadcast(ConfigMessage());
         };
     }
+
+    string _lang = L.Lang;
 
     public int Port => _ws.Port;
 
@@ -190,6 +194,7 @@ public sealed class TelemetryHub : IDisposable
         return JsonSerializer.Serialize(new
         {
             type = "catalog",
+            lang = L.Lang,
             version = typeof(TelemetryHub).Assembly.GetName().Version?.ToString(3),
             admin = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator),
             presentMon = _presentMon.Available,
@@ -215,7 +220,7 @@ public sealed class TelemetryHub : IDisposable
             {
                 id = d.Id,
                 group = d.Group.ToString().ToLowerInvariant(),
-                name = d.Name,
+                name = L.MetricName(d),
                 unit = d.Unit,
                 isTemperature = d.IsTemperature,
                 available = _available.Contains(d.Id),

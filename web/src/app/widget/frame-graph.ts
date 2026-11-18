@@ -1,11 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { I18n } from '../i18n';
 
 /** Gráfico de frametime por frame (dados reais do PresentMon), com linha de referência na mediana. */
 @Component({
   selector: 'pw-frame-graph',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <svg viewBox="0 0 200 40" preserveAspectRatio="none" aria-label="Gráfico de frametime">
+    <svg viewBox="0 0 200 40" preserveAspectRatio="none" [attr.aria-label]="s().frameGraph">
       @if (model(); as m) {
         <line class="median" x1="0" x2="200" [attr.y1]="m.median" [attr.y2]="m.median" vector-effect="non-scaling-stroke" />
         <path class="line" [attr.d]="m.path" vector-effect="non-scaling-stroke" />
@@ -24,6 +25,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
   `,
 })
 export class FrameGraph {
+  protected readonly s = inject(I18n).s;
   readonly frames = input.required<readonly number[]>();
   readonly tick = input(0);
 

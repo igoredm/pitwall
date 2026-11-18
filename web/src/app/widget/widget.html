@@ -14,7 +14,7 @@
     <div class="mini">
       <section class="mini-top">
         @if (!t.connected()) {
-          <span class="mini-extra">Conectando…</span>
+          <span class="mini-extra">{{ s().connecting }}</span>
         } @else if (t.game()) {
           <span class="fps">{{ fps().current?.text ?? '—' }}</span>
           <span class="mini-fps-label">FPS</span>
@@ -44,11 +44,11 @@
     <div class="compact" pwFitScale>
       <section class="c-top" [class.idle]="!t.game()">
         @if (!t.connected()) {
-          <div class="c-sub">Conectando…</div>
+          <div class="c-sub">{{ s().connecting }}</div>
         } @else if (t.game(); as game) {
           <div class="fps">{{ fps().current?.text ?? '—' }}<span class="c-fps-label">FPS</span></div>
           @if (fpsBlocked()) {
-            <div class="c-sub fps-note" [title]="t.fpsStatus()">FPS bloqueado pelo anti-cheat</div>
+            <div class="c-sub fps-note" [title]="t.fpsStatus()">{{ s().fpsBlocked }}</div>
           }
           <!-- uma linha só (quebra se faltar largura): jogo · 1% · frametime · bateria -->
           <div class="c-info">
@@ -68,7 +68,7 @@
           @if (battery().show) {
             <pw-battery-row class="batt" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" [max]="4" />
           } @else {
-            <div class="c-sub">{{ theme() === 'terminal' ? '// sem jogo' : 'Nenhum jogo' }}</div>
+            <div class="c-sub">{{ theme() === 'terminal' ? s().noGameTerm : s().noGame }}</div>
           }
         }
       </section>
@@ -99,13 +99,13 @@
         }
 
         @if (!t.connected()) {
-          <div class="status-pill">Conectando ao Pitwall…</div>
+          <div class="status-pill">{{ s().connectingPitwall }}</div>
         } @else if (t.game(); as game) {
           <div class="game-chip"><i></i>{{ theme() === 'terminal' ? '> ' + game.exe : game.exe }}</div>
           <div class="fps">{{ fps().current?.text ?? '—' }}</div>
           <div class="fps-label">FPS</div>
         @if (fpsBlocked()) {
-          <div class="fps-note" [title]="t.fpsStatus()">FPS bloqueado pelo anti-cheat · feche e abra o jogo</div>
+          <div class="fps-note" [title]="t.fpsStatus()">{{ s().fpsBlockedLong }}</div>
         }
           @if (fps().extras.length) {
             <div class="fps-extras">
@@ -123,7 +123,7 @@
         } @else {
           <div class="clock">{{ clock() }}</div>
           <div class="date">{{ date() }}</div>
-          <div class="status-pill">{{ theme() === 'terminal' ? '// nenhum jogo detectado' : 'Nenhum jogo detectado' }}</div>
+          <div class="status-pill">{{ theme() === 'terminal' ? s().noGameDetectedTerm : s().noGameDetected }}</div>
         }
         @if (battery().show) {
           <pw-battery-row class="batt" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" />
@@ -146,7 +146,7 @@
       <span>watch -n {{ (config()?.refreshMs ?? 500) / 1000 }} sensors</span>
       <span class="grow"></span>
       <span [class.ok]="t.connected()" [class.crit]="!t.connected()">ws:{{ t.connected() ? 'up' : 'down' }}</span>
-      <span [class.warn]="alerts() > 0">alertas:{{ alerts() }}</span>
+      <span [class.warn]="alerts() > 0">{{ s().alertsTerm }}:{{ alerts() }}</span>
       <span>{{ clock() }}</span>
     </footer>
   }
@@ -170,7 +170,7 @@
           <span class="kind">{{ b.kind }}</span>
           <span class="name">{{ b.label }}</span>
           @if (hiddenCount(b)) {
-            <span class="more" title="Métricas escondidas por falta de espaço">+{{ hiddenCount(b) }}</span>
+            <span class="more" [title]="s().hiddenMetrics">+{{ hiddenCount(b) }}</span>
           }
         </div>
         @if (b.head; as h) {

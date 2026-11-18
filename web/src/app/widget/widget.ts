@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, signal } from '@angular/core';
-import { AppConfig, Level, MetricGroup, MetricView, ThemeName, WidgetLayout } from '../models';
+import { AppConfig, MetricGroup, MetricView, ThemeName, WidgetLayout } from '../models';
+import { I18n } from '../i18n';
 import { TelemetryService } from '../telemetry.service';
 import { BatteryRow } from './battery-row';
 import { FrameGraph } from './frame-graph';
@@ -26,9 +27,8 @@ const EMBEDDED = new Set(['ram.used', 'ram.total', 'fps.current', 'fps.graph']);
 /** Nome curto dos layouts, para as classes CSS. */
 const MODE_CLASS: Record<LayoutSize, string> = { full: '', mid: ' c', compact: ' c tiny' };
 
-/** Rótulos curtos para os chips do layout compacto (quando o usuário não definiu um label). */
+/** Rótulos curtos para os chips do layout compacto (quando o usuário não definiu um label). Os que mudam com o idioma ficam em i18n.ts. */
 const SHORT: Record<string, string> = {
-  'gpu.temp': 'Núcleo',
   'gpu.hotspot': 'Hot spot',
   'gpu.memjunction': 'VRAM',
   'gpu.hotspotDelta': 'Δ HS',
@@ -47,18 +47,10 @@ const SHORT: Record<string, string> = {
   'fps.low1': '1%',
   'fps.low01': '0.1%',
   'fps.frametime': 'frametime',
-  'fps.avg': 'méd',
   'net.down': '↓',
   'net.up': '↑',
 };
 
-const TAGS: Record<ThemeName, Record<Level, string>> = {
-  lumen: { ok: '', warn: 'atenção', crit: 'crítico' },
-  minimo: { ok: '', warn: 'atenção', crit: 'crítico' },
-  neon: { ok: '', warn: 'alerta', crit: 'crítico' },
-  terminal: { ok: '[ OK ]', warn: '[WARN]', crit: '[CRIT]' },
-  splash: { ok: '', warn: '▲ alerta', crit: '! crítico' },
-};
 
 @Component({
   selector: 'pw-widget',
@@ -69,6 +61,7 @@ const TAGS: Record<ThemeName, Record<Level, string>> = {
 })
 export class Widget {
   protected readonly t = inject(TelemetryService);
+  protected readonly s = inject(I18n).s;
 
   /** Pré-visualização na tela de configurações: força tema/orientação sem mexer na config. */
   readonly previewTheme = input<ThemeName | null>(null);
@@ -117,19 +110,19 @@ export class Widget {
       : isDarkTheme(this.config(), this.theme(), this.systemDark()),
   );
   protected readonly accent = computed(() => this.config()?.accent || null);
-  protected readonly tags = computed(() => TAGS[this.theme()]);
+  protected readonly tags = computed(() => this.s().tags[this.theme()]);
 
-  protected readonly gpu = computed(() => this.block('gpu', 'GPU', groupLabel(this.config(), 'gpu', this.t.catalog())));
-  protected readonly cpu = computed(() => this.block('cpu', 'CPU', groupLabel(this.config(), 'cpu', this.t.catalog())));
+  protected readonly gpu = computed(() => this.block('gpu', 'GPU', groupLabel(this.config(), 'gpu', this.t.catalog(), this.s())));
+  protected readonly cpu = computed(() => this.block('cpu', 'CPU', groupLabel(this.config(), 'cpu', this.t.catalog(), this.s())));
   protected readonly ram = computed(() => {
-    const b = this.block('ram', 'RAM', groupLabel(this.config(), 'ram', this.t.catalog()));
+    const b = this.block('ram', 'RAM', groupLabel(this.config(), 'ram', this.t.catalog(), this.s()));
     const v = this.t.values();
     if (b.sub && v['ram.used'] != null && v['ram.total'] != null)
       b.sub = `${v['ram.used']!.toFixed(1)} / ${Math.round(v['ram.total']!)} GB`;
     else b.sub = null;
     return b;
   });
-  protected readonly other = computed(() => this.block('other', 'Outros', groupLabel(this.config(), 'other', this.t.catalog())));
+  protected readonly other = computed(() => this.block('other', this.s().groupOther, groupLabel(this.config(), 'other', this.t.catalog(), this.s())));
 
   protected readonly fps = computed(() => {
     const views = this.limited('fps');
@@ -161,10 +154,10 @@ export class Widget {
   });
 
   protected readonly clock = computed(() =>
-    this.now().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    this.now().toLocaleTimeString(this.s().locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }),
   );
   protected readonly date = computed(() =>
-    this.now().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }),
+    this.now().toLocaleDateString(this.s().locale, { weekday: 'long', day: 'numeric', month: 'long' }),
   );
 
   constructor() {
@@ -225,7 +218,7 @@ export class Widget {
   /** Label curto para chips do compacto. */
   protected short(m: MetricView) {
     const custom = this.config()?.metrics.find((x) => x.id === m.id)?.label;
-    return custom || SHORT[m.id] || this.label(m);
+    return custom || this.s().short[m.id] || SHORT[m.id] || this.label(m);
   }
 
   /** Unidade curta: temperatura vira só "°". */

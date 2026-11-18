@@ -1,3 +1,4 @@
+using Pitwall.Localization;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -40,8 +41,8 @@ internal static partial class Nvml
     public static string Describe(int code) => code switch
     {
         Success => "ok",
-        NotSupported => "não suportado por esta placa/driver",
-        NoPermission => "sem permissão (precisa de administrador)",
+        NotSupported => L.T("não suportado por esta placa/driver", "not supported by this card/driver"),
+        NoPermission => L.T("sem permissão (precisa de administrador)", "no permission (needs administrator)"),
         _ => $"erro NVML {code}",
     };
 }

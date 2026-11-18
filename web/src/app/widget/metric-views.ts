@@ -1,3 +1,4 @@
+import type { Dict } from '../i18n';
 import { AppConfig, Catalog, Level, MetricDef, MetricGroup, MetricView, ThemeName } from '../models';
 
 /** Métricas habilitadas e disponíveis de um grupo, na ordem configurada, prontas para exibir. */
@@ -63,7 +64,7 @@ export function isDarkTheme(config: AppConfig | null, theme: ThemeName, systemDa
 }
 
 /** Nome do bloco no widget: o que o usuário definiu, senão derivado do hardware ("RTX 3080", "i5-12600K"). */
-export function groupLabel(config: AppConfig | null, group: MetricGroup, catalog: Catalog | null) {
+export function groupLabel(config: AppConfig | null, group: MetricGroup, catalog: Catalog | null, s: Dict) {
   const custom = config?.groupLabels?.[group];
   if (custom) return custom;
   switch (group) {
@@ -72,11 +73,11 @@ export function groupLabel(config: AppConfig | null, group: MetricGroup, catalog
     case 'cpu':
       return shortCpu(catalog?.hardware.cpu);
     case 'ram':
-      return 'Memória';
+      return s.groupRam;
     case 'fps':
       return 'FPS';
     default:
-      return 'Outros';
+      return s.groupOther;
   }
 }
 

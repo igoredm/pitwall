@@ -14,6 +14,8 @@ public sealed class AppConfig
     public string ThemeMode { get; set; } = "dark";
     /// <summary>Cor de destaque. Vazio = padrão de cada tema.</summary>
     public string Accent { get; set; } = "";
+    /// <summary>auto (idioma do Windows) | pt-BR | en</summary>
+    public string Language { get; set; } = "auto";
 
     public bool StartWithWindows { get; set; }
     public bool AutoOpenWidgetOnGame { get; set; } = true;

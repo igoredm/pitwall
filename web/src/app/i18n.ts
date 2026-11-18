@@ -1,0 +1,481 @@
+import { Injectable, computed, effect, inject } from '@angular/core';
+import { Level, ThemeName } from './models';
+import { TelemetryService } from './telemetry.service';
+
+export type Lang = 'pt-BR' | 'en';
+export type LanguagePref = 'auto' | Lang;
+
+/**
+ * Textos da interface. `en` é tipado como `typeof ptBR`: chave faltando ou sobrando é erro de compilação.
+ * Nomes de métricas, unidades e status (anti-cheat, bateria) vêm já traduzidos do backend.
+ */
+const ptBR = {
+  locale: 'pt-BR',
+
+  // ---------------------------------------------------------------- widget
+  connecting: 'Conectando…',
+  connectingPitwall: 'Conectando ao Pitwall…',
+  fpsBlocked: 'FPS bloqueado pelo anti-cheat',
+  fpsBlockedLong: 'FPS bloqueado pelo anti-cheat · feche e abra o jogo',
+  noGame: 'Nenhum jogo',
+  noGameTerm: '// sem jogo',
+  noGameDetected: 'Nenhum jogo detectado',
+  noGameDetectedTerm: '// nenhum jogo detectado',
+  hiddenMetrics: 'Métricas escondidas por falta de espaço',
+  alertsTerm: 'alertas',
+  frameGraph: 'Gráfico de frametime',
+  groupOther: 'Outros',
+  groupRam: 'Memória',
+  /** Rótulos curtos dos chips do compacto/médio que mudam com o idioma (os demais são iguais). */
+  short: { 'gpu.temp': 'Núcleo', 'fps.avg': 'méd' } as Record<string, string>,
+  tags: {
+    lumen: { ok: '', warn: 'atenção', crit: 'crítico' },
+    minimo: { ok: '', warn: 'atenção', crit: 'crítico' },
+    neon: { ok: '', warn: 'alerta', crit: 'crítico' },
+    terminal: { ok: '[ OK ]', warn: '[WARN]', crit: '[CRIT]' },
+    splash: { ok: '', warn: '▲ alerta', crit: '! crítico' },
+  } as Record<ThemeName, Record<Level, string>>,
+  battAsleepLast: 'dormindo (último valor)',
+  battCharging: 'carregando',
+
+  // ---------------------------------------------------------------- temas
+  themeNames: { minimo: 'Mínimo', neon: 'Neon', terminal: 'Terminal', lumen: 'Lumen', splash: 'Splash' } as Record<ThemeName, string>,
+
+  // ---------------------------------------------------------------- configurações: moldura
+  sections: 'Seções',
+  settingsTitle: 'Configurações',
+  nav: { metricas: 'Métricas', geral: 'Geral', gpu: 'GPU', log: 'Log', jogos: 'Jogos' },
+  widgetActive: 'Widget ativo',
+  widgetHidden: 'Widget oculto',
+  statusMonitor: (n: string | number, locked: boolean) => `Monitor ${n}${locked ? ' · posição travada' : ''}`,
+  statusGame: (exe: string | null, rate: string) => `${exe ? 'Jogo: ' + exe : 'Sem jogo'} · ${rate}`,
+  confirmAgain: 'Clique de novo para confirmar',
+  restoreDefaults: 'Restaurar padrão',
+  runningAdmin: ' · executando como administrador',
+  disconnected: 'desconectado do Pitwall',
+  previewWidget: 'Pré-visualizar widget',
+  loading: 'Carregando…',
+
+  // ---------------------------------------------------------------- métricas
+  metricsTitle: 'Métricas',
+  metricsIntro: [
+    'A ordem é a prioridade: o ',
+    'compacto',
+    ' mostra as 4 primeiras da GPU, 3 da CPU e 1 da RAM; o ',
+    'médio',
+    ' 6 / 4 / 2; o ',
+    'completo',
+    ' mostra tudo o que couber na janela. "Outros" só aparece no completo. O log grava tudo, mesmo o que está oculto.',
+  ],
+  searchMetric: 'Buscar métrica…',
+  activeOf: (a: number, t: number) => `${a} de ${t} ativas`,
+  nameInWidget: 'Nome no widget',
+  colShow: 'Exibir',
+  colLabel: 'Label',
+  colSensor: 'Sensor',
+  colUnit: 'Unidade',
+  colWarn: 'Amarelo',
+  colCrit: 'Vermelho',
+  colGraph: 'Gráfico',
+  colWhere: 'Aparece em',
+  drag: 'Arrastar',
+  notAvailable: 'não disponível',
+  layoutCompact: 'compacto',
+  layoutMid: 'médio',
+  layoutFull: 'completo',
+
+  // ---------------------------------------------------------------- geral
+  generalTitle: 'Geral',
+  generalIntro: 'Aparência e comportamento do widget. As mudanças são aplicadas na hora.',
+  appearance: 'Aparência',
+  appTheme: 'Tema do app',
+  widgetTheme: 'Tema do widget',
+  widgetThemeHint: 'Independente do tema do app.',
+  variant: 'Variante',
+  darkOnlyHint: 'Neon e Terminal existem só no escuro.',
+  light: 'Clara',
+  dark: 'Escura',
+  system: 'Sistema',
+  accent: 'Cor de destaque',
+  accentCustom: 'Personalizada',
+  accentThemeDefault: 'padrão do tema',
+  accents: {
+    '': 'Padrão do tema',
+    '#4C8DFF': 'Azul',
+    '#8B5CF6': 'Violeta',
+    '#FF2E88': 'Magenta',
+    '#FF7A1A': 'Laranja',
+    '#FFC53D': 'Âmbar',
+    '#3DDC84': 'Verde',
+    '#00E5FF': 'Ciano',
+  } as Record<string, string>,
+  language: 'Idioma',
+  languageHint: 'Automático segue o idioma do Windows.',
+  languageAuto: 'Automático (Windows)',
+  behavior: 'Comportamento',
+  refreshRate: 'Taxa de atualização',
+  refreshRateHint: 'Frequência de leitura dos sensores e envio ao widget.',
+  startWithWindows: 'Iniciar com o Windows',
+  startWithWindowsHint: 'Pelo Agendador de Tarefas, como administrador.',
+  autoOpen: 'Abrir widget ao detectar jogo',
+  autoOpenHint: 'Mostra o widget se ele estiver oculto.',
+  wireless: 'Periféricos sem fio',
+  battShow: 'Mostrar bateria perto do FPS',
+  battHint: [
+    'Mouse, headset, teclado e controle. Lido a cada minuto direto do dispositivo, sem software do fabricante, pelo ',
+    ' (GPL-3.0, por krisgfx9) e HeadsetControl.',
+  ],
+  battOff: 'desligado',
+  battAsleep: 'dormindo',
+  battNone: 'Nenhum dispositivo com bateria reconhecido.',
+  battSupported: 'Ver modelos suportados',
+  refreshNow: 'Atualizar agora',
+  widgetMonitor: 'Monitor do widget',
+  identifyMonitors: 'Identificar monitores',
+  layout: 'Layout',
+  layoutHint: 'Automático: vira compacto quando a janela é pequena.',
+  layoutAutoBtn: 'Automático',
+  layoutFullBtn: 'Completo',
+  layoutMidBtn: 'Médio',
+  layoutCompactBtn: 'Compacto',
+  corner: 'Posicionar no canto',
+  cornerHint:
+    'Canto superior direito do monitor escolhido — para quem tem 2 monitores e usa o Discord ao lado. Compacto 260×180, médio 300×300.',
+  showWidget: 'Mostrar widget',
+  lockWidget: 'Travar posição do widget',
+  lockWidgetHint: 'Impede arrastar e redimensionar. Monitor, posição e tamanho ficam salvos.',
+  alwaysOnTop: 'Sempre no topo',
+  alwaysOnTopHint: 'Não fica por cima de apps em tela cheia.',
+  noMonitor: 'Nenhum monitor',
+  monitorLabel: (i: number, w: number, h: number, vertical: boolean, primary: boolean) =>
+    `Monitor ${i} · ${w} × ${h} · ${vertical ? 'vertical' : 'horizontal'}${primary ? ' · principal' : ''}`,
+
+  // ---------------------------------------------------------------- gpu
+  gpuTitle: 'Ajuste da GPU',
+  gpuIntro:
+    '"Undervolt" seguro pela API oficial da NVIDIA: limita o consumo e trava o clock máximo — com o clock mais baixo, o driver usa menos voltagem. Menos calor no hot spot, quase sem perder FPS. Nada é gravado na placa: volta ao normal ao desligar, ao fechar o Pitwall ou ao reiniciar o PC. Não toca no jogo (seguro para anti-cheat).',
+  gpuUnavailable: (err: string) => `Não disponível nesta máquina: ${err}.`,
+  gpuNeedsNvidia: 'precisa de uma GPU NVIDIA',
+  gpuEnable: 'Ativar ajuste da GPU',
+  gpuCaps: (gpu: string, w: number, mhz: number) => `${gpu} · padrão de fábrica ${w} W · até ${mhz} MHz`,
+  gpuWhen: 'Quando aplicar',
+  gpuWhenHint: '"Só em jogos" volta ao normal no desktop e liga sozinho quando um jogo é detectado.',
+  gpuOnlyGames: 'Só em jogos',
+  gpuAlways: 'Sempre',
+  gpuProfile: 'Perfil',
+  gpuBalanced: 'Equilibrado',
+  gpuCool: 'Frio',
+  gpuCustom: 'Personalizado',
+  gpuProfileHint:
+    'O que mais derruba o calor é o teto de clock (menos voltagem). Equilibrado: ~2–4% menos FPS sem limite de quadros; com FPS travado (ex.: 120 no EA FC) a diferença costuma sumir. Frio: para quando a placa está esquentando demais — pode custar ~8–10% em jogos pesados.',
+  gpuPowerLimit: (w: number, pct: number) => `Limite de consumo · ${w} W (${pct}% do padrão)`,
+  gpuMaxClock: (mhz: number) => `Clock máximo · ${mhz ? mhz + ' MHz' : 'sem teto'}`,
+  gpuMaxClockHint: 'Arraste até o fim para "sem teto" (só limite de consumo).',
+  gpuNow: 'Agora',
+  gpuActive: (w: number | undefined, mhz: number | undefined) => `Ativo · ${w} W${mhz ? ` · até ${mhz} MHz` : ''}`,
+  gpuWaiting: 'Aguardando um jogo',
+  gpuOff: (w: number) => `Desligado · placa no limite original (${w} W)`,
+  gpuApplied: 'Aplicado',
+  gpuInactive: 'Inativo',
+  gpuLive: { 'gpu.hotspot': 'Hot spot', 'gpu.hotspotDelta': 'Δ hot spot − núcleo', 'gpu.temp': 'Núcleo', 'gpu.power': 'Consumo', 'gpu.clock': 'Clock', 'gpu.fan': 'Fan' } as Record<string, string>,
+  gpuCompareHint: 'Compare o hot spot e o Δ com o ajuste ligado e desligado durante uma partida. O log CSV registra tudo.',
+
+  // ---------------------------------------------------------------- log
+  logTitle: 'Log',
+  logIntro: 'Registro em CSV para investigar travamentos e desligamentos. Cada sessão de jogo gera um arquivo.',
+  logEnable: 'Gravar log em CSV',
+  logEnableHint:
+    'Grava todas as métricas de CPU, GPU e RAM (mesmo ocultas no widget) e os "Outros" habilitados, com flush em disco a cada linha — os últimos segundos não se perdem num desligamento.',
+  logFolder: 'Pasta de destino',
+  change: 'Alterar…',
+  open: 'Abrir',
+  interval: 'Intervalo',
+  currentFile: 'Arquivo atual:',
+  logWaiting: 'Aguardando o primeiro registro…',
+  logOff: 'Log desligado.',
+  decimalComma: true,
+
+  // ---------------------------------------------------------------- jogos
+  gamesTitle: 'Jogos',
+  gamesIntro: 'Controle quando o widget considera que há um jogo rodando.',
+  autoDetection: 'Detecção automática',
+  autoDetect: 'Detectar jogos automaticamente',
+  autoDetectHint:
+    'Usa o processo em foco que estiver em tela cheia exclusiva ou sem bordas e renderizando frames. Regras manuais têm prioridade.',
+  focusedNow: 'Em foco agora',
+  gameDetected: 'Jogo detectado',
+  idle: 'Ocioso',
+  executables: 'Executáveis',
+  executablesHint: 'Inclua jogos que não são detectados ou ignore apps em tela cheia.',
+  all: 'Todos',
+  include: 'Incluir',
+  ignore: 'Ignorar',
+  exePlaceholder: 'jogo.exe',
+  browse: 'Procurar…',
+  add: 'Adicionar',
+  colExe: 'Executável',
+  colRule: 'Regra',
+  colOrigin: 'Origem',
+  remove: 'Remover',
+  originSelf: 'O próprio app · fixo',
+  originBrowser: 'Navegador · padrão',
+  originDefault: 'Padrão',
+  originManual: 'Adicionado manualmente',
+  recentSessions: 'Sessões recentes',
+  recentSessionsHint: 'Cada sessão gera um arquivo de log.',
+  noSessions: 'Nenhuma sessão ainda.',
+  today: 'hoje',
+  yesterday: 'ontem',
+  inProgress: 'em andamento',
+  preview: 'Pré-visualização',
+  close: 'Fechar',
+};
+
+export type Dict = typeof ptBR;
+
+const en: Dict = {
+  locale: 'en-US',
+
+  connecting: 'Connecting…',
+  connectingPitwall: 'Connecting to Pitwall…',
+  fpsBlocked: 'FPS blocked by anti-cheat',
+  fpsBlockedLong: 'FPS blocked by anti-cheat · restart the game',
+  noGame: 'No game',
+  noGameTerm: '// no game',
+  noGameDetected: 'No game detected',
+  noGameDetectedTerm: '// no game detected',
+  hiddenMetrics: 'Metrics hidden for lack of space',
+  alertsTerm: 'alerts',
+  frameGraph: 'Frametime graph',
+  groupOther: 'Other',
+  groupRam: 'Memory',
+  short: { 'gpu.temp': 'Core', 'fps.avg': 'avg' },
+  tags: {
+    lumen: { ok: '', warn: 'warning', crit: 'critical' },
+    minimo: { ok: '', warn: 'warning', crit: 'critical' },
+    neon: { ok: '', warn: 'alert', crit: 'critical' },
+    terminal: { ok: '[ OK ]', warn: '[WARN]', crit: '[CRIT]' },
+    splash: { ok: '', warn: '▲ alert', crit: '! critical' },
+  },
+  battAsleepLast: 'asleep (last reading)',
+  battCharging: 'charging',
+
+  themeNames: { minimo: 'Minimal', neon: 'Neon', terminal: 'Terminal', lumen: 'Lumen', splash: 'Splash' },
+
+  sections: 'Sections',
+  settingsTitle: 'Settings',
+  nav: { metricas: 'Metrics', geral: 'General', gpu: 'GPU', log: 'Log', jogos: 'Games' },
+  widgetActive: 'Widget active',
+  widgetHidden: 'Widget hidden',
+  statusMonitor: (n, locked) => `Monitor ${n}${locked ? ' · position locked' : ''}`,
+  statusGame: (exe, rate) => `${exe ? 'Game: ' + exe : 'No game'} · ${rate}`,
+  confirmAgain: 'Click again to confirm',
+  restoreDefaults: 'Restore defaults',
+  runningAdmin: ' · running as administrator',
+  disconnected: 'disconnected from Pitwall',
+  previewWidget: 'Preview widget',
+  loading: 'Loading…',
+
+  metricsTitle: 'Metrics',
+  metricsIntro: [
+    'Order is priority: ',
+    'compact',
+    ' shows the first 4 GPU, 3 CPU and 1 RAM metrics; ',
+    'mid',
+    ' 6 / 4 / 2; ',
+    'full',
+    ' shows everything that fits in the window. "Other" only appears in full. The log records everything, even hidden metrics.',
+  ],
+  searchMetric: 'Search metrics…',
+  activeOf: (a, t) => `${a} of ${t} active`,
+  nameInWidget: 'Name in widget',
+  colShow: 'Show',
+  colLabel: 'Label',
+  colSensor: 'Sensor',
+  colUnit: 'Unit',
+  colWarn: 'Yellow',
+  colCrit: 'Red',
+  colGraph: 'Graph',
+  colWhere: 'Shown in',
+  drag: 'Drag',
+  notAvailable: 'not available',
+  layoutCompact: 'compact',
+  layoutMid: 'mid',
+  layoutFull: 'full',
+
+  generalTitle: 'General',
+  generalIntro: 'Widget look and behavior. Changes apply immediately.',
+  appearance: 'Appearance',
+  appTheme: 'App theme',
+  widgetTheme: 'Widget theme',
+  widgetThemeHint: 'Independent of the app theme.',
+  variant: 'Variant',
+  darkOnlyHint: 'Neon and Terminal are dark only.',
+  light: 'Light',
+  dark: 'Dark',
+  system: 'System',
+  accent: 'Accent color',
+  accentCustom: 'Custom',
+  accentThemeDefault: 'theme default',
+  accents: {
+    '': 'Theme default',
+    '#4C8DFF': 'Blue',
+    '#8B5CF6': 'Violet',
+    '#FF2E88': 'Magenta',
+    '#FF7A1A': 'Orange',
+    '#FFC53D': 'Amber',
+    '#3DDC84': 'Green',
+    '#00E5FF': 'Cyan',
+  },
+  language: 'Language',
+  languageHint: 'Automatic follows the Windows language.',
+  languageAuto: 'Automatic (Windows)',
+  behavior: 'Behavior',
+  refreshRate: 'Refresh rate',
+  refreshRateHint: 'How often sensors are read and sent to the widget.',
+  startWithWindows: 'Start with Windows',
+  startWithWindowsHint: 'Through Task Scheduler, as administrator.',
+  autoOpen: 'Open widget when a game is detected',
+  autoOpenHint: 'Shows the widget if it is hidden.',
+  wireless: 'Wireless peripherals',
+  battShow: 'Show battery next to FPS',
+  battHint: [
+    'Mouse, headset, keyboard and controller. Read every minute straight from the device, without vendor software, by ',
+    ' (GPL-3.0, by krisgfx9) and HeadsetControl.',
+  ],
+  battOff: 'off',
+  battAsleep: 'asleep',
+  battNone: 'No battery-powered device recognized.',
+  battSupported: 'See supported models',
+  refreshNow: 'Refresh now',
+  widgetMonitor: 'Widget monitor',
+  identifyMonitors: 'Identify monitors',
+  layout: 'Layout',
+  layoutHint: 'Automatic: switches to compact when the window is small.',
+  layoutAutoBtn: 'Automatic',
+  layoutFullBtn: 'Full',
+  layoutMidBtn: 'Mid',
+  layoutCompactBtn: 'Compact',
+  corner: 'Snap to corner',
+  cornerHint:
+    'Top-right corner of the chosen monitor — for two-monitor setups with Discord alongside. Compact 260×180, mid 300×300.',
+  showWidget: 'Show widget',
+  lockWidget: 'Lock widget position',
+  lockWidgetHint: 'Prevents dragging and resizing. Monitor, position and size are saved.',
+  alwaysOnTop: 'Always on top',
+  alwaysOnTopHint: 'Never covers fullscreen apps.',
+  noMonitor: 'No monitor',
+  monitorLabel: (i, w, h, vertical, primary) =>
+    `Monitor ${i} · ${w} × ${h} · ${vertical ? 'portrait' : 'landscape'}${primary ? ' · primary' : ''}`,
+
+  gpuTitle: 'GPU tuning',
+  gpuIntro:
+    'Safe "undervolt" through NVIDIA\'s official API: caps power draw and locks the maximum clock — at a lower clock the driver uses less voltage. Less hot spot heat, with almost no FPS loss. Nothing is written to the card: it goes back to normal when you turn this off, close Pitwall or restart the PC. It never touches the game (anti-cheat safe).',
+  gpuUnavailable: (err) => `Not available on this machine: ${err}.`,
+  gpuNeedsNvidia: 'requires an NVIDIA GPU',
+  gpuEnable: 'Enable GPU tuning',
+  gpuCaps: (gpu, w, mhz) => `${gpu} · factory default ${w} W · up to ${mhz} MHz`,
+  gpuWhen: 'When to apply',
+  gpuWhenHint: '"Only in games" returns to normal on the desktop and turns on by itself when a game is detected.',
+  gpuOnlyGames: 'Only in games',
+  gpuAlways: 'Always',
+  gpuProfile: 'Profile',
+  gpuBalanced: 'Balanced',
+  gpuCool: 'Cool',
+  gpuCustom: 'Custom',
+  gpuProfileHint:
+    'The clock cap is what cuts heat the most (less voltage). Balanced: ~2–4% fewer FPS with uncapped frame rate; with a frame cap (e.g. 120 in EA FC) the difference usually disappears. Cool: for when the card runs too hot — may cost ~8–10% in heavy games.',
+  gpuPowerLimit: (w, pct) => `Power limit · ${w} W (${pct}% of default)`,
+  gpuMaxClock: (mhz) => `Max clock · ${mhz ? mhz + ' MHz' : 'no cap'}`,
+  gpuMaxClockHint: 'Drag all the way for "no cap" (power limit only).',
+  gpuNow: 'Now',
+  gpuActive: (w, mhz) => `Active · ${w} W${mhz ? ` · up to ${mhz} MHz` : ''}`,
+  gpuWaiting: 'Waiting for a game',
+  gpuOff: (w) => `Off · card at its original limit (${w} W)`,
+  gpuApplied: 'Applied',
+  gpuInactive: 'Inactive',
+  gpuLive: { 'gpu.hotspot': 'Hot spot', 'gpu.hotspotDelta': 'Δ hot spot − core', 'gpu.temp': 'Core', 'gpu.power': 'Power', 'gpu.clock': 'Clock', 'gpu.fan': 'Fan' },
+  gpuCompareHint: 'Compare hot spot and Δ with tuning on and off during a match. The CSV log records everything.',
+
+  logTitle: 'Log',
+  logIntro: 'CSV recording to investigate freezes and shutdowns. Each game session creates a file.',
+  logEnable: 'Write CSV log',
+  logEnableHint:
+    'Records every CPU, GPU and RAM metric (even those hidden in the widget) plus enabled "Other" metrics, flushing to disk on every line — the last seconds survive a sudden shutdown.',
+  logFolder: 'Destination folder',
+  change: 'Change…',
+  open: 'Open',
+  interval: 'Interval',
+  currentFile: 'Current file:',
+  logWaiting: 'Waiting for the first record…',
+  logOff: 'Log is off.',
+  decimalComma: false,
+
+  gamesTitle: 'Games',
+  gamesIntro: 'Control when the widget considers a game to be running.',
+  autoDetection: 'Automatic detection',
+  autoDetect: 'Detect games automatically',
+  autoDetectHint:
+    'Uses the focused process when it is in exclusive or borderless fullscreen and rendering frames. Manual rules take priority.',
+  focusedNow: 'Focused now',
+  gameDetected: 'Game detected',
+  idle: 'Idle',
+  executables: 'Executables',
+  executablesHint: 'Include games that are not detected or ignore fullscreen apps.',
+  all: 'All',
+  include: 'Include',
+  ignore: 'Ignore',
+  exePlaceholder: 'game.exe',
+  browse: 'Browse…',
+  add: 'Add',
+  colExe: 'Executable',
+  colRule: 'Rule',
+  colOrigin: 'Source',
+  remove: 'Remove',
+  originSelf: 'The app itself · fixed',
+  originBrowser: 'Browser · default',
+  originDefault: 'Default',
+  originManual: 'Added manually',
+  recentSessions: 'Recent sessions',
+  recentSessionsHint: 'Each session creates a log file.',
+  noSessions: 'No sessions yet.',
+  today: 'today',
+  yesterday: 'yesterday',
+  inProgress: 'in progress',
+  preview: 'Preview',
+  close: 'Close',
+};
+
+const DICTS: Record<Lang, Dict> = { 'pt-BR': ptBR, en };
+
+/** Nomes dos idiomas no próprio idioma (o seletor não muda de texto ao trocar). */
+export const LANGUAGES: { id: Lang; name: string }[] = [
+  { id: 'pt-BR', name: 'Português (Brasil)' },
+  { id: 'en', name: 'English' },
+];
+
+function asLang(v: string | null | undefined): Lang | null {
+  if (!v) return null;
+  return v.toLowerCase().startsWith('pt') ? 'pt-BR' : v.toLowerCase().startsWith('en') ? 'en' : null;
+}
+
+@Injectable({ providedIn: 'root' })
+export class I18n {
+  private readonly t = inject(TelemetryService);
+  /** ?lang=en na URL: pré-visualização em desenvolvimento, como ?theme=. */
+  private readonly urlLang = asLang(new URLSearchParams(location.search).get('lang'));
+
+  /** Idioma efetivo: URL > escolha na config > o que o backend resolveu pelo Windows > navegador. */
+  readonly lang = computed<Lang>(() => {
+    if (this.urlLang) return this.urlLang;
+    const pref = this.t.config()?.language;
+    if (pref && pref !== 'auto') return asLang(pref) ?? 'en';
+    return asLang(this.t.catalog()?.lang) ?? (navigator.language.toLowerCase().startsWith('pt') ? 'pt-BR' : 'en');
+  });
+
+  readonly s = computed(() => DICTS[this.lang()]);
+
+  constructor() {
+    effect(() => (document.documentElement.lang = this.lang()));
+  }
+}

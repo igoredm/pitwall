@@ -1,46 +1,58 @@
 # Pitwall
 
-Monitor de hardware para Windows que mostra um widget num monitor secundário — sem overlay e sem tocar no processo do jogo.
-Spec: [docs/spec.md](docs/spec.md) · Design: [docs/design-notes.md](docs/design-notes.md)
+**English** · [Português](README.pt-BR.md)
 
-## Arquitetura
+A hardware monitor for Windows that shows a widget on a secondary monitor — no overlay, nothing touches the game process.
+A lightweight alternative to MSI Afterburner/RTSS: FPS, 1% / 0.1% lows, frametime, temperatures (including GPU hot spot and
+memory junction), clocks, power, RAM, wireless mouse/headset battery, a CSV log per game session and optional GPU tuning
+(power limit + max clock).
 
-- `src/Pitwall` — .NET 10 WinForms (bandeja + janela WebView2), roda como administrador.
-  - Sensores: LibreHardwareMonitorLib 0.9.6 (driver **PawnIO**, sem WinRing0).
-  - FPS: `tools/PresentMon.exe` (Intel, ETW) lido pelo stdout; FPS, frametime, 1% e 0.1% low.
-  - WebSocket `ws://localhost:48123/ws` (HttpListener) — snapshot a cada `refreshMs`.
-  - CSV em `%LOCALAPPDATA%\Pitwall\logs`, todas as métricas disponíveis, `FlushFileBuffers` por linha.
-  - Iniciar com o Windows: Agendador de Tarefas com "privilégios mais altos".
-- `web` — Angular 22: widget (`#/widget`) e configurações (`#/settings`, carregada sob demanda), 5 temas
-  (Lumen, Mínimo, Neon, Terminal, Splash) com tokens em `src/styles.scss`. Servido ao WebView2 via `https://pitwall.local`.
-  - Métricas "Outros" (discos, placa-mãe, rede) só são lidas do hardware quando habilitadas.
-- `installer` — Inno Setup: inclui PresentMon e instala PawnIO e WebView2 Runtime se faltarem.
+- **Anti-cheat safe:** FPS comes from PresentMon (Windows ETW events); nothing is injected into the game.
+- **Lightweight:** ~0.3% CPU for the app + ~1.3% for WebView2, ~50–80 MB.
+- **5 themes** (Lumen, Mínimo, Neon, Terminal, Splash), light/dark, and 3 layouts (full, medium, compact).
+- **Languages:** English and Portuguese (follows Windows, or pick one in Settings).
 
-## Desenvolvimento
+## Install
+
+Download `Pitwall-Setup-<version>.exe` from [Releases](../../releases). The installer also sets up:
+
+- [PresentMon](https://github.com/GameTechDev/PresentMon) (Intel, MIT) — FPS capture via ETW.
+- [PawnIO](https://pawnio.eu) — signed driver used by LibreHardwareMonitor for CPU sensors (replaces the flagged WinRing0).
+- Microsoft WebView2 Runtime, if missing.
+
+Pitwall runs as administrator (sensors and ETW require it). "Start with Windows" uses a Task Scheduler task with highest privileges.
+
+## Architecture
+
+- `src/Pitwall` — .NET 10 WinForms (tray + WebView2 window).
+  - Sensors: LibreHardwareMonitorLib 0.9.6 (PawnIO driver).
+  - FPS: `tools/PresentMon.exe` read from stdout; FPS, frametime, 1% and 0.1% lows.
+  - WebSocket `ws://localhost:48123/ws` (HttpListener, origin allowlist) — a snapshot every `refreshMs`.
+  - CSV in `%LOCALAPPDATA%\Pitwall\logs`, flushed to disk on every line (useful when the PC crashes).
+  - GPU tuning through NVIDIA's official NVML only; restored on exit, on game exit and after a crash.
+  - Wireless battery: bundled [WirelessBattery](https://github.com/krisgfx9/Wireless-Device-Battery-Monitor) (built from a
+    reviewed commit, plus our AULA driver in `tools/battery-patches`) and [HeadsetControl](https://github.com/Sapd/HeadsetControl).
+- `web` — Angular 22: widget (`#/widget`) and settings (`#/settings`), served to WebView2 at `https://pitwall.local`.
+- `installer` — Inno Setup script and build scripts.
+
+## Building
+
+Requirements: .NET 10 SDK, Node 24, Inno Setup 6, MinGW-w64 (for the battery reader).
 
 ```bash
-cd web && npx ng build          # frontend -> web/dist (copiado para wwwroot no build .NET)
-cd src/Pitwall && dotnet build  # app; rodar bin/Debug/.../Pitwall.exe (pede UAC)
-```
-
-- `Pitwall.exe --dump-sensors [arquivo]` lista todos os sensores e o mapeamento.
-- Dev do frontend com dados ao vivo: `npx ng serve` e abrir `http://localhost:4200/?port=48123#/widget` com o app rodando.
-  Pré-visualizar outro tema sem mudar a config: `?port=48123&theme=neon&mode=light#/widget`.
-- Em Debug, `{"type":"quit"}` no WebSocket fecha o app (o processo é elevado).
-
-## Instalador
-
-```bash
-powershell -ExecutionPolicy Bypass -File installer/fetch-deps.ps1      # PresentMon, PawnIO, WebView2 (versões fixas, verificadas)
-powershell -ExecutionPolicy Bypass -File installer/build-battery.ps1   # WirelessBattery (requer MinGW) + HeadsetControl
+cd web && npm ci && npx ng build
+powershell -ExecutionPolicy Bypass -File installer/fetch-deps.ps1      # PresentMon, PawnIO, WebView2 (pinned, verified)
+powershell -ExecutionPolicy Bypass -File installer/build-battery.ps1   # WirelessBattery + HeadsetControl
 powershell -ExecutionPolicy Bypass -File installer/build.ps1 -Version 0.1.0
 ```
 
-Gera `artifacts/installer/Pitwall-Setup-<versão>.exe`.
+Output: `artifacts/installer/Pitwall-Setup-<version>.exe`. GitHub Actions (`.github/workflows/build.yml`) does the same on every
+push; a `v*` tag creates a draft release with the installer and SHA-256 checksums.
 
-O GitHub Actions (`.github/workflows/build.yml`) faz o mesmo a cada push; uma tag `v*` gera um rascunho de release com o instalador.
+Useful flags: `Pitwall.exe --dump-sensors [file]` lists every sensor and the mapping. For frontend dev with live data, run
+`npx ng serve` and open `http://localhost:4200/?port=48123#/widget` with the app running (`&theme=neon&mode=light&lang=en` to preview).
 
-## Licença
+## License
 
-Código do Pitwall: [MIT](LICENSE). `tools/battery-patches/` é GPL-3.0 (modifica o WirelessBattery).
-Programas de terceiros empacotados: ver [installer/THIRD-PARTY-NOTICES.txt](installer/THIRD-PARTY-NOTICES.txt).
+Pitwall's code: [MIT](LICENSE). `tools/battery-patches/` is GPL-3.0 (it modifies WirelessBattery).
+Bundled third-party programs keep their own licenses — see [installer/THIRD-PARTY-NOTICES.txt](installer/THIRD-PARTY-NOTICES.txt).

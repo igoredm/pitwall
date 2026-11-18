@@ -1,3 +1,4 @@
+using Pitwall.Localization;
 using System.Text.Json;
 using Pitwall.Config;
 
@@ -52,7 +53,7 @@ public sealed class GpuTuner : IDisposable
         {
             if (Nvml.Init() != Nvml.Success)
             {
-                Caps = Unsupported("Driver NVIDIA (NVML) não encontrado");
+                Caps = Unsupported(L.T("Driver NVIDIA (NVML) não encontrado", "NVIDIA driver (NVML) not found"));
                 return;
             }
             _initialized = true;
@@ -65,7 +66,7 @@ public sealed class GpuTuner : IDisposable
             }
             if (_dev == IntPtr.Zero)
             {
-                Caps = Unsupported("Nenhuma GPU NVIDIA encontrada");
+                Caps = Unsupported(L.T("Nenhuma GPU NVIDIA encontrada", "No NVIDIA GPU found"));
                 return;
             }
 
@@ -92,7 +93,7 @@ public sealed class GpuTuner : IDisposable
         }
         catch (DllNotFoundException)
         {
-            Caps = Unsupported("Driver NVIDIA (NVML) não encontrado");
+            Caps = Unsupported(L.T("Driver NVIDIA (NVML) não encontrado", "NVIDIA driver (NVML) not found"));
         }
         catch (Exception ex)
         {

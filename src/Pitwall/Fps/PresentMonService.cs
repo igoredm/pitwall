@@ -1,3 +1,4 @@
+using Pitwall.Localization;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
@@ -31,15 +32,16 @@ public sealed class PresentMonService : IDisposable
     /// <summary>Motivo legível quando não está capturando (null = tudo certo).</summary>
     public string? StatusText =>
         _capturing ? null
-        : !Available ? "PresentMon não encontrado"
-        : _blocked ? "Captura de FPS bloqueada — provavelmente pelo anti-cheat do jogo aberto (ex.: EA FC). Feche o jogo e abra de novo para voltar a medir FPS."
+        : !Available ? L.T("PresentMon não encontrado", "PresentMon not found")
+        : _blocked ? L.T("Captura de FPS bloqueada — provavelmente pelo anti-cheat do jogo aberto (ex.: EA FC). Feche o jogo e abra de novo para voltar a medir FPS.",
+              "FPS capture blocked — most likely by the running game's anti-cheat (e.g. EA FC). Close the game and open it again to measure FPS.")
         : "Iniciando captura de FPS…";
 
     public void Start()
     {
         if (!Available)
         {
-            LastError = "PresentMon.exe não encontrado em tools/";
+            LastError = L.T("PresentMon.exe não encontrado em tools/", "PresentMon.exe not found in tools/");
             return;
         }
         new Thread(RunLoop) { IsBackground = true, Name = "PresentMon reader", Priority = ThreadPriority.BelowNormal }.Start();
@@ -96,7 +98,7 @@ public sealed class PresentMonService : IDisposable
                  })
             psi.ArgumentList.Add(arg);
 
-        using var p = Process.Start(psi) ?? throw new InvalidOperationException("Falha ao iniciar PresentMon");
+        using var p = Process.Start(psi) ?? throw new InvalidOperationException(L.T("Falha ao iniciar PresentMon", "Failed to start PresentMon"));
         _process = p;
         _job.Assign(p);
         p.PriorityClass = ProcessPriorityClass.BelowNormal;
@@ -131,7 +133,7 @@ public sealed class PresentMonService : IDisposable
         }
         p.WaitForExit();
         _capturing = false;
-        LastError ??= $"PresentMon saiu (código {p.ExitCode})";
+        LastError ??= L.T($"PresentMon saiu (código {p.ExitCode})", $"PresentMon exited (code {p.ExitCode})");
     }
 
     void ParseRow(string line, int colApp, int colPid, int colFt)

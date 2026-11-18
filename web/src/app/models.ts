@@ -31,6 +31,8 @@ export interface AppConfig {
   widgetTheme: string;
   themeMode: 'dark' | 'light' | 'system';
   accent: string;
+  /** "auto" (idioma do Windows), "pt-BR" ou "en". */
+  language?: 'auto' | 'pt-BR' | 'en';
   startWithWindows: boolean;
   autoOpenWidgetOnGame: boolean;
   primaryGpu: string;
@@ -104,6 +106,8 @@ export interface MonitorInfo {
 export interface Catalog {
   type: 'catalog';
   version?: string;
+  /** Idioma resolvido pelo backend ("auto" → idioma do Windows). */
+  lang?: 'pt-BR' | 'en';
   admin?: boolean;
   presentMon?: boolean;
   battery?: boolean;

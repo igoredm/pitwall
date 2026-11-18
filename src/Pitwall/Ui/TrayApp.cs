@@ -1,3 +1,4 @@
+using Pitwall.Localization;
 using System.Diagnostics;
 using Pitwall.Config;
 
@@ -50,7 +51,7 @@ public sealed class TrayApp : ApplicationContext
                 if (Autostart.Set(want)) _autostartState = want;
                 else
                 {
-                    _tray.ShowBalloonTip(4000, "Pitwall", "Não foi possível alterar o início automático.", ToolTipIcon.Warning);
+                    _tray.ShowBalloonTip(4000, "Pitwall", L.T("Não foi possível alterar o início automático.", "Could not change start with Windows."), ToolTipIcon.Warning);
                     _config.Update(x => x.StartWithWindows = _autostartState);
                 }
             }, null);
@@ -78,62 +79,62 @@ public sealed class TrayApp : ApplicationContext
         menu.Items.Clear();
 
         var game = _hub.CurrentGame;
-        menu.Items.Add(new ToolStripMenuItem(game != null ? $"Jogo: {game.Exe} ({game.Mode})" : "Nenhum jogo detectado") { Enabled = false });
+        menu.Items.Add(new ToolStripMenuItem(game != null ? L.T($"Jogo: {game.Exe} ({game.Mode})", $"Game: {game.Exe} ({game.Mode})") : L.T("Nenhum jogo detectado", "No game detected")) { Enabled = false });
         menu.Items.Add(new ToolStripSeparator());
 
-        menu.Items.Add(new ToolStripMenuItem("Configurações…", null, (_, _) => OpenSettings()) { Font = new Font(menu.Font, FontStyle.Bold) });
-        menu.Items.Add(Check("Mostrar widget", c.Widget.Visible, () => Toggle(x => x.Widget.Visible = !x.Widget.Visible)));
-        menu.Items.Add(Check("Travar posição", c.Widget.Locked, () => Toggle(x => x.Widget.Locked = !x.Widget.Locked)));
-        menu.Items.Add(Check("Sempre no topo (exceto sobre tela cheia)", c.Widget.AlwaysOnTop, () => Toggle(x => x.Widget.AlwaysOnTop = !x.Widget.AlwaysOnTop)));
+        menu.Items.Add(new ToolStripMenuItem(L.T("Configurações…", "Settings…"), null, (_, _) => OpenSettings()) { Font = new Font(menu.Font, FontStyle.Bold) });
+        menu.Items.Add(Check(L.T("Mostrar widget", "Show widget"), c.Widget.Visible, () => Toggle(x => x.Widget.Visible = !x.Widget.Visible)));
+        menu.Items.Add(Check(L.T("Travar posição", "Lock position"), c.Widget.Locked, () => Toggle(x => x.Widget.Locked = !x.Widget.Locked)));
+        menu.Items.Add(Check(L.T("Sempre no topo (exceto sobre tela cheia)", "Always on top (except over fullscreen)"), c.Widget.AlwaysOnTop, () => Toggle(x => x.Widget.AlwaysOnTop = !x.Widget.AlwaysOnTop)));
 
-        var monitors = new ToolStripMenuItem("Monitor do widget");
+        var monitors = new ToolStripMenuItem(L.T("Monitor do widget", "Widget monitor"));
         var i = 1;
         foreach (var s in Screen.AllScreens)
         {
-            var label = $"Monitor {i++} — {s.Bounds.Width}×{s.Bounds.Height}{(s.Primary ? " (principal)" : "")}{(s.Bounds.Height > s.Bounds.Width ? " · vertical" : "")}";
+            var label = $"Monitor {i++} — {s.Bounds.Width}×{s.Bounds.Height}{(s.Primary ? L.T(" (principal)", " (primary)") : "")}{(s.Bounds.Height > s.Bounds.Width ? L.T(" · vertical", " · portrait") : "")}";
             var device = s.DeviceName;
             monitors.DropDownItems.Add(Check(label, Screen.FromControl(_widget).DeviceName == device,
                 () => Toggle(x => { x.Widget.Monitor = device; x.Widget.X = 40; x.Widget.Y = 40; })));
         }
         menu.Items.Add(monitors);
 
-        var layout = new ToolStripMenuItem("Layout do widget");
-        layout.DropDownItems.Add(Check("Automático", c.Widget.Layout == "auto", () => Toggle(x => x.Widget.Layout = "auto")));
-        layout.DropDownItems.Add(Check("Completo", c.Widget.Layout == "full", () => Toggle(x => x.Widget.Layout = "full")));
-        layout.DropDownItems.Add(Check("Médio", c.Widget.Layout == "mid", () => Toggle(x => x.Widget.Layout = "mid")));
-        layout.DropDownItems.Add(Check("Compacto", c.Widget.Layout == "compact", () => Toggle(x => x.Widget.Layout = "compact")));
+        var layout = new ToolStripMenuItem(L.T("Layout do widget", "Widget layout"));
+        layout.DropDownItems.Add(Check(L.T("Automático", "Automatic"), c.Widget.Layout == "auto", () => Toggle(x => x.Widget.Layout = "auto")));
+        layout.DropDownItems.Add(Check(L.T("Completo", "Full"), c.Widget.Layout == "full", () => Toggle(x => x.Widget.Layout = "full")));
+        layout.DropDownItems.Add(Check(L.T("Médio", "Medium"), c.Widget.Layout == "mid", () => Toggle(x => x.Widget.Layout = "mid")));
+        layout.DropDownItems.Add(Check(L.T("Compacto", "Compact"), c.Widget.Layout == "compact", () => Toggle(x => x.Widget.Layout = "compact")));
         layout.DropDownItems.Add(new ToolStripSeparator());
-        layout.DropDownItems.Add("Compacto no canto superior direito", null, (_, _) => _widget.PlaceTopRight("compact"));
-        layout.DropDownItems.Add("Médio no canto superior direito", null, (_, _) => _widget.PlaceTopRight("mid"));
+        layout.DropDownItems.Add(L.T("Compacto no canto superior direito", "Compact in the top-right corner"), null, (_, _) => _widget.PlaceTopRight("compact"));
+        layout.DropDownItems.Add(L.T("Médio no canto superior direito", "Medium in the top-right corner"), null, (_, _) => _widget.PlaceTopRight("mid"));
         menu.Items.Add(layout);
 
-        var theme = new ToolStripMenuItem("Aparência");
-        theme.DropDownItems.Add(Check("Escuro", c.ThemeMode == "dark", () => Toggle(x => x.ThemeMode = "dark")));
-        theme.DropDownItems.Add(Check("Claro", c.ThemeMode == "light", () => Toggle(x => x.ThemeMode = "light")));
+        var theme = new ToolStripMenuItem(L.T("Aparência", "Appearance"));
+        theme.DropDownItems.Add(Check(L.T("Escuro", "Dark"), c.ThemeMode == "dark", () => Toggle(x => x.ThemeMode = "dark")));
+        theme.DropDownItems.Add(Check(L.T("Claro", "Light"), c.ThemeMode == "light", () => Toggle(x => x.ThemeMode = "light")));
         menu.Items.Add(theme);
 
-        var rate = new ToolStripMenuItem("Taxa de atualização");
+        var rate = new ToolStripMenuItem(L.T("Taxa de atualização", "Refresh rate"));
         foreach (var ms in new[] { 250, 500, 1000, 2000 })
             rate.DropDownItems.Add(Check($"{ms} ms", c.RefreshMs == ms, () => Toggle(x => x.RefreshMs = ms)));
         menu.Items.Add(rate);
 
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(Check(
-            c.GpuTuning.OnlyInGames ? "Ajuste da GPU (undervolt) · só em jogos" : "Ajuste da GPU (undervolt) · sempre",
+            c.GpuTuning.OnlyInGames ? L.T("Ajuste da GPU (undervolt) · só em jogos", "GPU tuning (undervolt) · games only") : L.T("Ajuste da GPU (undervolt) · sempre", "GPU tuning (undervolt) · always"),
             c.GpuTuning.Enabled, () => Toggle(x => x.GpuTuning.Enabled = !x.GpuTuning.Enabled)));
-        menu.Items.Add(Check("Abrir widget ao detectar jogo", c.AutoOpenWidgetOnGame, () => Toggle(x => x.AutoOpenWidgetOnGame = !x.AutoOpenWidgetOnGame)));
-        menu.Items.Add(Check("Iniciar com o Windows", c.StartWithWindows, ToggleAutostart));
+        menu.Items.Add(Check(L.T("Abrir widget ao detectar jogo", "Open widget when a game is detected"), c.AutoOpenWidgetOnGame, () => Toggle(x => x.AutoOpenWidgetOnGame = !x.AutoOpenWidgetOnGame)));
+        menu.Items.Add(Check(L.T("Iniciar com o Windows", "Start with Windows"), c.StartWithWindows, ToggleAutostart));
 
         var log = new ToolStripMenuItem("Log CSV");
-        log.DropDownItems.Add(Check("Gravar log", c.Log.Enabled, () => Toggle(x => x.Log.Enabled = !x.Log.Enabled)));
-        log.DropDownItems.Add("Abrir pasta de logs", null, (_, _) =>
+        log.DropDownItems.Add(Check(L.T("Gravar log", "Write log"), c.Log.Enabled, () => Toggle(x => x.Log.Enabled = !x.Log.Enabled)));
+        log.DropDownItems.Add(L.T("Abrir pasta de logs", "Open log folder"), null, (_, _) =>
         {
             Directory.CreateDirectory(_config.Current.Log.Folder);
             Process.Start("explorer.exe", _config.Current.Log.Folder);
         });
         menu.Items.Add(log);
 
-        menu.Items.Add("Listar sensores detectados…", null, (_, _) =>
+        menu.Items.Add(L.T("Listar sensores detectados…", "List detected sensors…"), null, (_, _) =>
         {
             var path = Path.Combine(ConfigStore.Dir, "sensores.txt");
             File.WriteAllText(path, _dumpSensors());
@@ -141,7 +142,7 @@ public sealed class TrayApp : ApplicationContext
         });
 
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Sair", null, (_, _) => ExitThread());
+        menu.Items.Add(L.T("Sair", "Exit"), null, (_, _) => ExitThread());
     }
 
     void ToggleAutostart() => Toggle(c => c.StartWithWindows = !c.StartWithWindows);

@@ -1,6 +1,7 @@
 import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { AppConfig, MetricDef, MetricGroup, MetricSetting, MonitorInfo, THEMES, ThemeName } from '../models';
+import { I18n, LANGUAGES } from '../i18n';
 import { TelemetryService } from '../telemetry.service';
 import { LIMITS, NOT_COUNTED, groupLabel, isDarkTheme, unitLabel } from '../widget/metric-views';
 import { Widget } from '../widget/widget';
@@ -21,13 +22,7 @@ interface Group {
   total: number;
 }
 
-const GROUPS: { key: MetricGroup; name: string }[] = [
-  { key: 'gpu', name: 'GPU' },
-  { key: 'cpu', name: 'CPU' },
-  { key: 'ram', name: 'RAM' },
-  { key: 'fps', name: 'FPS' },
-  { key: 'other', name: 'Outros' },
-];
+const GROUPS: MetricGroup[] = ['gpu', 'cpu', 'ram', 'fps', 'other'];
 
 /** Lista "ignorar" de fábrica (espelha GamesConfig.Ignore no backend) — só para mostrar a origem de cada regra. */
 const DEFAULT_IGNORE = new Set(
@@ -40,16 +35,8 @@ const DEFAULT_IGNORE = new Set(
 );
 const BROWSERS = new Set(['chrome.exe', 'msedge.exe', 'firefox.exe', 'opera.exe', 'brave.exe']);
 
-export const ACCENTS = [
-  { value: '', name: 'Padrão do tema' },
-  { value: '#4C8DFF', name: 'Azul' },
-  { value: '#8B5CF6', name: 'Violeta' },
-  { value: '#FF2E88', name: 'Magenta' },
-  { value: '#FF7A1A', name: 'Laranja' },
-  { value: '#FFC53D', name: 'Âmbar' },
-  { value: '#3DDC84', name: 'Verde' },
-  { value: '#00E5FF', name: 'Ciano' },
-];
+/** Cores de destaque; os nomes ficam em i18n.ts (accents). */
+export const ACCENTS = ['', '#4C8DFF', '#8B5CF6', '#FF2E88', '#FF7A1A', '#FFC53D', '#3DDC84', '#00E5FF'];
 
 @Component({
   selector: 'pw-settings',
@@ -60,6 +47,9 @@ export const ACCENTS = [
 })
 export class Settings {
   protected readonly t = inject(TelemetryService);
+  protected readonly s = inject(I18n).s;
+  protected readonly languages = LANGUAGES;
+  protected readonly navItems: Section[] = ['metricas', 'geral', 'gpu', 'log', 'jogos'];
   protected readonly themes = THEMES;
   protected readonly accents = ACCENTS;
   protected readonly refreshRates = [250, 500, 1000, 2000];
@@ -93,7 +83,9 @@ export class Settings {
     const defs = this.t.defs();
     if (!d || defs.size === 0) return [];
     const q = normalize(this.search());
-    return GROUPS.map(({ key, name }) => {
+    const s = this.s();
+    return GROUPS.map((key) => {
+      const name = key === 'other' ? s.groupOther : key.toUpperCase();
       const all = [...d.metrics]
         .sort((a, b) => a.order - b.order)
         .map((s) => ({ s, def: defs.get(s.id)! }))
@@ -102,7 +94,7 @@ export class Settings {
       return {
         key,
         name,
-        label: groupLabel(d, key, this.t.catalog()),
+        label: groupLabel(d, key, this.t.catalog(), s),
         rows,
         active: all.filter((r) => r.s.enabled && r.def.available).length,
         total: all.filter((r) => r.def.available).length,
@@ -152,7 +144,7 @@ export class Settings {
     const rows = [
       ...g.include.map((exe) => ({ exe, rule: 'include' as const })),
       ...g.ignore.map((exe) => ({ exe, rule: 'ignore' as const })),
-    ].map((r) => ({ ...r, origin: origin(r.exe), fixed: r.exe.toLowerCase() === 'pitwall.exe' }));
+    ].map((r) => ({ ...r, origin: this.origin(r.exe), fixed: r.exe.toLowerCase() === 'pitwall.exe' }));
     const f = this.ruleFilter();
     return f === 'all' ? rows : rows.filter((r) => r.rule === f);
   });
@@ -165,10 +157,11 @@ export class Settings {
     const d = this.draft();
     const m = this.selectedMonitor();
     const game = this.t.game();
+    const s = this.s();
     return {
-      title: d?.widget.visible ? 'Widget ativo' : 'Widget oculto',
-      line1: `Monitor ${m?.index ?? '?'}${d?.widget.locked ? ' · posição travada' : ''}`,
-      line2: `${game ? 'Jogo: ' + game.exe : 'Sem jogo'} · ${fmtMs(d?.refreshMs ?? 500)}`,
+      title: d?.widget.visible ? s.widgetActive : s.widgetHidden,
+      line1: s.statusMonitor(m?.index ?? '?', !!d?.widget.locked),
+      line2: s.statusGame(game?.exe ?? null, fmtMs(d?.refreshMs ?? 500)),
     };
   });
 
@@ -223,7 +216,7 @@ export class Settings {
   }
 
   protected isCustomAccent(accent: string | undefined) {
-    return !!accent && !ACCENTS.some((a) => a.value === accent);
+    return !!accent && !ACCENTS.includes(accent);
   }
 
   protected round(v: number) {
@@ -386,30 +379,40 @@ export class Settings {
   protected fmtSize(bytes: number) {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    return `${(bytes / 1024 / 1024).toFixed(1).replace('.', ',')} MB`;
+    const mb = (bytes / 1024 / 1024).toFixed(1);
+    return `${this.s().decimalComma ? mb.replace('.', ',') : mb} MB`;
   }
 
   protected sessionWhen(start: string) {
     const d = new Date(start);
     const today = new Date();
     const yesterday = new Date(Date.now() - 86_400_000);
-    const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    if (d.toDateString() === today.toDateString()) return `hoje, ${time}`;
-    if (d.toDateString() === yesterday.toDateString()) return `ontem, ${time}`;
-    return `${d.toLocaleDateString('pt-BR', { weekday: 'long' })}, ${time}`;
+    const s = this.s();
+    const time = d.toLocaleTimeString(s.locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    if (d.toDateString() === today.toDateString()) return `${s.today}, ${time}`;
+    if (d.toDateString() === yesterday.toDateString()) return `${s.yesterday}, ${time}`;
+    return `${d.toLocaleDateString(s.locale, { weekday: 'long' })}, ${time}`;
   }
 
   protected sessionDuration(start: string, end?: string) {
-    if (!end) return 'em andamento';
+    if (!end) return this.s().inProgress;
     const min = Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60_000));
     if (min < 60) return `${min} min`;
     return `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
   }
 
   protected monitorLabel(m: MonitorInfo | null) {
-    if (!m) return 'Nenhum monitor';
-    const orient = m.height > m.width ? 'vertical' : 'horizontal';
-    return `Monitor ${m.index} · ${m.width} × ${m.height} · ${orient}${m.primary ? ' · principal' : ''}`;
+    if (!m) return this.s().noMonitor;
+    return this.s().monitorLabel(m.index, m.width, m.height, m.height > m.width, m.primary);
+  }
+
+  private origin(exe: string) {
+    const e = exe.toLowerCase();
+    const s = this.s();
+    if (e === 'pitwall.exe') return s.originSelf;
+    if (BROWSERS.has(e)) return s.originBrowser;
+    if (DEFAULT_IGNORE.has(e)) return s.originDefault;
+    return s.originManual;
   }
 
   protected isDarkOnly(theme: string | undefined) {
@@ -423,12 +426,4 @@ function fmtMs(ms: number) {
 
 function normalize(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-}
-
-function origin(exe: string) {
-  const e = exe.toLowerCase();
-  if (e === 'pitwall.exe') return 'O próprio app · fixo';
-  if (BROWSERS.has(e)) return 'Navegador · padrão';
-  if (DEFAULT_IGNORE.has(e)) return 'Padrão';
-  return 'Adicionado manualmente';
 }

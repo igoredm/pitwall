@@ -1,3 +1,4 @@
+using Pitwall.Localization;
 using Pitwall.Config;
 using Pitwall.Fps;
 using Pitwall.Native;
@@ -45,7 +46,7 @@ public sealed class GameDetector(PresentMonService presentMon)
                 var presenting = presentMon.Get((int)fgPid) != null;
                 var blind = !presentMon.Healthy;
                 if (include.Contains(exe) || (cfg.AutoDetect && fullscreen && (presenting || blind)))
-                    found = new GameInfo((int)fgPid, exe, (fullscreen ? "tela cheia" : "janela") + (blind ? " · sem FPS" : ""));
+                    found = new GameInfo((int)fgPid, exe, (fullscreen ? L.T("tela cheia", "fullscreen") : L.T("janela", "windowed")) + (blind ? L.T(" · sem FPS", " · no FPS") : ""));
             }
         }
 

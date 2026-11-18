@@ -34,9 +34,12 @@ UninstallDisplayName={#AppName}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+ShowLanguageDialog=auto
+LanguageDetectionMethod=uilanguage
 CloseApplications=no
 
 [Languages]
+Name: "en"; MessagesFile: "compiler:Default.isl"
 Name: "ptbr"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
 [CustomMessages]
@@ -44,6 +47,10 @@ ptbr.AutostartTask=Iniciar o Pitwall junto com o Windows
 ptbr.InstallingPawnIO=Instalando o driver de sensores (PawnIO)...
 ptbr.InstallingWebView2=Instalando o Microsoft WebView2 Runtime...
 ptbr.LaunchApp=Abrir o Pitwall agora
+en.AutostartTask=Start Pitwall with Windows
+en.InstallingPawnIO=Installing the sensor driver (PawnIO)...
+en.InstallingWebView2=Installing the Microsoft WebView2 Runtime...
+en.LaunchApp=Launch Pitwall now
 
 [Tasks]
 Name: "autostart"; Description: "{cm:AutostartTask}"

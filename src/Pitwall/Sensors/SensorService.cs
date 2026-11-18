@@ -1,3 +1,4 @@
+using Pitwall.Localization;
 using System.Text;
 using System.Text.RegularExpressions;
 using LibreHardwareMonitor.Hardware;
@@ -310,11 +311,11 @@ public sealed partial class SensorService : IDisposable
         if (_coreLoads.TryGetValue(id, out var loads)) return $"{loads[0].Hardware.Name} · {string.Join(" + ", loads.Select(l => l.Name))}";
         return id switch
         {
-            "gpu.hotspotDelta" => "calculado: hot spot − núcleo",
-            "ram.total" => "calculado: usada + disponível",
-            "cpu.clockAvg" => "calculado: média dos núcleos",
-            "gpu.vramLoad" => "calculado: usada / total",
-            "net.up" or "net.down" => "adaptador com mais tráfego",
+            "gpu.hotspotDelta" => L.T("calculado: hot spot − núcleo", "calculated: hot spot − core"),
+            "ram.total" => L.T("calculado: usada + disponível", "calculated: used + available"),
+            "cpu.clockAvg" => L.T("calculado: média dos núcleos", "calculated: average of cores"),
+            "gpu.vramLoad" => L.T("calculado: usada / total", "calculated: used / total"),
+            "net.up" or "net.down" => L.T("adaptador com mais tráfego", "busiest adapter"),
             _ => null,
         };
     }
