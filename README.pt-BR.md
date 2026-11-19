@@ -66,16 +66,13 @@ Gera `artifacts/installer/Pitwall-Setup-<versão>.exe`.
 
 O GitHub Actions (`.github/workflows/build.yml`) faz o mesmo a cada push; uma tag `v*` gera um rascunho de release com o instalador.
 
-## Política de assinatura de código
+## Assinatura de código
 
-Assinatura de código gratuita fornecida por [SignPath.io](https://about.signpath.io), certificado da [SignPath Foundation](https://signpath.org).
-
-- Commits e revisão: [igoredm](https://github.com/igoredm)
-- Aprovação: [igoredm](https://github.com/igoredm)
-
-Toda release é compilada pelo workflow público do GitHub Actions deste repositório (`.github/workflows/build.yml`) a partir do
-commit da tag. Os programas de terceiros incluídos no instalador mantêm suas próprias assinaturas e licenças
-(ver [installer/THIRD-PARTY-NOTICES.txt](installer/THIRD-PARTY-NOTICES.txt)).
+As releases **ainda não são assinadas**, então o SmartScreen do Windows pode avisar na primeira execução
+(*Mais informações → Executar assim mesmo*). Toda release é compilada pelo workflow público do GitHub Actions deste
+repositório (`.github/workflows/build.yml`) a partir do commit da tag, e cada uma traz o SHA-256 do instalador em
+`SHA256SUMS.txt`; o atualizador confere esse hash antes de instalar. Os programas de terceiros incluídos no instalador
+mantêm suas próprias assinaturas e licenças (ver [installer/THIRD-PARTY-NOTICES.txt](installer/THIRD-PARTY-NOTICES.txt)).
 
 ## Privacidade
 

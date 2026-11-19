@@ -69,15 +69,12 @@ push; a `v*` tag creates a draft release with the installer and SHA-256 checksum
 Useful flags: `Pitwall.exe --dump-sensors [file]` lists every sensor and the mapping. For frontend dev with live data, run
 `npx ng serve` and open `http://localhost:4200/?port=48123#/widget` with the app running (`&theme=neon&mode=light&lang=en` to preview).
 
-## Code signing policy
+## Code signing
 
-Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
-
-- Committers and reviewers: [igoredm](https://github.com/igoredm)
-- Approvers: [igoredm](https://github.com/igoredm)
-
-Every release is built by the public GitHub Actions workflow in this repository (`.github/workflows/build.yml`) from the tagged
-commit. Third-party programs bundled in the installer keep their own signatures and licenses
+Releases are **not code-signed yet**, so Windows SmartScreen may warn on first run (*More info → Run anyway*).
+Every release is built by the public GitHub Actions workflow in this repository (`.github/workflows/build.yml`) from the
+tagged commit, and each release lists the installer's SHA-256 in `SHA256SUMS.txt`; the built-in updater checks that hash
+before installing. Third-party programs bundled in the installer keep their own signatures and licenses
 (see [installer/THIRD-PARTY-NOTICES.txt](installer/THIRD-PARTY-NOTICES.txt)).
 
 ## Privacy
