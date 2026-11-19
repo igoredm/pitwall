@@ -1,7 +1,11 @@
 # Assinatura de código com a SignPath Foundation (rascunho)
 
-Rascunho da inscrição no programa gratuito para projetos open source da SignPath Foundation
-(<https://signpath.org>). **Nada foi enviado**: o dono do repositório preenche o formulário com o texto abaixo.
+Inscrição no programa gratuito para projetos open source da SignPath Foundation (<https://signpath.org>).
+
+> **Status (2026-11-19): pedido enviado e não aprovado.** O programa exige sinais públicos de adoção (estrelas, forks,
+> contribuidores, menções externas) que o projeto ainda não tem. Dá para pedir de novo quando houver mais visibilidade;
+> o texto abaixo continua valendo. Alternativa paga avaliada: Certum Open Source Code Signing (nuvem €49 / kit €69 por ano).
+> Enquanto isso as releases saem sem assinatura e o README diz isso.
 
 Antes de enviar:
 
