@@ -25,4 +25,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- 1.2: listas de sensores (formato do getSensorDump) usadas pelos testes de mapeamento -->
+  <ItemGroup>
+    <None Include="Fixtures\**\*.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

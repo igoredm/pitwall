@@ -1,0 +1,368 @@
+# Pitwall · lista de sensores · sensor list
+app: 1.2.0
+windows: Windows 11 25H2 (10.0.26200.9974)
+gpuDriver: 610.74 (32.0.16.1074)
+gpu: NVIDIA GeForce RTX 3080
+gpuVendor: nvidia
+gpu2: Radeon RX 580 Series
+gpu2Vendor: amd
+gpuOrder: bus   1  NVIDIA GeForce RTX 3080  (@System32\drivers\pci.sys,#65536;PCI bus %1, device %2, function %3;(1,0,0)); bus   9  Radeon RX 580 Series  (@System32\drivers\pci.sys,#65536;PCI bus %1, device %2, function %3;(9,0,0))
+pawnIO: yes
+admin: yes
+presentMon: yes
+generated: 2026-11-19 21:14
+
+== Hardware ==
+[Motherboard] ASUS TUF GAMING Z690-PLUS D4 | /motherboard
+  [SuperIO] Nuvoton NCT6798D | /lpc/nct6798d/0
+    Voltage | Vcore | 1.072 | 1.072 | 1.072 | /lpc/nct6798d/0/voltage/0
+    Voltage | Voltage #2 | 0.992 | 0.992 | 0.992 | /lpc/nct6798d/0/voltage/1
+    Voltage | AVCC | 3.328 | 3.328 | 3.328 | /lpc/nct6798d/0/voltage/2
+    Voltage | +3.3V | 3.328 | 3.328 | 3.328 | /lpc/nct6798d/0/voltage/3
+    Voltage | Voltage #5 | 0.992 | 0.992 | 0.992 | /lpc/nct6798d/0/voltage/4
+    Voltage | Voltage #6 | 0.024 | 0.024 | 0.024 | /lpc/nct6798d/0/voltage/5
+    Voltage | Voltage #7 | 0.64 | 0.64 | 0.64 | /lpc/nct6798d/0/voltage/6
+    Voltage | +3V Standby | 3.328 | 3.328 | 3.328 | /lpc/nct6798d/0/voltage/7
+    Voltage | CMOS Battery | 3.152 | 3.152 | 3.152 | /lpc/nct6798d/0/voltage/8
+    Voltage | CPU Termination | 0.536 | 0.536 | 0.536 | /lpc/nct6798d/0/voltage/9
+    Voltage | Voltage #11 | 0.672 | 0.672 | 0.672 | /lpc/nct6798d/0/voltage/10
+    Voltage | Voltage #12 | 0.504 | 0.504 | 0.504 | /lpc/nct6798d/0/voltage/11
+    Voltage | Voltage #13 | 1.056 | 1.056 | 1.056 | /lpc/nct6798d/0/voltage/12
+    Voltage | Voltage #14 | 0.456 | 0.456 | 0.456 | /lpc/nct6798d/0/voltage/13
+    Voltage | Voltage #15 | 0.896 | 0.896 | 0.896 | /lpc/nct6798d/0/voltage/14
+    Temperature | CPU Core | 64 | 64 | 67 | /lpc/nct6798d/0/temperature/0
+    Temperature | Temperature #1 | 50.5 | 50.5 | 50.5 | /lpc/nct6798d/0/temperature/1
+    Temperature | Temperature #2 | 35 | 35 | 35 | /lpc/nct6798d/0/temperature/2
+    Temperature | Temperature #3 | 46.5 | 46.5 | 47 | /lpc/nct6798d/0/temperature/3
+    Temperature | Temperature #4 | 8 | 8 | 8 | /lpc/nct6798d/0/temperature/4
+    Temperature | Temperature #5 | 25 | 25 | 25 | /lpc/nct6798d/0/temperature/5
+    Temperature | Temperature #6 | 32 | 32 | 32 | /lpc/nct6798d/0/temperature/6
+    Fan | Fan #1 | 0 | 0 | 0 | /lpc/nct6798d/0/fan/0
+    Fan | Fan #2 | 1183.173 | 1183.173 | 1183.173 | /lpc/nct6798d/0/fan/1
+    Fan | Fan #3 | 1153.846 | 1153.846 | 1164.797 | /lpc/nct6798d/0/fan/2
+    Fan | Fan #4 | 0 | 0 | 0 | /lpc/nct6798d/0/fan/3
+    Fan | Fan #5 | 0 | 0 | 0 | /lpc/nct6798d/0/fan/4
+    Fan | Fan #6 | 6617.647 | 6617.647 | 6617.647 | /lpc/nct6798d/0/fan/5
+    Fan | Fan #7 | 0 | 0 | 0 | /lpc/nct6798d/0/fan/6
+    Control | Fan #1 | 83.922 | 81.961 | 83.922 | /lpc/nct6798d/0/control/0
+    Control | Fan #2 | 57.255 | 55.294 | 57.255 | /lpc/nct6798d/0/control/1
+    Control | Fan #3 | 57.255 | 55.294 | 57.255 | /lpc/nct6798d/0/control/2
+    Control | Fan #4 | 83.922 | 81.961 | 83.922 | /lpc/nct6798d/0/control/3
+    Control | Fan #5 | 83.922 | 81.961 | 83.922 | /lpc/nct6798d/0/control/4
+    Control | Fan #6 | 100 | 100 | 100 | /lpc/nct6798d/0/control/5
+    Control | Fan #7 | 100 | 100 | 100 | /lpc/nct6798d/0/control/6
+[Cpu] 12th Gen Intel Core i5-12600K | /intelcpu/0
+  Voltage | CPU Core | 1.177 | 1.177 | 1.179 | /intelcpu/0/voltage/0
+  Voltage | P-Core #1 | 1.175 | 1.175 | 1.175 | /intelcpu/0/voltage/1
+  Voltage | P-Core #2 | 1.175 | 1.175 | 1.183 | /intelcpu/0/voltage/2
+  Voltage | P-Core #3 | 1.176 | 1.176 | 1.179 | /intelcpu/0/voltage/3
+  Voltage | P-Core #4 | 1.192 | 1.179 | 1.192 | /intelcpu/0/voltage/4
+  Voltage | P-Core #5 | 1.192 | 1.188 | 1.192 | /intelcpu/0/voltage/5
+  Voltage | P-Core #6 | 1.201 | 1.18 | 1.201 | /intelcpu/0/voltage/6
+  Voltage | E-Core #1 | 1.195 | 1.18 | 1.195 | /intelcpu/0/voltage/7
+  Voltage | E-Core #2 | 1.153 | 1.149 | 1.153 | /intelcpu/0/voltage/8
+  Voltage | E-Core #3 | 1.199 | 1.187 | 1.199 | /intelcpu/0/voltage/9
+  Voltage | E-Core #4 | 1.194 | 1.193 | 1.194 | /intelcpu/0/voltage/10
+  Power | CPU Package | 66.76 | 65.794 | 66.76 | /intelcpu/0/power/0
+  Power | CPU Cores | 56.281 | 56.281 | 57.056 | /intelcpu/0/power/1
+  Power | CPU Memory | 0 | 0 | 0 | /intelcpu/0/power/3
+  Power | CPU Platform | 0 | 0 | 0 | /intelcpu/0/power/4
+  Clock | Bus Speed | 99.642 | 99.642 | 99.642 | /intelcpu/0/clock/0
+  Clock | P-Core #1 | 4483.9 | 4483.9 | 4483.9 | /intelcpu/0/clock/1
+  Clock | P-Core #2 | 4483.9 | 4483.9 | 4483.9 | /intelcpu/0/clock/2
+  Clock | P-Core #3 | 4483.9 | 4483.9 | 4483.9 | /intelcpu/0/clock/3
+  Clock | P-Core #4 | 4483.9 | 4483.9 | 4483.9 | /intelcpu/0/clock/4
+  Clock | P-Core #5 | 4483.9 | 4483.9 | 4483.9 | /intelcpu/0/clock/5
+  Clock | P-Core #6 | 4483.9 | 4483.9 | 4483.9 | /intelcpu/0/clock/6
+  Clock | E-Core #1 | 3587.12 | 3587.12 | 3587.12 | /intelcpu/0/clock/7
+  Clock | E-Core #2 | 3587.12 | 3587.12 | 3587.12 | /intelcpu/0/clock/8
+  Clock | E-Core #3 | 3587.12 | 3587.12 | 3587.12 | /intelcpu/0/clock/9
+  Clock | E-Core #4 | 3587.12 | 3587.12 | 3587.12 | /intelcpu/0/clock/10
+  Temperature | Core Max | 65 | 64 | 65 | /intelcpu/0/temperature/0
+  Temperature | Core Average | 60.8 | 60.8 | 61.9 | /intelcpu/0/temperature/1
+  Temperature | P-Core #1 | 57 | 57 | 62 | /intelcpu/0/temperature/2
+  Temperature | P-Core #2 | 63 | 58 | 63 | /intelcpu/0/temperature/3
+  Temperature | P-Core #3 | 54 | 54 | 58 | /intelcpu/0/temperature/4
+  Temperature | P-Core #4 | 62 | 62 | 62 | /intelcpu/0/temperature/5
+  Temperature | P-Core #5 | 57 | 57 | 60 | /intelcpu/0/temperature/6
+  Temperature | P-Core #6 | 58 | 58 | 63 | /intelcpu/0/temperature/7
+  Temperature | E-Core #1 | 65 | 64 | 65 | /intelcpu/0/temperature/8
+  Temperature | E-Core #2 | 64 | 64 | 64 | /intelcpu/0/temperature/9
+  Temperature | E-Core #3 | 64 | 64 | 64 | /intelcpu/0/temperature/10
+  Temperature | E-Core #4 | 64 | 64 | 64 | /intelcpu/0/temperature/11
+  Temperature | CPU Package | 64 | 64 | 64 | /intelcpu/0/temperature/12
+  Temperature | P-Core #1 Distance to TjMax | 43 | 38 | 43 | /intelcpu/0/temperature/13
+  Temperature | P-Core #2 Distance to TjMax | 37 | 37 | 42 | /intelcpu/0/temperature/14
+  Temperature | P-Core #3 Distance to TjMax | 46 | 42 | 46 | /intelcpu/0/temperature/15
+  Temperature | P-Core #4 Distance to TjMax | 38 | 38 | 38 | /intelcpu/0/temperature/16
+  Temperature | P-Core #5 Distance to TjMax | 43 | 40 | 43 | /intelcpu/0/temperature/17
+  Temperature | P-Core #6 Distance to TjMax | 42 | 37 | 42 | /intelcpu/0/temperature/18
+  Temperature | E-Core #1 Distance to TjMax | 35 | 35 | 36 | /intelcpu/0/temperature/19
+  Temperature | E-Core #2 Distance to TjMax | 36 | 36 | 36 | /intelcpu/0/temperature/20
+  Temperature | E-Core #3 Distance to TjMax | 36 | 36 | 36 | /intelcpu/0/temperature/21
+  Temperature | E-Core #4 Distance to TjMax | 36 | 36 | 36 | /intelcpu/0/temperature/22
+  Load | CPU Total | 46.95 | 46.95 | 61.18 | /intelcpu/0/load/0
+  Load | CPU Core Max | 97.14 | 97.14 | 100 | /intelcpu/0/load/1
+  Load | CPU Core #1 Thread #1 | 52.24 | 52.24 | 100 | /intelcpu/0/load/2
+  Load | CPU Core #1 Thread #2 | 7.35 | 7.35 | 30 | /intelcpu/0/load/3
+  Load | CPU Core #2 Thread #1 | 62.04 | 50 | 62.04 | /intelcpu/0/load/4
+  Load | CPU Core #2 Thread #2 | 6.5 | 0 | 6.5 | /intelcpu/0/load/5
+  Load | CPU Core #3 Thread #1 | 42.45 | 42.45 | 50 | /intelcpu/0/load/6
+  Load | CPU Core #3 Thread #2 | 3.66 | 3.66 | 11.11 | /intelcpu/0/load/7
+  Load | CPU Core #4 Thread #1 | 44.9 | 44.9 | 70 | /intelcpu/0/load/8
+  Load | CPU Core #4 Thread #2 | 34.29 | 34.29 | 80 | /intelcpu/0/load/9
+  Load | CPU Core #5 Thread #1 | 21.22 | 21.22 | 30 | /intelcpu/0/load/10
+  Load | CPU Core #5 Thread #2 | 43.27 | 40 | 43.27 | /intelcpu/0/load/11
+  Load | CPU Core #6 Thread #1 | 46.34 | 46.34 | 77.78 | /intelcpu/0/load/12
+  Load | CPU Core #6 Thread #2 | 15.92 | 15.92 | 40 | /intelcpu/0/load/13
+  Load | CPU Core #7 | 89.8 | 89.8 | 100 | /intelcpu/0/load/14
+  Load | CPU Core #8 | 92.24 | 92.24 | 100 | /intelcpu/0/load/15
+  Load | CPU Core #9 | 91.84 | 91.84 | 100 | /intelcpu/0/load/16
+  Load | CPU Core #10 | 97.14 | 97.14 | 100 | /intelcpu/0/load/17
+[Memory] Virtual Memory | /vram
+  Load | Memory | 81.956 | 81.956 | 81.956 | /vram/load/1
+  Data | Memory Used | 43.286 | 43.286 | 43.286 | /vram/data/2
+  Data | Memory Available | 9.53 | 9.53 | 9.53 | /vram/data/3
+[Memory] Total Memory | /ram
+  Load | Memory | 84.949 | 84.949 | 84.949 | /ram/load/0
+  Data | Memory Used | 27.027 | 27.027 | 27.027 | /ram/data/0
+  Data | Memory Available | 4.789 | 4.789 | 4.789 | /ram/data/1
+[Memory] DIMM #1 | /memory/dimm/1
+  Temperature | DIMM #1 | 49.813 | 49.813 | 49.813 | /memory/dimm/1/temperature/0
+  Temperature | Temperature Sensor Resolution | 0.063 | 0.063 | 0.063 | /memory/dimm/1/temperature/1
+  Temperature | Thermal Sensor Low Limit | 0 | 0 | 0 | /memory/dimm/1/temperature/2
+  Temperature | Thermal Sensor High Limit | 0 | 0 | 0 | /memory/dimm/1/temperature/3
+  Temperature | Thermal Sensor Critical Limit | 0 | 0 | 0 | /memory/dimm/1/temperature/4
+  Data | Capacity | 16 | 16 | 16 | /memory/dimm/1/data/50
+[Memory] DIMM #3 | /memory/dimm/3
+  Temperature | DIMM #3 | 48.313 | 48.313 | 48.313 | /memory/dimm/3/temperature/0
+  Temperature | Temperature Sensor Resolution | 0.063 | 0.063 | 0.063 | /memory/dimm/3/temperature/1
+  Temperature | Thermal Sensor Low Limit | 0 | 0 | 0 | /memory/dimm/3/temperature/2
+  Temperature | Thermal Sensor High Limit | 0 | 0 | 0 | /memory/dimm/3/temperature/3
+  Temperature | Thermal Sensor Critical Limit | 0 | 0 | 0 | /memory/dimm/3/temperature/4
+  Data | Capacity | 16 | 16 | 16 | /memory/dimm/3/data/50
+[GpuAmd] Radeon RX 580 Series | /gpu-amd/0
+[GpuNvidia] NVIDIA GeForce RTX 3080 | /gpu-nvidia/0
+  Voltage | GPU Core Voltage | 0.919 | 0.919 | 0.919 | /gpu-nvidia/0/voltage/0
+  Power | GPU Package | 98.105 | 97.061 | 98.105 | /gpu-nvidia/0/power/0
+  Clock | GPU Core | 1710 | 1710 | 1710 | /gpu-nvidia/0/clock/0
+  Clock | GPU Memory | 9251.968 | 9251.968 | 9251.968 | /gpu-nvidia/0/clock/4
+  Temperature | GPU Core | 50 | 49 | 50 | /gpu-nvidia/0/temperature/0
+  Temperature | GPU Hot Spot | 63.125 | 63 | 63.125 | /gpu-nvidia/0/temperature/2
+  Temperature | GPU Memory Junction | 68 | 68 | 68 | /gpu-nvidia/0/temperature/3
+  Load | GPU Core | 13 | 13 | 13 | /gpu-nvidia/0/load/0
+  Load | GPU Memory Controller | 1 | 1 | 1 | /gpu-nvidia/0/load/1
+  Load | GPU Video Engine | 4 | 4 | 4 | /gpu-nvidia/0/load/2
+  Load | GPU Bus | 2 | 2 | 2 | /gpu-nvidia/0/load/3
+  Load | GPU Memory | 37.06 | 37.06 | 37.141 | /gpu-nvidia/0/load/3
+  Load | GPU Power | 30.373 | 30.373 | 30.661 | /gpu-nvidia/0/load/4
+  Load | GPU Board Power | 30.57 | 30.57 | 31.119 | /gpu-nvidia/0/load/5
+  Load | D3D 3D | 21.789 | 21.789 | 29.879 | /gpu-nvidia/0/load/7
+  Load | D3D Copy | 0 | 0 | 0 | /gpu-nvidia/0/load/8
+  Load | D3D Copy | 0.011 | 0.011 | 0.063 | /gpu-nvidia/0/load/9
+  Load | D3D Copy | 1.504 | 1.126 | 1.504 | /gpu-nvidia/0/load/10
+  Load | D3D Copy | 0 | 0 | 0 | /gpu-nvidia/0/load/11
+  Load | D3D Copy | 0 | 0 | 0 | /gpu-nvidia/0/load/12
+  Load | D3D Copy | 0 | 0 | 0 | /gpu-nvidia/0/load/13
+  Load | D3D Optical Flow Accelerator 0 | 0 | 0 | 0 | /gpu-nvidia/0/load/14
+  Load | D3D Overlay | 0 | 0 | 0 | /gpu-nvidia/0/load/15
+  Load | D3D Security | 0 | 0 | 0 | /gpu-nvidia/0/load/16
+  Load | D3D Video Decode | 4.092 | 4.092 | 6.275 | /gpu-nvidia/0/load/17
+  Load | D3D Video Encode | 0 | 0 | 0 | /gpu-nvidia/0/load/18
+  Load | D3D VR | 0 | 0 | 0 | /gpu-nvidia/0/load/19
+  Fan | GPU Fan 1 | 0 | 0 | 0 | /gpu-nvidia/0/fan/1
+  Fan | GPU Fan 2 | 0 | 0 | 0 | /gpu-nvidia/0/fan/2
+  Control | GPU Fan 1 | 0 | 0 | 0 | /gpu-nvidia/0/control/1
+  Control | GPU Fan 2 | 0 | 0 | 0 | /gpu-nvidia/0/control/2
+  SmallData | GPU Memory Free | 6445 | 6436 | 6445 | /gpu-nvidia/0/smalldata/0
+  SmallData | GPU Memory Used | 3794 | 3794 | 3803 | /gpu-nvidia/0/smalldata/1
+  SmallData | GPU Memory Total | 10240 | 10240 | 10240 | /gpu-nvidia/0/smalldata/2
+  SmallData | D3D Dedicated Memory Used | 3619.227 | 3619.227 | 3627.613 | /gpu-nvidia/0/smalldata/3
+  SmallData | D3D Shared Memory Used | 279.809 | 279.793 | 279.809 | /gpu-nvidia/0/smalldata/4
+  Throughput | GPU PCIe Rx | 1451699200 | 1451699200 | 3646499840 | /gpu-nvidia/0/throughput/0
+  Throughput | GPU PCIe Tx | 541449216 | 541449216 | 928299008 | /gpu-nvidia/0/throughput/1
+[Storage] Asgard AN3 1TNVMe-M.2/80 | /nvme/3
+  Temperature | Composite Temperature | 37 | 0 | 37 | /nvme/3/temperature/0
+  Temperature | Temperature #2 | 36.85 | 0 | 36.85 | /nvme/3/temperature/2
+  Temperature | Temperature #3 | 49.85 | 0 | 49.85 | /nvme/3/temperature/3
+  Temperature | Temperature #6 | 36.85 | 0 | 36.85 | /nvme/3/temperature/6
+  Temperature | Warning Temperature | 74 | 0 | 74 | /nvme/3/temperature/10
+  Temperature | Critical Temperature | 79 | 0 | 79 | /nvme/3/temperature/11
+  Load | Used Space | 99.989 | 99.989 | 99.989 | /nvme/3/load/30
+  Load | Read Activity | 0 | 0 | 0 | /nvme/3/load/51
+  Load | Write Activity | 0 | 0 | 0 | /nvme/3/load/52
+  Load | Total Activity | 0.004 | 0.004 | 100 | /nvme/3/load/53
+  Level | Life | 91 | 0 | 91 | /nvme/3/level/20
+  Level | Available Spare | 100 | 0 | 100 | /nvme/3/level/100
+  Level | Available Spare Threshold | 10 | 0 | 10 | /nvme/3/level/101
+  Level | Percentage Used | 9 | 0 | 9 | /nvme/3/level/102
+  Factor | Power On Count | 3871 | 0 | 3871 | /nvme/3/factor/23
+  Factor | Power On Hours | 28657 | 0 | 28657 | /nvme/3/factor/24
+  Data | Data Read | 75867 | 0 | 75867 | /nvme/3/data/21
+  Data | Data Written | 48310 | 0 | 48310 | /nvme/3/data/22
+  Data | Free Space | 0.117 | 0.117 | 0.117 | /nvme/3/data/31
+  Data | Total Space | 1024.21 | 1024.21 | 1024.21 | /nvme/3/data/32
+  Throughput | Read Rate | 0 | 0 | 0 | /nvme/3/throughput/54
+  Throughput | Write Rate | 0 | 0 | 0 | /nvme/3/throughput/55
+[Storage] Fanxiang S790 1TB | /nvme/2
+  Temperature | Composite Temperature | 38 | 0 | 38 | /nvme/2/temperature/0
+  Temperature | Temperature #1 | 37.85 | 0 | 37.85 | /nvme/2/temperature/1
+  Temperature | Temperature #2 | 42.85 | 0 | 42.85 | /nvme/2/temperature/2
+  Temperature | Warning Temperature | 89 | 0 | 89 | /nvme/2/temperature/10
+  Temperature | Critical Temperature | 94 | 0 | 94 | /nvme/2/temperature/11
+  Load | Used Space | 80.508 | 80.508 | 80.508 | /nvme/2/load/30
+  Load | Read Activity | 0 | 0 | 0 | /nvme/2/load/51
+  Load | Write Activity | 0 | 0 | 0 | /nvme/2/load/52
+  Load | Total Activity | 0.252 | 0.252 | 100 | /nvme/2/load/53
+  Level | Life | 99 | 0 | 99 | /nvme/2/level/20
+  Level | Available Spare | 100 | 0 | 100 | /nvme/2/level/100
+  Level | Available Spare Threshold | 1 | 0 | 1 | /nvme/2/level/101
+  Level | Percentage Used | 1 | 0 | 1 | /nvme/2/level/102
+  Factor | Power On Count | 1783 | 0 | 1783 | /nvme/2/factor/23
+  Factor | Power On Hours | 13420 | 0 | 13420 | /nvme/2/factor/24
+  Data | Data Read | 37012 | 0 | 37012 | /nvme/2/data/21
+  Data | Data Written | 11295 | 0 | 11295 | /nvme/2/data/22
+  Data | Free Space | 194.957 | 194.957 | 194.957 | /nvme/2/data/31
+  Data | Total Space | 1000.205 | 1000.205 | 1000.205 | /nvme/2/data/32
+  Throughput | Read Rate | 0 | 0 | 0 | /nvme/2/throughput/54
+  Throughput | Write Rate | 0 | 0 | 0 | /nvme/2/throughput/55
+[Storage] WDS500G3XHC-00SJG0 | /nvme/4
+  Temperature | Composite Temperature | 50 | 0 | 50 | /nvme/4/temperature/0
+  Temperature | Warning Temperature | 79 | 0 | 79 | /nvme/4/temperature/10
+  Temperature | Critical Temperature | 84 | 0 | 84 | /nvme/4/temperature/11
+  Load | Used Space | 60.964 | 60.964 | 60.964 | /nvme/4/load/30
+  Load | Read Activity | 0.412 | 0 | 0.412 | /nvme/4/load/51
+  Load | Write Activity | 0.06 | 0 | 0.06 | /nvme/4/load/52
+  Load | Total Activity | 0.428 | 0.428 | 100 | /nvme/4/load/53
+  Level | Life | 100 | 0 | 100 | /nvme/4/level/20
+  Level | Available Spare | 100 | 0 | 100 | /nvme/4/level/100
+  Level | Available Spare Threshold | 10 | 0 | 10 | /nvme/4/level/101
+  Level | Percentage Used | 0 | 0 | 0 | /nvme/4/level/102
+  Factor | Power On Count | 4084 | 0 | 4084 | /nvme/4/factor/23
+  Factor | Power On Hours | 30205 | 0 | 30205 | /nvme/4/factor/24
+  Data | Data Read | 83137 | 0 | 83137 | /nvme/4/data/21
+  Data | Data Written | 82741 | 0 | 82741 | /nvme/4/data/22
+  Data | Free Space | 195.221 | 195.221 | 195.221 | /nvme/4/data/31
+  Data | Total Space | 500.108 | 500.108 | 500.108 | /nvme/4/data/32
+  Throughput | Read Rate | 196292.984 | 196292.984 | 196292.984 | /nvme/4/throughput/54
+  Throughput | Write Rate | 272406.594 | 272406.594 | 272406.594 | /nvme/4/throughput/55
+[Storage] WDC WDS240G2G0A-00JH30 | /ssd/1
+  Temperature | Temperature | 41 | 0 | 42 | /ssd/1/temperature/0
+  Load | Used Space | 0 | 0 | 0 | /ssd/1/load/30
+  Load | Read Activity | 0 | 0 | 0 | /ssd/1/load/51
+  Load | Write Activity | 0 | 0 | 0 | /ssd/1/load/52
+  Load | Total Activity | 0.075 | 0.075 | 100 | /ssd/1/load/53
+  Level | Life | 70 | 0 | 70 | /ssd/1/level/20
+  Factor | Power On Count | 4381 | 0 | 4381 | /ssd/1/factor/23
+  Factor | Power On Hours | 34161 | 0 | 34161 | /ssd/1/factor/24
+  Data | Data Read | 20754 | 0 | 20754 | /ssd/1/data/21
+  Data | Data Written | 28212 | 0 | 28212 | /ssd/1/data/22
+  Data | Free Space | 240.065 | 240.065 | 240.065 | /ssd/1/data/31
+  Data | Total Space | 240.065 | 240.065 | 240.065 | /ssd/1/data/32
+  Throughput | Read Rate | 0 | 0 | 0 | /ssd/1/throughput/54
+  Throughput | Write Rate | 0 | 0 | 0 | /ssd/1/throughput/55
+[Storage] SATA3 2TB SSD  | /ssd/0
+  Temperature | Temperature | 40 | 0 | 40 | /ssd/0/temperature/0
+  Load | Used Space | 25.436 | 25.436 | 25.436 | /ssd/0/load/30
+  Load | Read Activity | 0 | 0 | 0 | /ssd/0/load/51
+  Load | Write Activity | 0 | 0 | 0 | /ssd/0/load/52
+  Load | Total Activity | 0 | 0 | 100 | /ssd/0/load/53
+  Level | Life | 93 | 0 | 93 | /ssd/0/level/20
+  Factor | Power On Count | 3658 | 0 | 3658 | /ssd/0/factor/23
+  Factor | Power On Hours | 23807 | 0 | 23807 | /ssd/0/factor/24
+  Data | Data Read | 15184 | 0 | 15184 | /ssd/0/data/21
+  Data | Data Written | 10957 | 0 | 10957 | /ssd/0/data/22
+  Data | Free Space | 1491.573 | 1491.573 | 1491.573 | /ssd/0/data/31
+  Data | Total Space | 2000.399 | 2000.399 | 2000.399 | /ssd/0/data/32
+  Throughput | Read Rate | 0 | 0 | 0 | /ssd/0/throughput/54
+  Throughput | Write Rate | 0 | 0 | 0 | /ssd/0/throughput/55
+[Network] Ethernet | /nic/<id>
+  Load | Network Utilization | 0.057 | 0.026 | 0.057 | /nic/<id>/load/1
+  Data | Data Uploaded | 4.124 | 4.124 | 4.124 | /nic/<id>/data/2
+  Data | Data Downloaded | 126.381 | 126.381 | 126.381 | /nic/<id>/data/3
+  Throughput | Upload Speed | 117602.344 | 7682.965 | 117602.344 | /nic/<id>/throughput/7
+  Throughput | Download Speed | 59776.215 | 59776.215 | 74202.242 | /nic/<id>/throughput/8
+== Mapeamento · Mapping ==
+  cpu.e1.clock <- 12th Gen Intel Core i5-12600K / Clock / E-Core #1 (/intelcpu/0/clock/7)
+  cpu.e1.temp <- 12th Gen Intel Core i5-12600K / Temperature / E-Core #1 (/intelcpu/0/temperature/8)
+  cpu.e2.clock <- 12th Gen Intel Core i5-12600K / Clock / E-Core #2 (/intelcpu/0/clock/8)
+  cpu.e2.temp <- 12th Gen Intel Core i5-12600K / Temperature / E-Core #2 (/intelcpu/0/temperature/9)
+  cpu.e3.clock <- 12th Gen Intel Core i5-12600K / Clock / E-Core #3 (/intelcpu/0/clock/9)
+  cpu.e3.temp <- 12th Gen Intel Core i5-12600K / Temperature / E-Core #3 (/intelcpu/0/temperature/10)
+  cpu.e4.clock <- 12th Gen Intel Core i5-12600K / Clock / E-Core #4 (/intelcpu/0/clock/10)
+  cpu.e4.temp <- 12th Gen Intel Core i5-12600K / Temperature / E-Core #4 (/intelcpu/0/temperature/11)
+  cpu.load <- 12th Gen Intel Core i5-12600K / Load / CPU Total (/intelcpu/0/load/0)
+  cpu.p1.clock <- 12th Gen Intel Core i5-12600K / Clock / P-Core #1 (/intelcpu/0/clock/1)
+  cpu.p1.temp <- 12th Gen Intel Core i5-12600K / Temperature / P-Core #1 (/intelcpu/0/temperature/2)
+  cpu.p2.clock <- 12th Gen Intel Core i5-12600K / Clock / P-Core #2 (/intelcpu/0/clock/2)
+  cpu.p2.temp <- 12th Gen Intel Core i5-12600K / Temperature / P-Core #2 (/intelcpu/0/temperature/3)
+  cpu.p3.clock <- 12th Gen Intel Core i5-12600K / Clock / P-Core #3 (/intelcpu/0/clock/3)
+  cpu.p3.temp <- 12th Gen Intel Core i5-12600K / Temperature / P-Core #3 (/intelcpu/0/temperature/4)
+  cpu.p4.clock <- 12th Gen Intel Core i5-12600K / Clock / P-Core #4 (/intelcpu/0/clock/4)
+  cpu.p4.temp <- 12th Gen Intel Core i5-12600K / Temperature / P-Core #4 (/intelcpu/0/temperature/5)
+  cpu.p5.clock <- 12th Gen Intel Core i5-12600K / Clock / P-Core #5 (/intelcpu/0/clock/5)
+  cpu.p5.temp <- 12th Gen Intel Core i5-12600K / Temperature / P-Core #5 (/intelcpu/0/temperature/6)
+  cpu.p6.clock <- 12th Gen Intel Core i5-12600K / Clock / P-Core #6 (/intelcpu/0/clock/6)
+  cpu.p6.temp <- 12th Gen Intel Core i5-12600K / Temperature / P-Core #6 (/intelcpu/0/temperature/7)
+  cpu.power <- 12th Gen Intel Core i5-12600K / Power / CPU Package (/intelcpu/0/power/0)
+  cpu.temp <- 12th Gen Intel Core i5-12600K / Temperature / CPU Package (/intelcpu/0/temperature/12)
+  disk1.activity <- Asgard AN3 1TNVMe-M.2/80 / Load / Total Activity (/nvme/3/load/53)
+  disk1.temp <- Asgard AN3 1TNVMe-M.2/80 / Temperature / Composite Temperature (/nvme/3/temperature/0)
+  disk1.used <- Asgard AN3 1TNVMe-M.2/80 / Load / Used Space (/nvme/3/load/30)
+  disk2.activity <- Fanxiang S790 1TB / Load / Total Activity (/nvme/2/load/53)
+  disk2.temp <- Fanxiang S790 1TB / Temperature / Composite Temperature (/nvme/2/temperature/0)
+  disk2.used <- Fanxiang S790 1TB / Load / Used Space (/nvme/2/load/30)
+  disk3.activity <- WDS500G3XHC-00SJG0 / Load / Total Activity (/nvme/4/load/53)
+  disk3.temp <- WDS500G3XHC-00SJG0 / Temperature / Composite Temperature (/nvme/4/temperature/0)
+  disk3.used <- WDS500G3XHC-00SJG0 / Load / Used Space (/nvme/4/load/30)
+  disk4.activity <- WDC WDS240G2G0A-00JH30 / Load / Total Activity (/ssd/1/load/53)
+  disk4.temp <- WDC WDS240G2G0A-00JH30 / Temperature / Temperature (/ssd/1/temperature/0)
+  disk4.used <- WDC WDS240G2G0A-00JH30 / Load / Used Space (/ssd/1/load/30)
+  disk5.activity <- SATA3 2TB SSD  / Load / Total Activity (/ssd/0/load/53)
+  disk5.temp <- SATA3 2TB SSD  / Temperature / Temperature (/ssd/0/temperature/0)
+  disk5.used <- SATA3 2TB SSD  / Load / Used Space (/ssd/0/load/30)
+  gpu.clock <- NVIDIA GeForce RTX 3080 / Clock / GPU Core (/gpu-nvidia/0/clock/0)
+  gpu.fan <- NVIDIA GeForce RTX 3080 / Control / GPU Fan 1 (/gpu-nvidia/0/control/1)
+  gpu.fanRpm <- NVIDIA GeForce RTX 3080 / Fan / GPU Fan 1 (/gpu-nvidia/0/fan/1)
+  gpu.hotspot <- NVIDIA GeForce RTX 3080 / Temperature / GPU Hot Spot (/gpu-nvidia/0/temperature/2)
+  gpu.load <- NVIDIA GeForce RTX 3080 / Load / GPU Core (/gpu-nvidia/0/load/0)
+  gpu.memclock <- NVIDIA GeForce RTX 3080 / Clock / GPU Memory (/gpu-nvidia/0/clock/4)
+  gpu.memjunction <- NVIDIA GeForce RTX 3080 / Temperature / GPU Memory Junction (/gpu-nvidia/0/temperature/3)
+  gpu.power <- NVIDIA GeForce RTX 3080 / Power / GPU Package (/gpu-nvidia/0/power/0)
+  gpu.powerLimit <- NVIDIA GeForce RTX 3080 / Load / GPU Power (/gpu-nvidia/0/load/4)
+  gpu.temp <- NVIDIA GeForce RTX 3080 / Temperature / GPU Core (/gpu-nvidia/0/temperature/0)
+  gpu.voltage <- NVIDIA GeForce RTX 3080 / Voltage / GPU Core Voltage (/gpu-nvidia/0/voltage/0)
+  gpu.vramTotalMb <- NVIDIA GeForce RTX 3080 / SmallData / GPU Memory Total (/gpu-nvidia/0/smalldata/2)
+  gpu.vramUsedMb <- NVIDIA GeForce RTX 3080 / SmallData / GPU Memory Used (/gpu-nvidia/0/smalldata/1)
+  mb.fan1 <- Nuvoton NCT6798D / Fan / Fan #2 (/lpc/nct6798d/0/fan/1)
+  mb.fan2 <- Nuvoton NCT6798D / Fan / Fan #3 (/lpc/nct6798d/0/fan/2)
+  mb.fan5 <- Nuvoton NCT6798D / Fan / Fan #6 (/lpc/nct6798d/0/fan/5)
+  mb.temp0 <- Nuvoton NCT6798D / Temperature / CPU Core (/lpc/nct6798d/0/temperature/0)
+  mb.temp1 <- Nuvoton NCT6798D / Temperature / Temperature #1 (/lpc/nct6798d/0/temperature/1)
+  mb.temp2 <- Nuvoton NCT6798D / Temperature / Temperature #2 (/lpc/nct6798d/0/temperature/2)
+  mb.temp3 <- Nuvoton NCT6798D / Temperature / Temperature #3 (/lpc/nct6798d/0/temperature/3)
+  mb.temp4 <- Nuvoton NCT6798D / Temperature / Temperature #4 (/lpc/nct6798d/0/temperature/4)
+  mb.temp5 <- Nuvoton NCT6798D / Temperature / Temperature #5 (/lpc/nct6798d/0/temperature/5)
+  mb.temp6 <- Nuvoton NCT6798D / Temperature / Temperature #6 (/lpc/nct6798d/0/temperature/6)
+  ram.available <- Total Memory / Data / Memory Available (/ram/data/1)
+  ram.dimm1.temp <- DIMM #1 / Temperature / DIMM #1 (/memory/dimm/1/temperature/0)
+  ram.dimm3.temp <- DIMM #3 / Temperature / DIMM #3 (/memory/dimm/3/temperature/0)
+  ram.load <- Total Memory / Load / Memory (/ram/load/0)
+  ram.used <- Total Memory / Data / Memory Used (/ram/data/0)
+  ram.virtualLoad <- Virtual Memory / Load / Memory (/vram/load/1)
+  cpu.e1.load <- 12th Gen Intel Core i5-12600K / Load / CPU Core #7
+  cpu.e2.load <- 12th Gen Intel Core i5-12600K / Load / CPU Core #8
+  cpu.e3.load <- 12th Gen Intel Core i5-12600K / Load / CPU Core #9
+  cpu.e4.load <- 12th Gen Intel Core i5-12600K / Load / CPU Core #10
+  cpu.p1.load <- 12th Gen Intel Core i5-12600K / Load / CPU Core #1 Thread #1 + CPU Core #1 Thread #2
+  cpu.p2.load <- 12th Gen Intel Core i5-12600K / Load / CPU Core #2 Thread #1 + CPU Core #2 Thread #2
+  cpu.p3.load <- 12th Gen Intel Core i5-12600K / Load / CPU Core #3 Thread #1 + CPU Core #3 Thread #2
+  cpu.p4.load <- 12th Gen Intel Core i5-12600K / Load / CPU Core #4 Thread #1 + CPU Core #4 Thread #2
+  cpu.p5.load <- 12th Gen Intel Core i5-12600K / Load / CPU Core #5 Thread #1 + CPU Core #5 Thread #2
+  cpu.p6.load <- 12th Gen Intel Core i5-12600K / Load / CPU Core #6 Thread #1 + CPU Core #6 Thread #2
+  gpu.hotspotDelta <- calculado: hot spot − núcleo
+  ram.total <- calculado: usada + disponível
+  cpu.clockAvg <- calculado: média dos núcleos
+  gpu.vramLoad <- calculado: usada / total
+  net.up <- adaptador com mais tráfego
+  net.down <- adaptador com mais tráfego

@@ -99,7 +99,7 @@ static class Program
         hub.Start();
         updater.Start();
 
-        Application.Run(new TrayApp(config, hub, sensorService.Dump));
+        Application.Run(new TrayApp(config, hub, hub.SensorDump));
         // "Atualizar ao sair": o instalador espera este processo terminar (mutex) antes de copiar os arquivos
         updater.InstallOnExitIfPending();
         return 0;

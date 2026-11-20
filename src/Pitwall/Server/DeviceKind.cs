@@ -4,7 +4,8 @@ namespace Pitwall.Server;
 
 /// <summary>
 /// Tipo do aparelho pareado (ícone e nome na lista), deduzido do User-Agent no momento do pareamento.
-/// Só serve para exibição: nada de segurança depende disso (o User-Agent vem do cliente).
+/// Para phone/tv/desktop/unknown só serve para exibição (o User-Agent vem do cliente). A exceção é "integration", que
+/// nunca sai do User-Agent: só a página local cria (createApiToken) e ela separa token de API de token de visualização.
 /// </summary>
 public static partial class DeviceKind
 {
@@ -12,8 +13,10 @@ public static partial class DeviceKind
     public const string Tv = "tv";
     public const string Desktop = "desktop";
     public const string Unknown = "unknown";
+    /// <summary>1.2: token de API (Home Assistant). Criado só pela página local (createApiToken), nunca pelo User-Agent.</summary>
+    public const string Integration = "integration";
 
-    public static bool IsValid(string? kind) => kind is Phone or Tv or Desktop or Unknown;
+    public static bool IsValid(string? kind) => kind is Phone or Tv or Desktop or Unknown or Integration;
 
     // TV primeiro: Android TV, Fire TV e afins também dizem "Android" (e às vezes "Mobile").
     // "AFT" (Fire TV: AFTMM, AFTKA...) diferencia maiúsculas e precisa começar palavra, para não pegar texto qualquer.

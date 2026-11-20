@@ -1,0 +1,44 @@
+# Pitwall · lista de sensores · sensor list
+# Fixture sintético: RTX 50 (sem hot spot) e Ryzen sem o driver PawnIO (sem temperatura/consumo/clock da CPU).
+app: 1.2.0
+windows: Windows 11 24H2 (10.0.26100.4351)
+gpuDriver: 581.57 (32.0.15.8157)
+gpu: NVIDIA GeForce RTX 5080
+gpuVendor: nvidia
+gpu2: -
+gpu2Vendor: -
+pawnIO: no
+admin: yes
+presentMon: yes
+generated: 2026-11-19 21:14
+
+== Hardware ==
+[Cpu] AMD Ryzen 7 9800X3D 8-Core Processor | /amdcpu/0
+  Load | CPU Total | 12.5 | 1.2 | 64.1 | /amdcpu/0/load/0
+  Load | CPU Core Max | 30.2 | 3.1 | 99 | /amdcpu/0/load/1
+  Load | CPU Core #1 Thread #1 | 10 | 0 | 80 | /amdcpu/0/load/2
+  Load | CPU Core #1 Thread #2 | 8 | 0 | 75 | /amdcpu/0/load/3
+[Memory] Virtual Memory | /vram
+  Load | Memory | 41.2 | 40 | 45 | /vram/load/1
+[Memory] Total Memory | /ram
+  Load | Memory | 38.4 | 37 | 40 | /ram/load/0
+  Data | Memory Used | 12.2 | 12 | 13 | /ram/data/0
+  Data | Memory Available | 19.6 | 19 | 20 | /ram/data/1
+[GpuNvidia] NVIDIA GeForce RTX 5080 | /gpu-nvidia/0
+  Voltage | GPU Core Voltage | 0.89 | 0.8 | 1.05 | /gpu-nvidia/0/voltage/0
+  Power | GPU Package | 286.4 | 25 | 330.1 | /gpu-nvidia/0/power/0
+  Clock | GPU Core | 2790 | 210 | 2895 | /gpu-nvidia/0/clock/0
+  Clock | GPU Memory | 15001 | 405 | 15001 | /gpu-nvidia/0/clock/4
+  Temperature | GPU Core | 63 | 34 | 66 | /gpu-nvidia/0/temperature/0
+  Temperature | GPU Memory Junction | 70 | 40 | 74 | /gpu-nvidia/0/temperature/3
+  Load | GPU Core | 98 | 0 | 100 | /gpu-nvidia/0/load/0
+  Load | GPU Power | 79.5 | 7 | 91.7 | /gpu-nvidia/0/load/4
+  Fan | GPU Fan 1 | 1650 | 0 | 1720 | /gpu-nvidia/0/fan/1
+  Control | GPU Fan 1 | 55 | 0 | 58 | /gpu-nvidia/0/control/1
+  SmallData | GPU Memory Used | 9876 | 900 | 10022 | /gpu-nvidia/0/smalldata/1
+  SmallData | GPU Memory Total | 16303 | 16303 | 16303 | /gpu-nvidia/0/smalldata/2
+
+== Mapeamento · Mapping ==
+  cpu.load <- AMD Ryzen 7 9800X3D 8-Core Processor / Load / CPU Total (/amdcpu/0/load/0)
+  gpu.temp <- NVIDIA GeForce RTX 5080 / Temperature / GPU Core (/gpu-nvidia/0/temperature/0)
+  gpu.memjunction <- NVIDIA GeForce RTX 5080 / Temperature / GPU Memory Junction (/gpu-nvidia/0/temperature/3)

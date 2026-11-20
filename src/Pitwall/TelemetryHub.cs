@@ -126,6 +126,10 @@ public sealed class TelemetryHub : IDisposable
             _ws.Broadcast(DevicesMessage(paired ? id : null));
         };
         _remote.Disconnected += _ => _ws.Broadcast(DevicesMessage());
+        // 1.2: Home Assistant (GET /api/v1/state), desligado por padrão
+        _remote.ApiEnabled = () => _config.Current.Remote is { Enabled: true, ApiEnabled: true };
+        _remote.StateJson = StateJson;
+        _remote.ApiAuthorized += TouchApiDevice;
 
         _crashFeature = config.Current.Features.CrashReport;
         _peaksOn = config.Current.Features.SessionPeaks;
@@ -514,6 +518,11 @@ public sealed class TelemetryHub : IDisposable
 
         _ws.Broadcast(msg.ToJsonString());
 
+        // Home Assistant: guarda só uma cópia dos valores (o JSON é montado quando alguém pede)
+        _apiSnapshot = cfg.Remote is { Enabled: true, ApiEnabled: true }
+            ? new ApiSnapshot(DateTimeOffset.Now, game?.Exe, new(_values), new(_texts))
+            : null;
+
         // Celular: o mesmo snapshot sem nome de arquivo, ajuste da GPU nem sugestão de jogo
         if (_remote.HasClients)
         {
@@ -529,6 +538,7 @@ public sealed class TelemetryHub : IDisposable
     string CatalogMessage(bool remote = false)
     {
         var screens = Screen.AllScreens;
+        var missingContext = MissingContextNow();
         var node = JsonSerializer.SerializeToNode(new
         {
             type = "catalog",
@@ -558,19 +568,27 @@ public sealed class TelemetryHub : IDisposable
                 height = s.Bounds.Height,
                 primary = s.Primary,
             }),
-            metrics = _definitions.Select(d => new
+            metrics = _definitions.Select(d =>
             {
-                id = d.Id,
-                group = d.Group.ToString().ToLowerInvariant(),
-                name = L.MetricName(d),
-                unit = d.Unit,
-                isTemperature = d.IsTemperature,
-                available = _available.Contains(d.Id),
-                source = d.Group == MetricGroup.Fps ? (_presentMon.Available ? "PresentMon (ETW)" : null)
-                    : d.Id == "gpu.perfcap" ? (_available.Contains(d.Id) ? "NVML (clocks event reasons)" : null)
-                    : _sensors.SourceOf(d.Id),
-                defaultWarn = d.DefaultWarn,
-                defaultCrit = d.DefaultCrit,
+                var available = _available.Contains(d.Id);
+                var missing = available ? null : MissingReasons.For(d.Id, missingContext);
+                return new
+                {
+                    id = d.Id,
+                    group = d.Group.ToString().ToLowerInvariant(),
+                    name = L.MetricName(d),
+                    unit = d.Unit,
+                    isTemperature = d.IsTemperature,
+                    available,
+                    source = d.Group == MetricGroup.Fps ? (_presentMon.Available ? "PresentMon (ETW)" : null)
+                        : d.Id == "gpu.perfcap" ? (available ? "NVML (clocks event reasons)" : null)
+                        : _sensors.SourceOf(d.Id),
+                    defaultWarn = d.DefaultWarn,
+                    defaultCrit = d.DefaultCrit,
+                    // 1.2: por que não há leitura, num texto que dá para entender
+                    missing = missing?.Reason,
+                    missingText = missing?.Text,
+                };
             }),
         }, ConfigStore.Json)!.AsObject();
         // Sobre: componente ausente vai como null explícito (o resto do catálogo omite nulls)
@@ -810,6 +828,12 @@ public sealed class TelemetryHub : IDisposable
                     _ws.Broadcast(DevicesMessage());
                     return null;
                 }
+                // 1.2: só neste socket local (o da rede ignora mensagens do cliente)
+                case "createApiToken":
+                    return CreateApiToken(node);
+                case "getSensorDump":
+                    // Thread do socket, não a do tick: o tick só espera o lock enquanto o hardware parado é lido
+                    return JsonSerializer.Serialize(new { type = "sensorDump", text = SensorDump() });
                 case "dismissCrashReport":
                     if (_crashReport is { } report)
                     {
@@ -870,6 +894,97 @@ public sealed class TelemetryHub : IDisposable
             return JsonSerializer.Serialize(new { type = "error", message = ex.Message });
         }
         return null;
+    }
+
+    // ---- 1.2: sensores sem leitura, lista de sensores e Home Assistant ----
+
+    sealed record ApiSnapshot(DateTimeOffset Time, string? GameExe, Dictionary<string, double?> Values, Dictionary<string, string?> Texts);
+    volatile ApiSnapshot? _apiSnapshot;
+    readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> _apiSeenAt = new();
+
+    MissingContext MissingContextNow() => new(
+        _sensors.GpuVendor, _sensors.GpuName,
+        PawnIO: AboutInfo.Current.PawnIO != null,
+        Admin: new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator),
+        PresentMon: _presentMon.Available,
+        HasDevice: _battery.Devices.Count > 0,
+        Gpu2Vendor: _sensors.Gpu2Vendor, Gpu2Name: _sensors.Gpu2Name,
+        BatteryOn: _config.Current.Battery.Enabled);
+
+    /// <summary>Lista de sensores (getSensorDump, bandeja): sem nome do PC, usuário, caminhos ou números de série.</summary>
+    public string SensorDump()
+    {
+        var ctx = MissingContextNow();
+        var header = new List<(string, string)>
+        {
+            ("app", typeof(TelemetryHub).Assembly.GetName().Version?.ToString(3) ?? "-"),
+            ("windows", SystemInfo.WindowsVersion()),
+            ("gpuDriver", SystemInfo.GpuDriver(_sensors.GpuName) ?? "-"),
+            ("pawnIO", ctx.PawnIO ? "yes" : "no"),
+            ("admin", ctx.Admin ? "yes" : "no"),
+            ("presentMon", ctx.PresentMon ? "yes" : "no"),
+            ("generated", DateTime.Now.ToString("yyyy-MM-dd HH:mm")),
+        };
+        var data = _sensors.DumpData(header);
+        foreach (var d in _definitions.Where(d => !_available.Contains(d.Id)))
+        {
+            var m = MissingReasons.For(d.Id, ctx);
+            data.Missing.Add(new DumpMissing(d.Id, m.Reason, m.Text));
+        }
+        return SensorDumpText.Write(data);
+    }
+
+    /// <summary>createApiToken: token mostrado uma vez; aqui fica só o SHA-256 (aparelho kind "integration").</summary>
+    string CreateApiToken(JsonNode node)
+    {
+        string? name = null;
+        try { name = node["name"]?.GetValue<string>(); } catch { }
+        if (_config.Current.Remote.PairedDevices.Count(d => d.Kind == DeviceKind.Integration) >= StateApi.MaxTokens)
+            return JsonSerializer.Serialize(new
+            {
+                type = "error",
+                message = L.T($"Limite de {StateApi.MaxTokens} tokens de integração. Revogue um para criar outro.",
+                    $"Limit of {StateApi.MaxTokens} integration tokens. Revoke one to create another."),
+            });
+        var (token, device) = StateApi.NewToken(name, DateTime.Now);
+        _config.Update(c => c.Remote.PairedDevices = [.. c.Remote.PairedDevices, device]);
+        _ws.Broadcast(DevicesMessage());
+        return JsonSerializer.Serialize(new
+        {
+            type = "apiToken",
+            token,
+            device = new { id = device.Id, name = device.Name, created = device.Created, kind = device.Kind, online = false },
+        }, ConfigStore.Json);
+    }
+
+    /// <summary>Corpo do GET /api/v1/state (thread do servidor da rede): só o que o último tick já leu.</summary>
+    string StateJson()
+    {
+        var snap = _apiSnapshot;
+        var values = new List<StateValue>();
+        if (snap != null)
+            foreach (var d in _definitions)
+            {
+                if (d.Unit == "graph" || !_available.Contains(d.Id)) continue;
+                var name = $"{GroupName(d.Group)} · {L.MetricName(d)}";
+                if (d.Unit == "text")
+                {
+                    if (snap.Texts.TryGetValue(d.Id, out var t)) values.Add(new StateValue(d.Id, name, null, t, d.Unit));
+                }
+                else if (snap.Values.TryGetValue(d.Id, out var v)) values.Add(new StateValue(d.Id, name, v, null, d.Unit));
+            }
+        return StateApi.Build(typeof(TelemetryHub).Assembly.GetName().Version?.ToString(3), snap?.Time ?? DateTimeOffset.Now,
+            snap?.GameExe, values).ToJsonString();
+    }
+
+    /// <summary>"Visto por último" do token de API, no máximo 1x/min por aparelho.</summary>
+    void TouchApiDevice(string id)
+    {
+        var now = Environment.TickCount64;
+        var last = _apiSeenAt.GetOrAdd(id, 0);
+        if (last != 0 && now - last < LastSeenEveryMs) return;
+        _apiSeenAt[id] = now;
+        TouchDevices(new HashSet<string> { id });
     }
 
     /// <summary>O processo é elevado: não deixa a config apontar o log para pastas do sistema ou de rede.</summary>

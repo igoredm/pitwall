@@ -40,6 +40,12 @@ public sealed class RemoteServer : IDisposable
     public event Action<string, bool>? Authenticated;
     /// <summary>Conexão autenticada encerrada (id do dispositivo).</summary>
     public event Action<string>? Disconnected;
+    /// <summary>1.2: API de leitura ligada (remote.enabled &amp;&amp; remote.apiEnabled). null = desligada.</summary>
+    public Func<bool>? ApiEnabled { get; set; }
+    /// <summary>1.2: corpo do GET /api/v1/state (últimos valores do snapshot, sem ler sensores).</summary>
+    public Func<string>? StateJson { get; set; }
+    /// <summary>1.2: token de integração aceito na API (id do aparelho).</summary>
+    public event Action<string>? ApiAuthorized;
 
     public int Port { get; private set; }
     public bool Running => _listener != null;
@@ -121,6 +127,12 @@ public sealed class RemoteServer : IDisposable
             // Defesa contra DNS rebinding: só aceita o IP (como no QR) ou o nome deste PC no Host
             if (!HostAllowed(req.Url?.Host)) { Close(res, 421); return; }
 
+            if (req.Url?.AbsolutePath == StateApi.Path)
+            {
+                HandleApi(req, res, ip);
+                return;
+            }
+
             if (req.Url?.AbsolutePath == "/ws")
             {
                 if (!req.IsWebSocketRequest || !SameOrigin(req)) { Close(res, 403); return; }
@@ -149,6 +161,37 @@ public sealed class RemoteServer : IDisposable
         {
             try { res.Abort(); } catch { }
         }
+    }
+
+    /// <summary>
+    /// GET /api/v1/state. Sem CORS (navegador de outra origem não lê a resposta; o Authorization nem passa do preflight),
+    /// Cache-Control: no-store, token errado conta no mesmo limite por IP do pareamento.
+    /// </summary>
+    void HandleApi(HttpListenerRequest req, HttpListenerResponse res, string ip)
+    {
+        var now = DateTime.UtcNow;
+        var (decision, device) = StateApi.Authorize(ApiEnabled?.Invoke() == true, req.HttpMethod, req.Headers["Authorization"],
+            _limiter.IsBlocked(ip, now), _devices());
+        res.Headers["Cache-Control"] = "no-store";
+        res.Headers["X-Content-Type-Options"] = "nosniff";
+        if (decision == ApiDecision.Unauthorized)
+        {
+            _limiter.Fail(ip, now);
+            res.Headers["WWW-Authenticate"] = "Bearer";
+        }
+        if (decision == ApiDecision.Blocked && _limiter.RetryAfterSec(ip, now) is { } wait) res.Headers["Retry-After"] = wait.ToString();
+        if (decision != ApiDecision.Ok || device == null || StateJson == null)
+        {
+            Close(res, StateApi.StatusCode(decision == ApiDecision.Ok ? ApiDecision.NotFound : decision));
+            return;
+        }
+        try { ApiAuthorized?.Invoke(device.Id); } catch { }
+        var body = Encoding.UTF8.GetBytes(StateJson());
+        res.StatusCode = 200;
+        res.ContentType = "application/json; charset=utf-8";
+        res.ContentLength64 = body.Length;
+        res.OutputStream.Write(body);
+        res.Close();
     }
 
     static void Close(HttpListenerResponse res, int status)
@@ -235,7 +278,8 @@ public sealed class RemoteServer : IDisposable
         var type = Str(node, "type");
         if (type == "auth")
         {
-            var device = PairingManager.Validate(Str(node, "token"), _devices());
+            // Token de integração (Home Assistant) não abre a visualização: só a API de leitura
+            var device = PairingManager.Validate(Str(node, "token"), StateApi.ViewerDevices(_devices()));
             if (device == null)
             {
                 _limiter.Fail(ip, now);
