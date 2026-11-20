@@ -290,3 +290,137 @@ Estados da linha: dependência ("Sugestão" fica esmaecida, com "Precisa da Dete
 8. Deep links: o host aceita `openSettings { page, anchor }` (do balão de queda → `sessions/crash`; do aviso de alerta → `sessions`).
 9. `catalog` com as versões dos componentes para "Sobre" (PresentMon, PawnIO, .NET).
 10. `config.appearance: "system"|"light"|"dark"` para as configurações (substitui o uso de `appTheme` no app).
+
+## v1.2
+
+Frames no canvas abaixo do título "1.2" (a partir de y=27700). Cópias em `docs/design/v12/` (18 arquivos `.dc.html`, com o logo por caminho relativo `../../../assets/logo/pitwall-256.png`; no canvas ele vem de `/_blob/…`). Escopo e tipos: `docs/v12-contract.md` e `web/src/app/models.ts` › 1.2. Tudo usa os tokens, o espaço e o tipo da v1.0; nenhuma cor nova além de `--g/--y/--r/--ac` e as versões `*s`.
+
+Lentes usadas: impeccable (modo *Operate*: escaneabilidade e consistência acima de expressão; nada de "hero metric", card dentro de card ou rótulo-sobrancelha), emil-design-eng (só anima o que é raro e tem propósito) e design-taste-frontend (uma cor de destaque, linhas de tabela no lugar de cards).
+
+| Frame | Tamanho | O que mostra |
+|---|---|---|
+| V12-Monitor-Escuro | 1200×1260 | Monitor em 2 colunas, jogo aberto, hot spot crítico, Δ no amarelo, 3 sensores sem leitura com motivo; marca da dobra em 800 |
+| V12-Monitor-Claro | 1200×1260 | Mesmo layout em outro PC (RTX 5070 Ti: "A NVIDIA tirou o hot spot das RTX 50"), botão logo depois de marcar |
+| V12-Monitor-960 | 960×640 | Janela mínima: sidebar 200 justa, uma coluna, faixa de estado 3+2, FPS sem leitura (não é administrador) |
+| V12-RelatorioPC-Escuro / -Claro | 1200×2050 | Agora, Última queda (2 min), eventos perto da hora, Últimas medições, Eventos do Windows (30 dias), Histórico |
+| V12-RelatorioPC-Estados | 2×1200×800 | Sem quedas; `features.crashReport` desligado |
+| V12-RelatoriosJogo-Escuro | 1200×1860 | Última partida (terminou em queda), linha do tempo com marcadores e engasgos, médias e picos, Comparar vazio, Histórico com caixas de seleção |
+| V12-RelatoriosJogo-Comparar | 1200×1180 | A × B com diferenças e duas linhas sobrepostas (FPS, hot spot) |
+| V12-Card-Compartilhar | 1200×630 | PNG exportado |
+| V12-Card-Texto | 1200×700 | Diálogo Compartilhar: prévia do PNG + texto simples + Markdown |
+| V12-Widget-Faixa-Lumen-2560 / -Lumen-1920 / -Minimo-1920 | 2560×720, 1920×480 | Layout `strip` |
+| V12-Widget-Mini-Lumen-800 / -Lumen-480 / -Minimo-800 | 800×480, 480×320 | Layout `mini` |
+| V12-Assistente-UmMonitor | diálogo 880×600 | Passo 1 com um monitor só |
+| V12-Pecas | 1840×860 | Atalhos (capturando / em uso / inválido), Integrações (token mostrado uma vez), Ajuste da GPU sem NVIDIA, pico com unidade |
+
+### Navegação (sidebar)
+Novo grupo **PC** entre Visão geral e Widget: Monitor (ícone de pulso `M3 12h3.5l2.5-6 4 12 2.5-6H21`) e Relatório do PC (folha com pulso). "Sessões" vira **Relatórios de jogo** (ícone de eixo com linha: `M4 4.5v15h16` + `M7.5 15l3.5-4.5 3 2.5 4.5-6`). O ponto vermelho de incidente não visto (`catalog.pcPending`) sai de Sessões e vai para Relatório do PC. Versão na marca: 1.2.0. EN: grupo "PC", páginas "Monitor", "PC report", "Game reports".
+Com 12 itens, **abaixo de 720 px de altura** a sidebar fica justa (item 30 px, grupo com padding 10/8/3) e o bloco "Widget no monitor N" do rodapé some (o aviso de atualização fica).
+
+### 1. Monitor (`monitor`)
+- **Largura toda** (`.col.wide`). h1 "Monitor"; descrição "Todos os sensores ao vivo, com o gráfico recente e o mínimo e o máximo de cada um. Só calcula enquanto esta página está aberta." / "Every sensor live, with a recent graph and the min and max of each. Only computed while this page is open." À direita: [Copiar leituras] / [Copy readings] e [Marcar momento] / [Mark moment] (ícone bandeira + `kbd` do atalho atual, ex. "Ctrl Alt M"; sem atalho, sem kbd). Em 960: "Marcar" sem kbd.
+- Depois de marcar, o botão mostra "Marcador 3 · 21:02:41" com check em `--g` por 2 s (`aria-live="polite"`) e volta. EN "Marker 3 · 21:02:41". Copiar leituras: o texto vira "Copiado" / "Copied" por 2 s. O conteúdo copiado é o `sensorDump.text`.
+- **Faixa de estado**: um container, 5 células iguais separadas por `--hair`, padding 12/16; rótulo 11.5/700 tx3, valor 15/700, sub 12 tx2, uma linha com reticências. Em 960: grid de 3 (3+2).
+  - Jogo / Game: exe em mono 14/600, sub "há 36 min". Sem jogo: "Nenhum" / "None".
+  - FPS: "141", sub "1% low 112 · 7,1 ms". Sem FPS: "Sem leitura" / "No reading" em `--y`, motivo no sub.
+  - Clock limitado por / Clock limited by: Temperatura / Consumo / Voltagem (estim.) / Sincronia / Ocioso / Livre (Temperature / Power / Voltage (est.) / Sync / Idle / Free); sub "62% do tempo na partida". Sem cor de alerta: limite não é alarme.
+  - Ajuste da GPU / GPU tuning: ponto `--g` + perfil, sub "até 280 W e 1800 MHz"; desligado: "Desligado" + "Ligar em Ajuste da GPU"; AMD: "Precisa de NVIDIA".
+  - Ligado há / Up for: "2 h 58 min", sub "desde 18:04".
+- **Motivo do FPS** (`texts["fps.reason"]`): `noGame` "Nenhum jogo aberto" / "No game running"; `starting` "Começando a medir…" / "Starting to measure…"; `antiCheat` "O anti-cheat do jogo bloqueia a leitura" / "The game's anti-cheat blocks it"; `noPresentMon` "PresentMon não encontrado. Reinstale o Pitwall." / "PresentMon not found. Reinstall Pitwall."; `otherCapture` "Outro programa está usando a captura de quadros" / "Another app is using frame capture"; `noFrames` "Sem quadros novos (jogo minimizado ou em pausa)" / "No new frames (game minimized or paused)"; `notAdmin` "Precisa abrir como administrador" / "Needs to run as administrator".
+- **Barra de ferramentas** (16 px abaixo): à esquerda, âncoras "GPU CPU RAM FPS Discos Rede Bateria" (links 12.5/600 tx2, rolagem instantânea); à direita, "Mín e máx desde 18:04, quando o Pitwall abriu" / "Min and max since 18:04, when Pitwall opened" (estreito: "Mín e máx desde 18:04") e o segmentado **1 min / 5 min / 15 min** (padrão 5; lembrado em `localStorage`, não no config).
+- **Grupos** GPU · CPU · RAM · FPS · Discos · Rede · Bateria (EN … Disks · Network · Battery): h2 + dica na mesma linha (tx3: modelo, driver, "FC26.exe · PresentMon 2.3", nomes dos discos) e **um container** com uma linha por sensor. Grupo sem sensores e sem motivo (ex.: nenhuma bateria) não aparece.
+- **Duas colunas quando o conteúdo tem ≥ 860 px** (janela ≥ ~1140): esquerda GPU + FPS; direita CPU + RAM + Discos + Rede + Bateria; gap 24. Abaixo disso, uma coluna na ordem do contrato.
+- **Linha do sensor** (min-height 44, padding 0/14, divisor `--hair`). Grid `minmax(0,1fr) 96px 80px 52px` em 2 colunas; `minmax(0,1fr) minmax(0,1.4fr) 96px 104px` em 1 coluna.
+  - Nome 13.5/600 com reticências.
+  - Sparkline 24 px, traço 1.6 + área 13%, accent; `--y`/`--r` quando o valor atual passa do limite; linha tracejada `--y` (3/3, 75%) no limite amarelo quando cabe na escala; FPS em `--g`.
+  - Valor 16.5/600 à direita + unidade 11.5 tx3. **Amarelo/vermelho = fundo `--ys`/`--rs` (raio 6) + cor do texto**, nunca só a cor; `aria-label` com "atenção"/"crítico".
+  - Mín/máx empilhados 11.5 tx3 com o número em tx2/600; em 1 coluna, numa linha ("mín 38 · máx 79").
+  - Engasgos: no lugar do gráfico, trilho com um tique `--y` por engasgo na janela; valor = engasgos na partida; coluna da direita "0,1/min".
+  - Bateria: sem mín/máx; amarelo abaixo de 20%.
+- **Sem leitura** (`available:false`): nome em tx2/500 e `missingText` (12.5 tx2) ocupando as 3 colunas da direita, com ação quando houver: `needsPawnIO` "Instalar", `needsAdmin` "Reabrir como administrador", `needsPresentMon` "Reinstalar", `off` "Ligar". Exemplos: "A NVIDIA tirou o hot spot das RTX 50." / "NVIDIA removed the hot spot sensor on RTX 50 cards."; "Precisa do PawnIO para ler." / "Needs PawnIO to read."; "Este disco não informa a temperatura." / "This drive doesn't report temperature."; "O jogo não envia a latência para o PresentMon." / "The game doesn't send latency to PresentMon."; "Desligado ou fora de alcance." / "Off or out of range.". Se **todos** os sensores de um grupo faltam pelo mesmo motivo (FPS com `notAdmin`), o container vira uma linha: "FPS, 1% low, frametime e engasgos: sem leitura · Precisa abrir como administrador [Reabrir como administrador]".
+
+### 2. Relatório do PC (`health`)
+- Coluna de 840. h1 "Relatório do PC" / "PC report"; descrição "Quando o PC desliga sem aviso, com ou sem jogo, o Pitwall guarda os 2 minutos antes e junta os eventos do Windows daquela hora. Só os dados." / "When the PC shuts off without warning, in a game or not, Pitwall keeps the 2 minutes before and gathers that hour's Windows events. Just the data."
+- **Agora** (container de 1 linha): ponto `--g` + "**Agora: ligado há 14 min** desde 21:16 · guardando os últimos 2 min, 1 leitura por segundo" + link "Recursos". EN "**Now: up for 14 min** since 21:16 · keeping the last 2 min, 1 reading per second". Desligado (`ringActive:false`): ponto tx3, sem a parte do buffer, e a linha "Desligado em Recursos" / "Sem isto, o Pitwall não guarda os 2 minutos antes de uma queda. Os eventos do Windows continuam aqui." [Ligar] (EN "Off in Features" / "Without it, Pitwall doesn't keep the 2 minutes before a crash. Windows events still show here." [Turn on]).
+- **Última queda** (`#latest`), um container:
+  - Cabeçalho (padding 16): ícone power `--r` 20; título 17/800 "O PC desligou sem aviso às 21:14" (bugcheck: "O PC parou com tela azul às 23:02"); 13 tx2 "Ligado havia 3 h 12 min · jogando FC26.exe (48 min de partida) · voltou às 21:16" (sem jogo: "fora de jogo"); 12.5 tx3 hardware "RTX 3080 · driver 581.57 · Ryzen 7 5800X3D · 32 GB · Windows 11 24H2". [Dispensar] quieto à direita. EN "The PC shut off without warning at 21:14" / "Up for 3 h 12 min · playing FC26.exe (48 min in) · back at 21:16" / "The PC stopped with a blue screen at 23:02" / "Dismiss".
+  - 6 gráficos de 2 min (linhas de 50 px, grid `112px 1fr 132px`): Hot spot, GPU núcleo, Consumo GPU, Clock GPU, CPU, FPS; à direita "mín 99 · máx 104 °C" / "no fim **104 °C**" (cor de alerta só no valor do fim). Eixo comum: "−2:00 −1:30 −1:00 −0:30 21:14:05". Escala = mín/máx da série com folga (não começa em 0); tracejado do limite amarelo quando cabe. Série ausente: a linha some da lista de gráficos (o valor aparece como "sem leitura" nas medições).
+  - Nota 12 tx3: "A última gravação foi às 21:14:05; em jogo o Pitwall grava a cada 5 s, então o PC desligou entre 21:14:05 e 21:14:10." (fora de jogo, 10 s). EN "The last save was at 21:14:05; in a game Pitwall saves every 5 s, so the PC went off between 21:14:05 and 21:14:10."
+  - "Eventos do Windows perto dessa hora (21:04 a 21:24)" com as linhas de evento do incidente.
+- **Últimas medições**: ações no cabeçalho [Copiar como texto] [Copiar para fórum] [Salvar .txt] [Abrir CSV] (Copy as text / Copy for forum / Save .txt / Open CSV; Abrir CSV só com `csvFile`). Dica "Tudo o que o Pitwall leu às 21:14:05, a última gravação antes da queda." Tabela em **3 colunas** num container (GPU · CPU e RAM · FPS e outros), pares nome/valor 13 px, valor 600 à direita, cor de alerta só no valor, "sem leitura" em tx3. Copiar para fórum = Markdown (Reddit, GitHub, fóruns); Copiar como texto = linhas simples (Discord, WhatsApp).
+- **Eventos do Windows** (`#events`, 30 dias, mais novos primeiro), contagem à direita do título ("6 eventos"). Linha: hora 13/600 tx2 | nome 13.5/700 + fonte mono 11.5 tx3 (provedor, id, código ou componente) | significado 12.5 tx2. **Sem diagnóstico** e sem cor na lista.
+
+| kind | PT | significado | EN | meaning |
+|---|---|---|---|---|
+| kernelPower41 | Kernel-Power 41 | O PC voltou sem ter sido desligado pelo Windows. | Kernel-Power 41 | The PC came back without Windows shutting it down. |
+| unexpectedShutdown | Desligamento inesperado | O Windows registrou que o desligamento anterior foi inesperado. | Unexpected shutdown | Windows logged that the previous shutdown was unexpected. |
+| bugcheck | BugCheck | O Windows parou com tela azul e guardou este código. | BugCheck | Windows stopped with a blue screen and saved this code. |
+| whea | WHEA corrigido | O hardware relatou um erro e o corrigiu sozinho. | WHEA corrected | Hardware reported an error and corrected it. |
+| whea + fatal | WHEA fatal | O hardware relatou um erro que não conseguiu corrigir. | WHEA fatal | Hardware reported an error it couldn't correct. |
+| gpuReset | Driver de vídeo reiniciado | O driver de vídeo parou de responder e o Windows o reiniciou. | Display driver restarted | The display driver stopped responding and Windows restarted it. |
+
+- **Histórico** (`#history`): Quando | O que houve | Ligado havia | Jogo | Eventos do Windows (pílulas `p-n`; BugCheck e WHEA fatal `p-r`) | chevron. A linha aberta fica com `--acs`; clicar troca o bloco "Última queda" pelo incidente (`getPcIncident`). Rodapé "Guarda os 20 mais recentes." / "Keeps the 20 most recent." "Desligou sem aviso" / "Shut off without warning"; "Tela azul 0x124" / "Blue screen 0x124".
+- **Vazio**: check `--g` 22 + "Nenhuma queda registrada" (15/700) + "Se o PC desligar sem aviso, os 2 minutos antes e os eventos do Windows daquela hora aparecem aqui. Nada para fazer até lá." (EN "No crashes recorded" / "If the PC shuts off without warning, the 2 minutes before and that hour's Windows events show up here. Nothing to do until then."). Eventos do Windows continuam; Histórico some se vazio.
+- **Desligado** (`features.crashReport` off): "Agora" com a linha "Desligado em Recursos"; Última queda vira "Sem buffer, sem os 2 minutos antes" / "As quedas antigas continuam no histórico. Ligue o Relatório do PC para guardar as próximas." (EN "No buffer, no 2 minutes before" / "Older crashes stay in the history. Turn on PC report to keep the next ones.").
+- O balão de queda e o banner da Visão geral abrem `health/latest`.
+
+### 3. Relatórios de jogo (`sessions`)
+- h1 "Relatórios de jogo" / "Game reports"; "Cada partida vira um relatório: FPS, engasgos, temperaturas e os momentos que você marcou." / "Every match becomes a report: FPS, stutters, temperatures and the moments you marked."
+- **Última partida** (`#last`): dica "FC26.exe · hoje, 20:26 → 21:14 · 48 min"; [Compartilhar] / [Share] e [Abrir CSV]. Com `endedByCrash`: nota `n-r` de 1 linha acima do container "Terminou numa queda do PC, às 21:14." + "Ver relatório do PC ›" (incidente `incidentId`). EN "Ended in a PC crash at 21:14." / "See PC report".
+  - Faixa de 6 números no topo do container (células iguais, divisores, **sem fundo de tile**; substitui a grade 4×2 da v1.0): FPS médio (sub "mín 30 · máx 165"), 1% low, 0,1% low, Engasgos (sub "0,1 por minuto"; ausente = "não contado" + link Recursos), Erro de animação (ms, "média"), Latência do PC (ausente = "sem leitura" / "o jogo não envia"). Valor 24/600, rótulo 11.5/700 tx3.
+  - "A partida inteira" + segmentado **FPS / Hot spot / Núcleo / Consumo / CPU** (`getSessionSeries`, 120 pontos). Gráfico 140 px, eixo Y com 4 valores (11 tx3) e grade `--hair`; FPS em `--g`, o resto em accent. **Marcadores**: linha vertical tracejada tx3 com o número num círculo de 18 px no topo. **Engasgos**: trilho de 14 px embaixo, um tique `--y` cada. **Queda**: linha `--r` de 2 px no fim e o último rótulo do eixo "48 min · PC desligou". Eixo X em minutos.
+  - Lista de marcadores (linhas de 38): número | hora | "aos 15 min" | nota ou "sem nota" (tx3) | origem ("Ctrl Alt M" / "botão Marcar momento"). Sem marcadores, some.
+  - `sessionSeries.available:false`: no lugar do gráfico, "O CSV desta partida já foi apagado pela retenção, então não dá para desenhar a partida inteira. Os números acima continuam." / "This match's CSV was already removed by retention, so the full timeline can't be drawn. The numbers above still hold."
+- **Médias e picos**: Sensor | Média | Pico | No amarelo | No vermelho (GPU núcleo, Hot spot, Δ hot spot, Consumo GPU, Clock GPU, Uso GPU, CPU temperatura, CPU uso); pico com a cor do limite; "—" quando não houve. Última linha "O que limitou o clock" + barra empilhada de 8 px (temperatura `--y`, consumo `--ac`, livre `--bd`) com legenda em texto.
+- **Comparar** (`#compare`), vazio: uma linha com pílula "A" + seletor (última partida) + botão trocar + pílula "B" + seletor "Escolha outra partida" + [Comparar] desabilitado. Dica "Marque duas partidas no histórico ou escolha aqui." / "Tick two matches in the history or pick them here."
+- **Comparação**: Sensor | A (data) | B (data) | "A em relação a B" / "A vs B". **Verde = A melhor, vermelho = A pior, tx3 "igual" quando a diferença é < 2% ou o sensor não tem lado melhor** (consumo, clock, uso, duração). Melhor = maior em FPS/1%/0,1%; menor em engasgos, engasgos/min, temperaturas, tempo no amarelo/vermelho. A regra fica escrita embaixo da tabela. Dois gráficos sobrepostos (FPS, Hot spot), 110 px: A accent sólido com área 10%, B tx2 tracejado 5/4 sem área; eixo X até a partida mais longa. [Limpar] no cabeçalho.
+- **Histórico** (`#history`): caixa de seleção de 16 px à esquerda (`role="checkbox"`, rótulo "Comparar FC26.exe de hoje, 20:26"); linha marcada com `--acs`. Jogo (mono + pílula "PC desligou") | Quando | Duração | FPS médio | 1% low | Engasgos | Pico hot spot | chevron. Cabeçalho: "1 marcada · marque mais uma para comparar"; com 2, botão primário [Comparar 2 partidas] que rola até `#compare`. Marcar a terceira desmarca a mais antiga. EN "1 selected · select one more to compare" / "Compare 2 matches".
+- **Gravação em CSV** (`#csv`): igual à v1.0.
+
+### 4. Compartilhar
+- **PNG 1200×630**, sempre escuro (hex fixos, independente do tema do app): fundo #0E1014, padding 48/56/44, Manrope. Topo: logo 44 (raio 10) + "Pitwall" 22/800; à direita "19 nov. 2026 · 48 min" 17/600 #A3AAB6. Esquerda: jogo 40/800 (nome do perfil, senão o exe sem ".exe"); hardware 18/600 #A3AAB6; **FPS médio 156 px peso 300** (eco do FPS fino do widget) + "FPS médio"; 1% low, 0,1% low e engasgos em 40/700. Direita (300 px): "Picos" + Hot spot, GPU núcleo, Consumo, No vermelho (30/700, #FF6B70 só acima do limite) com divisores #23272E. Base: linha do FPS da partida (104 px, #3DDC84, área 10%) e rodapé "FPS na partida" / "github.com/igoredm/pitwall" 14/600 #848C99. Sem gradiente nem brilho; lê bem na miniatura do Discord (~400 px).
+- **Diálogo Compartilhar** (1040 px, `--pop`): prévia do PNG a 40% + [Copiar imagem] (primário) [Salvar PNG] + "1200×630, bom para Reddit, Discord e X."; à direita, dois blocos mono 12.5 sobre `--sf2`: **Texto** "funciona em qualquer lugar" [Copiar texto] e **Markdown** "Reddit, fóruns e GitHub" [Copiar Markdown]. EN "Share match", "Copy image", "Save PNG", "Text — works anywhere", "Copy text", "Markdown — Reddit, forums and GitHub", "Copy Markdown".
+- Texto simples:
+
+```
+EA SPORTS FC 26 · 19/11/2026 · 48 min
+RTX 3080 · Ryzen 7 5800X3D · 32 GB
+FPS médio 141 · 1% low 112 · 0,1% low 88
+Engasgos: 6 (0,1 por min)
+Picos: hot spot 101 °C · núcleo 79 °C · consumo 322 W
+No vermelho: 48 s
+Pitwall 1.2.0
+```
+
+- Markdown: jogo em negrito, linha de hardware, tabela `| FPS médio | 1% low | 0,1% low | Engasgos |` alinhada à direita, "Picos: hot spot **101 °C** · …" e "No vermelho: 48 s · *Pitwall 1.2.0*". Linha sem dado some (nunca "0" ou "—" no texto compartilhado).
+
+### 5. Widget: `strip` e `mini`
+Mesmo sistema do completo/médio/compacto (tokens do tema, cards, tiles, `.lim`, picos). Nenhuma animação nova.
+- **strip** (≥ 3:1): uma linha. Coluna do FPS (≈ 400 px em 1920×480: chip do jogo, FPS no peso do tema, pílulas 1% low / 0,1% / frametime, gráfico) | card **GPU** (flex 2.1: cabeçalho + "Limite: …" + uso, barra, **grade 3×2**: Núcleo, Hot spot, Memória, Consumo, Clock, Δ) | card **CPU** (flex 1, **tiles em 1 coluna**: Temperatura, Consumo, Clock) | card **RAM** (flex .7, "19,8 de 32 GB" + Usada/Livre). 1920×480 = escala 1; 2560×720 = escala 1,45 e ganha uma 5ª coluna estreita (relógio, data, bateria, rede). Em 1920×480 a bateria vai para baixo das pílulas do FPS.
+- **mini**: 800×480 (e 1024×600): esquerda (300×s) chip do jogo, FPS 150×s, "FPS", 1% low e frametime empilhados, chip de limite; direita grade **2×3** (GPU uso, Núcleo, Hot spot, Consumo, CPU, RAM), valor 40×s peso fino, rótulo embaixo, "máx …" só na célula em alerta. 480×320: FPS 92 px com "FPS" e o jogo ao lado, "112 1% low" e "7,1 ms" à direita; grade **3×2** abaixo, sem picos. As células seguem a prioridade de Métricas.
+- Mínimo: sem cards, divisores `--hair`, rótulos em caixa alta .16em, tag de texto "crítico"/"atenção" (Lumen usa o ponto de 7 px).
+- **Pico com unidade**: sempre "máx 101 °C" / "max 101 °C". No completo e no strip, "máx …" fica **embaixo do nome** do tile (nunca disputa largura com ele); no médio o chip ganha a unidade; compacto e mini 480 não têm pico.
+- Automático: proporção ≥ 3:1 → strip; largura ≤ 1024, altura ≤ 600 e proporção < 3:1 → mini; o resto segue a regra atual.
+
+### 6. Peças
+- **Assistente, passo 1 com um monitor**: "Onde o widget vai ficar?"; "Achamos um monitor só (2560 × 1440). O widget foi feito para um segundo monitor, mas dá para usar assim:" (EN "We found a single monitor (2560 × 1440). The widget is made for a second screen, but you can use it like this:"). Um container com 2 opções de rádio (linha inteira clicável; escolhida com `--acs`): **Ver no celular ou na TV** / "Abre o widget num celular ou TV da mesma rede Wi-Fi. Fica fora da tela do jogo. Leva a Celular e TV para parear." (EN "Watch on your phone or TV" / "Opens the widget on a phone or TV on the same Wi-Fi. Stays off your game screen. Takes you to Phone & TV to pair.") e **Deixar no canto da tela** (padrão) / "O widget compacto fica sempre por cima, num canto. Ctrl Alt P mostra e esconde, até dentro do jogo." (EN "Keep it in a corner" / "The compact widget stays on top in a corner. Ctrl Alt P shows and hides it, even in game.") com segmentado Superior esquerdo / Superior direito (padrão) / Inferior esquerdo / Inferior direito. Rodapé: "Ligou outro monitor? Ele aparece aqui." (atualiza ao vivo; com 2 monitores volta ao passo normal).
+- **App › Atalhos**: switch "Atalhos globais" ("Funcionam em qualquer lugar, até dentro do jogo. O Windows avisa o Pitwall quando você aperta; nada lê o teclado." / "Work anywhere, even in game. Windows tells Pitwall when you press them; nothing reads your keyboard."); linhas "Mostrar ou esconder o widget" / "Show or hide the widget" e "Marcar momento" / "Mark moment": teclas em `kbd` (24 px, borda inferior 2 px) + [Alterar]. **Capturando**: campo com foco (`--ac` + anel `--acs`), modificadores já apertados + "Pressione as teclas…" / "Press the keys…", dica "Esc cancela. Backspace desliga o atalho." / "Esc cancels. Backspace turns the shortcut off.", [Cancelar]. **Em uso** (`hotkeys.x = "inUse"`): pílula `p-r` "em uso por outro app" / "used by another app" + dica em `--r` "Ctrl + Alt + M está em uso por outro app. Escolha outra combinação." **Inválido**: dica `--y` "Use Ctrl, Alt, Shift ou Win junto com uma letra, um número ou F1 a F24." Desligado: "Desligado" tx3.
+- **Celular e TV › Integrações**: switch "Home Assistant" ("Deixa o Home Assistant ler os sensores pela rede local. Só leitura. Precisa de Celular e TV ligado."; desabilitado com essa dica sem `remote.enabled`); "Endereço" mono + [Copiar]; "Novo token" (nome + [Criar token]). **Token criado** (uma vez só): "Token criado: Home Assistant" / "Copie agora. Por segurança, ele não aparece de novo; se perder, crie outro." + campo mono só leitura + [Copiar] primário + link "Como configurar o sensor REST no Home Assistant" (`docs/home-assistant.md`). Sair da página tira o token da tela. Tokens existentes: ícone chave, "integração · criado hoje, 21:30 · usado há 4 s", [Revogar] `--r`. EN "Integrations", "Address", "New token", "Create token", "Token created", "Copy it now. For security it won't be shown again; if you lose it, create another.", "Revoke".
+- **Ajuste da GPU sem NVIDIA**: nota `n-y` "O ajuste precisa de uma GPU NVIDIA" / "Esta é uma AMD Radeon RX 7800 XT. O resto do Pitwall funciona igual: sensores, FPS, relatórios e alertas." (EN "Tuning needs an NVIDIA GPU" / "This is an AMD Radeon RX 7800 XT. The rest of Pitwall works the same: sensors, FPS, reports and alerts."); seções abaixo esmaecidas (`opacity .45`, `aria-disabled`), switch desabilitado e pílula `p-y` "precisa de NVIDIA" / "needs NVIDIA".
+
+### Decisões para o frontend
+- **Componentes**: `pw-status-strip` (5 células ou 3+2), `pw-sensor-row` (nome, sparkline ou trilho, valor com nível, mín/máx, sem leitura com ação), `pw-sensor-group` (h2 + dica + container; vira uma linha quando todos faltam pelo mesmo motivo), `pw-mini-chart` (SVG `preserveAspectRatio="none"` + `vector-effect: non-scaling-stroke`, linha de limite opcional), `pw-timeline` (gráfico + marcadores + engasgos + eixo), `pw-event-row`, `pw-compare-table`, `pw-share-dialog`, `pw-hotkey-field`. Tabelas em grid com `.tbl-r`. Nada de card dentro de card: um container por seção, como na v1.0.
+- **Monitor**: assina o snapshot só com a página visível e a janela não minimizada; anel por sensor no front a 1 Hz (15 min = 900 pontos), redesenho no máximo 1×/s; mín/máx desde a abertura do app vêm do backend (não zeram ao trocar de página).
+- **Alerta no app** = cor + fundo `*s` (pílula do valor) + tracejado do limite no gráfico; nunca só cor. Limite de clock nunca é amarelo/vermelho.
+- **Copiar**: o botão vira "Copiado" por 2 s, sem toast. Salvar .txt/PNG pelo diálogo de arquivo do Windows (host).
+- **PNG**: componente fixo 1200×630 fora da tela, capturado pelo host (`CapturePreviewAsync`) ou desenhado num canvas; usa hex fixos, não tokens.
+- **Comparar**: seleção na URL (`sessions/compare?a=<start>&b=<start>`), histórico e seletores sincronizados.
+- **Movimento** (regras da v1.0): o diálogo Compartilhar entra com opacity + `scale(.98)` em 200 ms ease-out e sai em 140 ms. **Nunca anima**: valores, sparklines, gráficos, trilho de engasgos (só trocam o desenho); segmentados 1/5/15 min e da linha do tempo; marcar/desmarcar no histórico; rolagem pelas âncoras; "Copiado" e "Marcador 3" (troca de texto); campo de atalho capturando (é teclado); colapso do grupo sem leitura; no widget strip/mini, nada além da cor de alerta que o widget já faz.
+- **Acessibilidade**: faixa de estado `role="status"` sem `aria-live` (muda sempre); "Marcador N" e "Copiado" com `aria-live="polite"`; linha de sensor com `aria-label` ("Hot spot, 101 graus, crítico, mínimo 45, máximo 101"); gráficos `aria-hidden`; caixas do histórico `role="checkbox"` com jogo e data no rótulo.
+- **Números**: `tabular-nums`; vírgula decimal em PT ("4,45 GHz"), ponto em EN; "101 °C" com espaço nas tabelas.
+
+### O que precisa do backend (além do contrato)
+1. `catalog.hardware.os` em texto curto ("Windows 11 24H2") e o modelo de cada disco (dica de Discos).
+2. Mín/máx por métrica desde a abertura do app (snapshot ou `getMinMax`).
+3. Nome amigável do jogo e `ramGb` na `GameSession` (card e texto).
+4. Opcional: origem do marcador (`via: "hotkey" | "button"`) em `SessionMarker`.
