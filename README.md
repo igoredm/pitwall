@@ -11,19 +11,26 @@ memory junction), clocks, power, RAM, wireless mouse/headset battery, a CSV log 
 
 - **Anti-cheat safe:** FPS comes from PresentMon (Windows ETW events); nothing is injected into the game.
 - **Lightweight:** ~0.3% CPU for the app + ~1.3% for WebView2, ~50–80 MB.
-- **5 themes** (Lumen, Mínimo, Neon, Terminal, Splash), light/dark, and 3 layouts (full, medium, compact).
+- **5 themes** (Lumen, Mínimo, Neon, Terminal, Splash), light/dark, and 5 layouts (full, medium, compact, plus
+  **strip** for ultrawide bars and **mini** for 5–8" screens).
+- **Monitor:** every sensor live with a recent graph, min/max and why a sensor has no reading.
+- **PC report:** when the PC shuts off or blue-screens, the last 2 minutes of readings plus that hour's Windows events.
+- **Game reports:** every match with FPS, stutters, markers and temperatures; compare two matches or share a PNG card.
+- **Hotkeys** (show/hide the widget, mark a moment) and a read-only **Home Assistant** API.
 - **Languages:** English and Portuguese (follows Windows, or pick one in Settings).
 
 ## Screenshots
 
-![Widget, full layout, Lumen dark theme](docs/screenshots/widget-full-lumen-dark.png)
-![Widget, full layout, Splash theme](docs/screenshots/widget-full-splash.png)
+![Widget, full layout, Lumen dark theme, live demo values](docs/screenshots/widget.gif)
 
-<img src="docs/screenshots/settings-overview.png" width="620" alt="Settings: Overview with the widget preview and what Pitwall is doing now"> <img src="docs/screenshots/pair-phone.png" width="200" alt="Pairing a phone by typing the 6-digit code">
+| | |
+|---|---|
+| ![Monitor: every sensor live with graph, min and max](docs/screenshots/settings-monitor.png) | ![PC report: the last 2 minutes before the PC shut off, with Windows events](docs/screenshots/settings-pc-report.png) |
+| ![Game report: the whole match with markers and stutters](docs/screenshots/settings-game-report.png) | ![Comparing two matches side by side](docs/screenshots/settings-compare.png) |
+| ![Share card: 1200×630 PNG of a match](docs/screenshots/share-card.png) | ![Settings: Overview with the widget preview](docs/screenshots/settings-overview.png) |
+| ![Widget, strip layout for ultrawide bar screens](docs/screenshots/widget-strip-lumen-dark.png) | ![Widget, mini layout for small screens](docs/screenshots/widget-mini-lumen-dark.png) |
 
-![First-run tour: coach mark on the widget layout](docs/screenshots/tour.png)
-
-More in [docs/screenshots](docs/screenshots) (every widget theme, medium and compact layouts, Settings in light and dark, the TV pairing screen).
+More in [docs/screenshots](docs/screenshots) (every widget theme, medium and compact layouts, Settings in light and dark, phone and TV pairing, the first-run tour).
 
 ## Install
 
