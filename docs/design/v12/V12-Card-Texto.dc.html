@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Pitwall 1.2 · Compartilhar: imagem e texto</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Nunito:wght@200;300;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+
+body{margin:0}
+.D{--bg:#0E1014;--side:#0A0C0F;--sf:#15181D;--sf2:#0F1216;--raise:#1D2128;--segon:#2A2F38;--hair:#23272E;--bd:#30353F;--tx:#ECEEF2;--tx2:#A3AAB6;--tx3:#848C99;--ac:#4C8DFF;--act:#82AEFF;--acs:rgba(76,141,255,.14);--y:#F2B33D;--ys:rgba(242,179,61,.12);--r:#FF6B70;--rs:rgba(255,97,102,.12);--g:#3DDC84;--gs:rgba(61,220,132,.12);--sh:none;--dim:rgba(4,6,9,.70);--knob:#F4F5F7;--pop:#1A1E24;--popsh:0 12px 32px rgba(0,0,0,.5),0 0 0 1px #30353F}
+.L{--bg:#F3F4F6;--side:#EAECEF;--sf:#FFFFFF;--sf2:#F0F2F5;--raise:#FFFFFF;--segon:#FFFFFF;--hair:#E3E6EA;--bd:#D2D7DE;--tx:#12151B;--tx2:#4D5562;--tx3:#5F6876;--ac:#2F6FEB;--act:#2257C4;--acs:rgba(47,111,235,.10);--y:#8A5800;--ys:rgba(242,179,61,.18);--r:#C42833;--rs:rgba(209,42,54,.08);--g:#1C8048;--gs:rgba(30,142,79,.10);--sh:0 1px 2px rgba(18,21,27,.07);--dim:rgba(18,21,27,.52);--knob:#FFFFFF;--pop:#FFFFFF;--popsh:0 12px 32px rgba(18,21,27,.16),0 0 0 1px #D2D7DE}
+.app{display:flex;position:relative;overflow:hidden;background:var(--bg);color:var(--tx);font-family:'Manrope',system-ui,sans-serif;font-size:14px;line-height:1.4;font-variant-numeric:tabular-nums}
+.side{width:232px;flex-shrink:0;box-sizing:border-box;background:var(--side);border-right:1px solid var(--hair);padding:14px 12px 12px;display:flex;flex-direction:column;gap:1px}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 6px 14px}
+.brand img{width:30px;height:30px;border-radius:7px;display:block}
+.bn{font-weight:800;font-size:15px;letter-spacing:-.01em;line-height:1.1}
+.bv{font-size:11.5px;color:var(--tx3);font-weight:500}
+.srch{display:flex;align-items:center;gap:8px;height:32px;padding:0 6px 0 10px;border-radius:8px;background:var(--sf);border:1px solid var(--hair);color:var(--tx3);font-size:13px;margin-bottom:6px;box-sizing:border-box}
+.srch.on{border-color:var(--ac);box-shadow:0 0 0 3px var(--acs);color:var(--tx)}
+.kbd{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:1px 5px;border:1px solid var(--bd);border-radius:4px;color:var(--tx3);line-height:1.4}
+.ng{font-size:11.5px;font-weight:700;color:var(--tx3);padding:14px 8px 4px}
+.ni{display:flex;align-items:center;gap:10px;height:34px;padding:0 8px;border-radius:7px;color:var(--tx2);text-decoration:none;font-weight:600;font-size:13.5px}
+.ni svg{color:var(--tx3);flex-shrink:0}
+.ni.on{background:var(--raise);color:var(--tx);box-shadow:var(--sh)}
+.ni.on svg{color:var(--ac)}
+.dot{margin-left:auto;width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sfoot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:12px}
+.upd{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;background:var(--acs);color:var(--tx);text-decoration:none;font-size:12.5px;font-weight:600}
+.live{display:flex;flex-direction:column;gap:2px;padding:10px;border-top:1px solid var(--hair);font-size:12px;color:var(--tx2)}
+.live b{color:var(--tx);font-weight:700;font-size:12.5px;display:flex;align-items:center;gap:6px}
+.main{flex:1;min-width:0;box-sizing:border-box;padding:28px 40px 40px;position:relative}
+.col{max-width:840px}
+.col.wide{max-width:none}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
+h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.pd{margin:4px 0 0;color:var(--tx2);font-size:13.5px;max-width:64ch}
+.saved{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--tx3);white-space:nowrap;padding-top:5px}
+h2{margin:0;font-size:14px;font-weight:700;letter-spacing:-.005em}
+.sec{margin-top:28px}
+.sh{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:8px}
+.sh .ht{margin-top:2px}
+.grp{background:var(--sf);border:1px solid var(--hair);border-radius:10px;box-shadow:var(--sh)}
+.row{display:flex;align-items:center;gap:24px;padding:12px 16px;min-height:32px}
+.row+.row,.spot+.row,.bt{border-top:1px solid var(--hair)}
+.rl{flex:1;min-width:0}
+.lb{font-weight:600;font-size:14px}
+.ht{font-size:12.5px;color:var(--tx2);margin-top:2px;line-height:1.45}
+.t3{color:var(--tx3)}
+.dimmed{opacity:.45}
+.sw{display:inline-block;width:36px;height:20px;border-radius:999px;background:var(--bd);position:relative;flex-shrink:0;border:0;padding:0;cursor:pointer}
+.sw::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--knob);box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.sw.on{background:var(--ac)}
+.sw.on::after{left:18px}
+.sw.dis{opacity:.4}
+.seg{display:inline-flex;padding:2px;border-radius:8px;background:var(--sf2);border:1px solid var(--hair);gap:2px;flex-shrink:0}
+.seg button{height:26px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--tx2);font:600 12.5px 'Manrope',sans-serif;white-space:nowrap;cursor:pointer}
+.seg button.on{background:var(--segon);color:var(--tx);box-shadow:0 1px 2px rgba(0,0,0,.22)}
+.btn{height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);font:600 13px 'Manrope',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;text-decoration:none;box-sizing:border-box;flex-shrink:0;cursor:pointer}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn.qt{border-color:transparent;background:transparent;color:var(--tx2)}
+.btn.dg{color:var(--r)}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.lnk{color:var(--act);font-weight:600;text-decoration:none;font-size:13px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12.5px}
+.in{height:32px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);padding:0 10px;font:500 13px 'Manrope',sans-serif;box-sizing:border-box}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-ac{background:var(--acs);color:var(--act)}
+.p-y{background:var(--ys);color:var(--y)}
+.p-r{background:var(--rs);color:var(--r)}
+.p-g{background:var(--gs);color:var(--g)}
+.p-n{background:var(--sf2);color:var(--tx2);border:1px solid var(--hair)}
+.note{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-radius:10px;font-size:13px;line-height:1.45}
+.n-y{background:var(--ys);border:1px solid rgba(242,179,61,.28)}
+.n-r{background:var(--rs);border:1px solid rgba(255,97,102,.30)}
+.n-ac{background:var(--acs);border:1px solid rgba(76,141,255,.28)}
+.th{font-size:11.5px;font-weight:700;color:var(--tx3)}
+.bar{height:6px;border-radius:999px;background:var(--hair);overflow:hidden;display:flex}
+.bar span{display:block;height:100%}
+.spot{position:relative;z-index:5;border-radius:10px;box-shadow:0 0 0 2px var(--ac),0 0 0 9999px var(--dim)}
+.coach{position:absolute;z-index:6;width:348px;box-sizing:border-box;background:var(--pop);box-shadow:var(--popsh);border-radius:12px;padding:16px 16px 12px;color:var(--tx);font-size:13.5px;line-height:1.5}
+.coach h3{margin:0 0 4px;font-size:15px;font-weight:800;letter-spacing:-.01em}
+.coach p{margin:0;color:var(--tx2)}
+.cfoot{display:flex;align-items:center;gap:8px;margin-top:14px}
+.steps{display:flex;gap:3px;margin-right:auto;align-items:center}
+.steps i{display:block;width:12px;height:3px;border-radius:2px;background:var(--bd)}
+.steps i.on{background:var(--ac)}
+.steps em{font-style:normal;white-space:nowrap;font-size:11.5px;color:var(--tx3);margin-left:6px;font-weight:600}
+.arrow{position:absolute;width:12px;height:12px;background:var(--pop);transform:rotate(45deg)}
+.mon{display:flex;align-items:center;justify-content:center;flex-direction:column;border-radius:6px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);font-weight:700;font-size:15px;box-sizing:border-box}
+.mon.on{border:2px solid var(--ac);background:var(--acs);color:var(--tx)}
+.tbl-r{display:grid;align-items:center;gap:12px;padding:0 16px;min-height:44px}
+.tbl-r+.tbl-r{border-top:1px solid var(--hair)}
+.cap{font-size:12px;color:var(--tx3)}
+
+
+.ni{height:34px}
+.side.tight .ni{height:30px}
+.side.tight .ng{padding:10px 8px 3px}
+.strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
+.strip>div{padding:12px 16px;min-width:0}
+.strip>div+div{border-left:1px solid var(--hair)}
+.strip.r2{grid-template-columns:repeat(3,minmax(0,1fr))}
+.strip.r2>div:nth-child(n+4){border-top:1px solid var(--hair)}
+.strip.r2>div:nth-child(4){border-left:0}
+.sl{font-size:11.5px;font-weight:700;color:var(--tx3);white-space:nowrap}
+.sv{font-size:15px;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.ss{font-size:12px;color:var(--tx2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.big .sv{font-size:24px;font-weight:600;letter-spacing:-.015em;margin-top:2px}
+.big .sv small{font-size:12.5px;color:var(--tx3);font-weight:600;letter-spacing:0}
+.gh{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
+.gh .ht{margin:0;color:var(--tx3)}
+.sr{display:grid;grid-template-columns:minmax(0,1fr) 96px 80px 52px;align-items:center;gap:12px;padding:0 14px;min-height:44px}
+.sr.w1{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) 96px 104px}
+.sr+.sr{border-top:1px solid var(--hair)}
+.sn{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr.off .sn{color:var(--tx2);font-weight:500}
+.vv{justify-self:end;font-size:16.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;padding:1px 6px;border-radius:6px;margin-right:-6px}
+.vv small{font-size:11.5px;color:var(--tx3);font-weight:600;margin-left:2px;letter-spacing:0}
+.vv.warn{background:var(--ys);color:var(--y)}
+.vv.crit{background:var(--rs);color:var(--r)}
+.vv.warn small,.vv.crit small{color:inherit;opacity:.8}
+.mm{font-size:11.5px;color:var(--tx3);line-height:1.3;text-align:right;white-space:nowrap}
+.mm b{color:var(--tx2);font-weight:600}
+.miss{grid-column:2/5;font-size:12.5px;color:var(--tx2);line-height:1.35;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.cols2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 24px;align-items:start}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:24px;padding:0 7px;box-sizing:border-box;border-radius:6px;border:1px solid var(--bd);border-bottom-width:2px;background:var(--sf2);font:600 12px 'Manrope',sans-serif;color:var(--tx)}
+.keys{display:inline-flex;align-items:center;gap:4px}
+.keys i{font-style:normal;color:var(--tx3);font-size:11px}
+.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--tx3);font-weight:600}
+.dl{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:0;font-size:13px}
+.dl span{padding:5px 0;border-top:1px solid var(--hair)}
+.dl span:nth-child(-n+2){border-top:0}
+.dl .k{color:var(--tx2)}
+.dl .v{text-align:right;font-weight:600;white-space:nowrap}
+.ev{display:grid;grid-template-columns:86px minmax(0,1.1fr) minmax(0,1.6fr);gap:16px;padding:10px 16px;align-items:start}
+.ev+.ev{border-top:1px solid var(--hair)}
+.evn{font-weight:700;font-size:13.5px}
+.evs{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx3);margin-top:2px}
+.evm{font-size:12.5px;color:var(--tx2);line-height:1.45}
+.cb{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--bd);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;background:var(--sf2);padding:0;cursor:pointer}
+.cb.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.mk{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--tx3)}
+.mk b{position:absolute;top:-9px;left:-9px;width:18px;height:18px;border-radius:50%;background:var(--sf);border:1px solid var(--bd);font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;color:var(--tx)}
+.lg{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);font-weight:600}
+.lg i{display:block;width:16px;height:0;border-top:2px solid var(--ac)}
+.lg i.b{border-top:2px dashed var(--tx2)}
+.d-g{color:var(--g);font-weight:700}
+.d-r{color:var(--r);font-weight:700}
+.d-n{color:var(--tx3);font-weight:600}
+.focus{border-color:var(--ac)!important;box-shadow:0 0 0 3px var(--acs)}
+.ann{font-size:12px;font-weight:700;color:var(--tx3);margin:0 0 8px;display:flex;gap:8px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--hair);background:var(--sf);font-size:13px;font-weight:600}
+
+
+</style>
+</helmet>
+<div style="width: 1200px; height: 700px; box-sizing: border-box; padding: 40px 80px; background: rgba(4,6,9,.92); display: flex; align-items: flex-start; justify-content: center"><div class="D" role="dialog" aria-label="Compartilhar partida" style="width: 1040px; box-sizing: border-box; background: var(--pop); box-shadow: var(--popsh); border-radius: 14px; color: var(--tx); font-family: 'Manrope', sans-serif; font-size: 14px; font-variant-numeric: tabular-nums">
+<div style="display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--hair)"><span style="font-weight: 800; font-size: 15px">Compartilhar partida</span><span class="cap"><span class="mono">FC26.exe</span> · hoje, 20:26</span><span style="flex: 1"></span><button type="button" class="btn qt sm" aria-label="Fechar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button></div>
+<div style="display: flex; gap: 20px; padding: 20px">
+<div style="display: flex; flex-direction: column; gap: 10px"><div style="width: 480px; height: 252px; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px var(--hair); flex-shrink: 0"><div style="transform: scale(.4); transform-origin: 0 0; width: 1200px; height: 630px"><div class="card" role="img" aria-label="Relatório da partida: EA SPORTS FC 26, 141 FPS médio">
+<div style="display: flex; align-items: center; gap: 14px">
+<img src="../../../assets/logo/pitwall-256.png" alt="" style="width: 44px; height: 44px; border-radius: 10px; display: block">
+<span style="font-size: 22px; font-weight: 800; letter-spacing: -.01em">Pitwall</span>
+<span style="flex: 1"></span>
+<span style="font-size: 17px; font-weight: 600; color: #A3AAB6">19 nov. 2026 · 48 min</span>
+</div>
+<div style="display: flex; gap: 56px; margin-top: 30px">
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<div style="font-size: 40px; font-weight: 800; letter-spacing: -.025em; line-height: 1.05">EA SPORTS FC 26</div>
+<div style="font-size: 18px; font-weight: 600; color: #A3AAB6; margin-top: 8px">RTX 3080 · Ryzen 7 5800X3D · 32 GB</div>
+<div style="display: flex; align-items: flex-end; gap: 40px; margin-top: 26px">
+<div><div style="font-size: 156px; font-weight: 300; letter-spacing: -.05em; line-height: .84">141</div><div class="k" style="margin-top: 10px">FPS médio</div></div>
+<div style="display: flex; gap: 32px; padding-bottom: 4px">
+<div><div class="v">112</div><div class="k">1% low</div></div>
+<div><div class="v">88</div><div class="k">0,1% low</div></div>
+<div><div class="v">6</div><div class="k">engasgos</div></div>
+</div></div>
+</div>
+<div style="width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0; padding-top: 4px">
+<div class="k" style="margin-bottom: 10px">Picos</div>
+<div class="hair" style="display: flex; justify-content: space-between; align-items: baseline; padding: 12px 0"><span style="font-size: 17px; font-weight: 600; color: #A3AAB6">Hot spot</span><span style="font-size: 30px; font-weight: 700; color: #FF6B70">101 °C</span></div>
+<div class="hair" style="display: flex; justify-content: space-between; align-items: baseline; padding: 12px 0"><span style="font-size: 17px; font-weight: 600; color: #A3AAB6">GPU núcleo</span><span style="font-size: 30px; font-weight: 700">79 °C</span></div>
+<div class="hair" style="display: flex; justify-content: space-between; align-items: baseline; padding: 12px 0"><span style="font-size: 17px; font-weight: 600; color: #A3AAB6">Consumo</span><span style="font-size: 30px; font-weight: 700">322 W</span></div>
+<div class="hair" style="display: flex; justify-content: space-between; align-items: baseline; padding: 12px 0"><span style="font-size: 17px; font-weight: 600; color: #A3AAB6">No vermelho</span><span style="font-size: 30px; font-weight: 700; color: #FF6B70">48 s</span></div>
+</div>
+</div>
+<div style="margin-top: auto"><svg viewBox="0 0 100 100" preserveAspectRatio="none" style="display: block; width: 100%; height: 104px" aria-hidden="true"><polygon points="0,100 0.00,22.35 1.05,21.90 2.11,20.55 3.16,20.94 4.21,20.07 5.26,19.44 6.32,18.27 7.37,18.72 8.42,18.66 9.47,17.78 10.53,18.30 11.58,17.67 12.63,17.91 13.68,18.52 14.74,18.89 15.79,19.90 16.84,19.46 17.89,21.52 18.95,21.41 20.00,21.20 21.05,23.67 22.11,40.43 23.16,23.21 24.21,25.18 25.26,25.45 26.32,26.18 27.37,25.98 28.42,26.63 29.47,25.33 30.53,26.21 31.58,24.83 32.63,25.09 33.68,25.11 34.74,24.75 35.79,24.96 36.84,24.00 37.89,23.99 38.95,21.76 40.00,21.02 41.05,21.34 42.11,19.97 43.16,20.27 44.21,18.35 45.26,18.75 46.32,19.21 47.37,17.97 48.42,18.51 49.47,17.85 50.53,17.71 51.58,17.79 52.63,18.21 53.68,19.61 54.74,34.51 55.79,18.82 56.84,20.10 57.89,21.81 58.95,21.07 60.00,21.41 61.05,22.00 62.11,22.70 63.16,24.14 64.21,30.55 65.26,32.59 66.32,31.75 67.37,32.71 68.42,33.28 69.47,27.00 70.53,26.82 71.58,25.91 72.63,24.70 73.68,25.50 74.74,24.75 75.79,24.02 76.84,23.61 77.89,22.99 78.95,23.04 80.00,20.73 81.05,37.92 82.11,20.36 83.16,18.96 84.21,18.64 85.26,17.73 86.32,18.79 87.37,17.22 88.42,17.97 89.47,17.25 90.53,18.26 91.58,17.39 92.63,18.95 93.68,18.80 94.74,20.10 95.79,19.91 96.84,19.95 97.89,21.30 98.95,22.30 100.00,23.09 100,100" fill="#3DDC84" fill-opacity=".10"></polygon><polyline points="0.00,22.35 1.05,21.90 2.11,20.55 3.16,20.94 4.21,20.07 5.26,19.44 6.32,18.27 7.37,18.72 8.42,18.66 9.47,17.78 10.53,18.30 11.58,17.67 12.63,17.91 13.68,18.52 14.74,18.89 15.79,19.90 16.84,19.46 17.89,21.52 18.95,21.41 20.00,21.20 21.05,23.67 22.11,40.43 23.16,23.21 24.21,25.18 25.26,25.45 26.32,26.18 27.37,25.98 28.42,26.63 29.47,25.33 30.53,26.21 31.58,24.83 32.63,25.09 33.68,25.11 34.74,24.75 35.79,24.96 36.84,24.00 37.89,23.99 38.95,21.76 40.00,21.02 41.05,21.34 42.11,19.97 43.16,20.27 44.21,18.35 45.26,18.75 46.32,19.21 47.37,17.97 48.42,18.51 49.47,17.85 50.53,17.71 51.58,17.79 52.63,18.21 53.68,19.61 54.74,34.51 55.79,18.82 56.84,20.10 57.89,21.81 58.95,21.07 60.00,21.41 61.05,22.00 62.11,22.70 63.16,24.14 64.21,30.55 65.26,32.59 66.32,31.75 67.37,32.71 68.42,33.28 69.47,27.00 70.53,26.82 71.58,25.91 72.63,24.70 73.68,25.50 74.74,24.75 75.79,24.02 76.84,23.61 77.89,22.99 78.95,23.04 80.00,20.73 81.05,37.92 82.11,20.36 83.16,18.96 84.21,18.64 85.26,17.73 86.32,18.79 87.37,17.22 88.42,17.97 89.47,17.25 90.53,18.26 91.58,17.39 92.63,18.95 93.68,18.80 94.74,20.10 95.79,19.91 96.84,19.95 97.89,21.30 98.95,22.30 100.00,23.09" fill="none" stroke="#3DDC84" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline></svg></div>
+<div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; font-weight: 600; color: #848C99"><span>FPS na partida</span><span>github.com/igoredm/pitwall</span></div>
+</div></div></div><div style="display: flex; gap: 8px"><button type="button" class="btn sm pri"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6A1.5 1.5 0 0 0 14 4.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg>Copiar imagem</button><button type="button" class="btn sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10.5l5 5 5-5"/><path d="M5 20h14"/></svg>Salvar PNG</button></div><span class="cap">1200×630, bom para Reddit, Discord e X.</span></div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; justify-content: space-between"><span><span class="lb" style="font-size: 13.5px">Texto</span> <span class="cap">funciona em qualquer lugar</span></span><button type="button" class="btn sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6A1.5 1.5 0 0 0 14 4.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg>Copiar texto</button></div>
+<pre style="margin: 0; padding: 14px 16px; font: 500 12.5px/1.6 'JetBrains Mono', monospace; color: var(--tx); white-space: pre-wrap; background: var(--sf2); border-radius: 8px; border: 1px solid var(--hair)">EA SPORTS FC 26 · 19/11/2026 · 48 min
+RTX 3080 · Ryzen 7 5800X3D · 32 GB
+FPS médio 141 · 1% low 112 · 0,1% low 88
+Engasgos: 6 (0,1 por min)
+Picos: hot spot 101 °C · núcleo 79 °C · consumo 322 W
+No vermelho: 48 s
+Pitwall 1.2.0</pre>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px"><span><span class="lb" style="font-size: 13.5px">Markdown</span> <span class="cap">Reddit, fóruns e GitHub</span></span><button type="button" class="btn sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 5.5h15v10h-9l-4 3.5v-3.5h-2z"/><path d="M8 9.5h8M8 12.5h5"/></svg>Copiar Markdown</button></div>
+<pre style="margin: 0; padding: 14px 16px; font: 500 12.5px/1.6 'JetBrains Mono', monospace; color: var(--tx); white-space: pre-wrap; background: var(--sf2); border-radius: 8px; border: 1px solid var(--hair)">**EA SPORTS FC 26** · 19/11/2026 · 48 min
+RTX 3080 · Ryzen 7 5800X3D · 32 GB
+
+| FPS médio | 1% low | 0,1% low | Engasgos |
+|---:|---:|---:|---:|
+| 141 | 112 | 88 | 6 |
+
+Picos: hot spot **101 °C** · núcleo 79 °C · consumo 322 W
+No vermelho: 48 s · *Pitwall 1.2.0*</pre>
+</div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":700}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

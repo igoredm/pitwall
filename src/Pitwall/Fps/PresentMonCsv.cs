@@ -19,22 +19,29 @@ public enum FrameKind
 /// <param name="FrametimeMs">Intervalo entre Presents (v1 msBetweenPresents, v2 FrameTime).</param>
 /// <param name="DisplayedMs">Quanto tempo o frame ficou na tela; null = não foi exibido (descartado) ou sem rastreio de tela.</param>
 /// <param name="CpuStartMs">Início do frame na CPU (ms desde o início da captura).</param>
-public readonly record struct PresentRow(string App, int Pid, double FrametimeMs, double? DisplayedMs, double CpuStartMs, FrameKind Kind);
+/// <param name="AnimErrorMs">1.2: erro de animação (2.x AnimationError/MsAnimationError); NaN = sem coluna ou NA.</param>
+/// <param name="PcLatencyMs">1.2: latência do PC (MsPCLatency/PCLatency); NaN = sem coluna ou NA.</param>
+public readonly record struct PresentRow(string App, int Pid, double FrametimeMs, double? DisplayedMs, double CpuStartMs, FrameKind Kind,
+    double AnimErrorMs = double.NaN, double PcLatencyMs = double.NaN);
 
 /// <summary>
 /// Leitor do CSV do PresentMon. O cabeçalho define as colunas; aceita as métricas v1 (--v1_metrics) e v2 (padrão do 2.x).
 /// v1: msBetweenPresents, msBetweenDisplayChange, Dropped, TimeInSeconds.
 /// v2: FrameTime, DisplayedTime (NA = não exibido), CPUStartTime, FrameType.
+/// 1.2: AnimationError (2.6 com --v2_metrics; "MsAnimationError" no formato padrão do 2.x) e MsPCLatency/PCLatency, se
+/// existirem no cabeçalho. Só índices de coluna: linhas sem essas colunas custam o mesmo de antes.
 /// </summary>
 public sealed class PresentMonCsv
 {
-    readonly int _app, _pid, _ft, _disp, _dropped, _start, _type;
+    readonly int _app, _pid, _ft, _disp, _dropped, _start, _type, _anim = -1, _pcl = -1, _last;
     readonly bool _startInSeconds;
 
     public int Version { get; }
     /// <summary>O CSV traz quando o frame chegou à tela (exibidos ≠ apresentados).</summary>
     public bool HasDisplay => _disp >= 0;
     public bool HasFrameType => _type >= 0;
+    public bool HasAnimationError => _anim >= 0;
+    public bool HasPcLatency => _pcl >= 0;
 
     PresentMonCsv(string[] h)
     {
@@ -61,6 +68,12 @@ public sealed class PresentMonCsv
             _start = Col("CPUStartTime");
             _type = Col("FrameType");
         }
+        _anim = Col("AnimationError");
+        if (_anim < 0) _anim = Col("MsAnimationError");
+        _pcl = Col("MsPCLatency");
+        if (_pcl < 0) _pcl = Col("PCLatency");
+        // Última coluna que interessa: o resto da linha nem é percorrido
+        _last = new[] { _app, _pid, _ft, _disp, _dropped, _start, _type, _anim, _pcl }.Max();
     }
 
     /// <summary>Interpreta o cabeçalho. null se não for um cabeçalho do PresentMon (sem pid ou frametime).</summary>
@@ -77,7 +90,7 @@ public sealed class PresentMonCsv
         ReadOnlySpan<char> span = line;
         string? app = null;
         int pid = -1;
-        double ft = -1, disp = double.NaN, start = 0;
+        double ft = -1, disp = double.NaN, start = 0, anim = double.NaN, pcl = double.NaN;
         var dropped = false;
         var kind = FrameKind.Unknown;
         int col = 0;
@@ -92,14 +105,16 @@ public sealed class PresentMonCsv
             else if (col == _dropped) dropped = field.Length == 1 && field[0] == '1';
             else if (col == _start) start = Num(field);
             else if (col == _type) kind = Kind(field);
-            if (comma < 0) break;
+            else if (col == _anim) anim = Num(field);
+            else if (col == _pcl) pcl = Num(field);
+            if (comma < 0 || col >= _last) break;
             span = span[(comma + 1)..];
             col++;
         }
         if (pid <= 0 || !(ft > 0)) return false;
         if (_startInSeconds) start *= 1000;
         double? displayed = !dropped && disp > 0 ? disp : null;
-        row = new PresentRow(app ?? "?", pid, ft, displayed, double.IsFinite(start) ? start : 0, kind);
+        row = new PresentRow(app ?? "?", pid, ft, displayed, double.IsFinite(start) ? start : 0, kind, anim, pcl);
         return true;
     }
 

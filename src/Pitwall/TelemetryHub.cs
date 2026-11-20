@@ -79,6 +79,13 @@ public sealed class TelemetryHub : IDisposable
     public GameInfo? CurrentGame { get; private set; }
     public string? LogPath => _log.CurrentPath;
 
+    // 1.2: marcadores, motivo de não haver FPS e estado dos atalhos
+    /// <summary>Um marcador foi gravado (atalho ou addMarker), com ou sem jogo. Disparado na thread de quem pediu.</summary>
+    public event Action<MarkerEvent>? MarkerAdded;
+    int _pcMarkers;
+    readonly bool _admin = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
+    volatile object? _hotkeys;
+
     public TelemetryHub(ConfigStore config, SensorService sensors, PresentMonService presentMon, GpuTuner tuner, BatteryService battery)
     {
         _tuner = tuner;
@@ -400,9 +407,14 @@ public sealed class TelemetryHub : IDisposable
             _sessions.Start(game);
             _log.Rotate(game?.Exe);
             CurrentGame = game;
-            _stats = game != null ? new SessionStatsAccumulator() : null;
+            _stats = game != null ? new SessionStatsAccumulator(features.Stutters) : null;
             _statsCursor = 0;
             _sessionSavedAt = now;
+            if (game != null)
+            {
+                var (gpuName, cpuName) = (_sensors.GpuName, _sensors.CpuName);
+                _sessions.UpdateOpen(s => { s.Gpu = gpuName; s.Cpu = cpuName; });
+            }
             if (game != null)
             {
                 _extremes.Reset();
@@ -429,6 +441,14 @@ public sealed class TelemetryHub : IDisposable
         _values["fps.low01"] = has ? fps!.Value.Low01 : null;
         _values["fps.avg"] = has ? fps!.Value.SessionAvg : null;
         _values["fps.displayed"] = has ? fps!.Value.Displayed : null;
+        _values["fps.animError"] = has ? fps!.Value.AnimErrorMs : null;
+        _values["fps.pcLatency"] = has ? fps!.Value.PcLatencyMs : null;
+        if (_stats != null) _stats.CountStutters = features.Stutters;
+        _values["fps.stutters"] = game != null ? _stats?.Stutters : null;
+        // Sem FPS: o motivo vai em texts (a página mostra no Monitor e no widget)
+        if (FpsReason.For(has, game != null, _presentMon.Available, _admin, _presentMon.Blocked, _presentMon.Healthy, _presentMon.LastError) is { } reason)
+            _texts["fps.reason"] = reason;
+        else _texts.Remove("fps.reason");
 
         _log.Write(cfg.Log, _logColumns, _values, _texts, game?.Exe);
 
@@ -547,7 +567,16 @@ public sealed class TelemetryHub : IDisposable
             admin = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator),
             presentMon = _presentMon.Available,
             battery = _battery.Available,
-            hardware = new { cpu = _sensors.CpuName, gpu = _sensors.GpuName, gpu2 = _sensors.Gpu2Name },
+            hardware = new
+            {
+                cpu = _sensors.CpuName,
+                gpu = _sensors.GpuName,
+                gpu2 = _sensors.Gpu2Name,
+                ramGb = SystemInfo.RamGbTotal,
+                os = SystemInfo.OsFriendly,
+                gpuDriver = _tuner.DriverVersion,
+            },
+            hotkeys = remote ? null : _hotkeys,
             crashReport = _crashFeature ? _crashReport : null,
             pcPending = _crashFeature ? _health.Pending : null,
             remote = new { running = _remote.Running, port = _remote.Running ? _remote.Port : (int?)null, error = _remote.LastError },
@@ -599,6 +628,61 @@ public sealed class TelemetryHub : IDisposable
     }
 
     static readonly JsonSerializerOptions AboutJson = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    /// <summary>1.2: estado dos atalhos (catalog.hotkeys: ok | inUse | invalid | off), informado pela bandeja.</summary>
+    public void SetHotkeyStatus(string toggleWidget, string marker)
+    {
+        _hotkeys = new { toggleWidget, marker };
+        _ws.Broadcast(CatalogMessage());
+    }
+
+    /// <summary>
+    /// 1.2: grava um marcador. Em jogo: na sessão aberta (markers) e no CSV (coluna marker); fora: só o CSV atual, o
+    /// broadcast e o aviso. Pode ser chamado de qualquer thread (salva o sessions.json: não chamar na thread da interface).
+    /// </summary>
+    public MarkerEvent AddMarker(string? note)
+    {
+        note = string.IsNullOrWhiteSpace(note) ? null : note.Trim()[..Math.Min(note.Trim().Length, 200)];
+        var at = DateTime.Now;
+        var exe = CurrentGame?.Exe;
+        var index = _sessions.AddMarker(at, note) ?? Interlocked.Increment(ref _pcMarkers);
+        _log.MarkNext();
+        var ev = new MarkerEvent(index, at, _sessions.Open != null ? exe : null, note);
+        _ws.Broadcast(JsonSerializer.Serialize(new { type = "marker", index, at, exe = ev.Exe }, ConfigStore.Json));
+        MarkerAdded?.Invoke(ev);
+        return ev;
+    }
+
+    /// <summary>getSessionSeries → sessionSeries. Lê o CSV da sessão (na thread do cliente do WebSocket, não na de telemetria).</summary>
+    string SessionSeriesMessage(JsonNode node)
+    {
+        string? startText = null;
+        try { startText = node["start"]?.GetValue<string>(); } catch { }
+        var points = Math.Clamp(Int(node["points"]) ?? SessionSeries.DefaultPoints, 2, SessionSeries.MaxPoints);
+        string Reply(double stepSec, object? series, bool available) =>
+            JsonSerializer.Serialize(new { type = "sessionSeries", start = startText, stepSec, series = series ?? new { }, available }, ConfigStore.Json);
+        if (startText == null || !DateTimeOffset.TryParse(startText, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AssumeLocal, out var start))
+            return Reply(0, null, false);
+        var session = _sessions.Find(start.LocalDateTime);
+        var file = session?.CsvFile;
+        if (session != null && file == null && ReferenceEquals(session, _sessions.Open)) file = _log.CurrentPath;
+        if (file == null) return Reply(0, null, false);
+        // Só o nome: o arquivo tem que estar na pasta de logs
+        var path = Path.Combine(_config.Current.Log.Folder, Path.GetFileName(file));
+        try
+        {
+            if (!File.Exists(path)) return Reply(0, null, false);
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 64 * 1024, FileOptions.SequentialScan);
+            using var reader = new StreamReader(stream);
+            var result = SessionSeries.Read(reader, points);
+            return result == null ? Reply(0, null, false) : Reply(result.StepSec, result.Series, true);
+        }
+        catch
+        {
+            return Reply(0, null, false);
+        }
+    }
 
     /// <summary>Config para a página local. Os hashes dos tokens dos celulares não saem do backend.</summary>
     string ConfigMessage()
@@ -877,6 +961,15 @@ public sealed class TelemetryHub : IDisposable
                     return SessionsPageMessage(node);
                 case "getLogStats":
                     return LogStatsMessage(node);
+                case "getSessionSeries":
+                    return SessionSeriesMessage(node);
+                case "addMarker":
+                {
+                    string? note = null;
+                    try { note = node["note"]?.GetValue<string>(); } catch { }
+                    AddMarker(note);
+                    return null;
+                }
                 case "resetExtremes":
                     if (!_config.Current.Features.SessionPeaks) return null;
                     _extremes.Reset();

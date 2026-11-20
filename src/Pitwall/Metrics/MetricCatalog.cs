@@ -31,6 +31,10 @@ public static class MetricCatalog
         new("fps.low01", MetricGroup.Fps, "0.1% low", "fps"),
         new("fps.avg", MetricGroup.Fps, "FPS médio da sessão", "fps"),
         new("fps.graph", MetricGroup.Fps, "Gráfico de frametime", "graph"),
+        // 1.2: engasgos na sessão (docs/v12-contract.md › Engasgo) e métricas do PresentMon 2.x (desligadas no widget)
+        new("fps.stutters", MetricGroup.Fps, "Engasgos na sessão", ""),
+        new("fps.animError", MetricGroup.Fps, "Erro de animação", "ms"),
+        new("fps.pcLatency", MetricGroup.Fps, "Latência do PC", "ms"),
 
         // GPU principal
         new("gpu.load", MetricGroup.Gpu, "Uso", "%", true),

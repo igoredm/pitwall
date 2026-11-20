@@ -611,3 +611,72 @@ abre o WebSocket `/ws` (o `auth` responde `invalidToken`) e token de celular **n
 ```
 `values` = métricas disponíveis do último snapshot (nenhuma leitura extra de sensor), `value: null` = sem leitura agora;
 temperatura sempre em °C; nomes no idioma do app; `game: null` fora de jogo. Guia: [home-assistant.md](home-assistant.md).
+
+### 10.2 Sessões, engasgos, marcadores e atalhos
+
+**`GameSession` (sessions / sessionsPage / crashReport)** ganha, todos opcionais (sessões antigas não têm; `null` não vai):
+`avgGpuTemp, avgHotspot, avgGpuPower, avgGpuClock, avgGpuLoad, avgCpuTemp, avgCpuLoad` (média dos ticks da sessão com
+leitura; clock inteiro, o resto com 1 casa), `peakCpuTemp`, `stutters` (ausente com `features.stutters` desligado),
+`markers: [{ t, at, note? }]` (`t` = segundos desde `start`), `animErrorMs` (média do `fps.animError`, 2 casas),
+`pcLatencyMs`, `gpu`, `cpu` (nomes no começo da sessão). Gravados junto com o resto (a cada ~30 s e no fim).
+```json
+{ "exe": "FC25.exe", "start": "2026-11-19T21:00:02-03:00", "end": "2026-11-19T22:31:40-03:00", "durationSec": 5498,
+  "avgFps": 141.2, "low1": 88.4, "peakGpuTemp": 78, "peakHotspot": 101.5, "peakCpuTemp": 83,
+  "avgGpuTemp": 71.3, "avgHotspot": 92.8, "avgGpuPower": 236.4, "avgGpuClock": 1845, "avgGpuLoad": 96.1,
+  "avgCpuTemp": 68.2, "avgCpuLoad": 34.5, "stutters": 17, "animErrorMs": 0.42,
+  "markers": [ { "t": 845.2, "at": "2026-11-19T21:14:07-03:00" } ],
+  "gpu": "NVIDIA GeForce RTX 3080", "cpu": "12th Gen Intel Core i5-12600K", "csvFile": "pitwall_2026-11-19_21-00-02_FC25.csv" }
+```
+
+**Engasgo** (`docs/v12-contract.md` › Engasgo): frame renderizado com `ft ≥ max(2,5 × mediana dos últimos 120, mediana + 10 ms)`.
+Os 10 s ignorados contam tempo de frames da sessão; os frames que o PresentMon já tinha antes da sessão só enchem a janela
+da mediana. Mediana recalculada a cada 16 frames (janela fixa de 120 floats, sem alocação): ~0,5 µs/frame medido. Roda na
+thread de telemetria sobre os frames do jogo (não no leitor do PresentMon, que vê todos os processos). Ligar/desligar
+`features.stutters` no meio da sessão zera a contagem.
+
+**Métricas novas** (grupo fps, desligadas no widget, disponíveis com o PresentMon):
+- `fps.stutters` (unidade `""`): engasgos na sessão atual; `null` fora de jogo ou com `features.stutters` off.
+- `fps.animError` (ms): média do |erro de animação| no último ~1 s. O PresentMon 2.6 com `--v2_metrics` (as flags atuais)
+  chama a coluna de `AnimationError`; o formato padrão do 2.x chama de `MsAnimationError` — as duas são aceitas. NA = sem valor.
+- `fps.pcLatency` (ms): coluna `MsPCLatency`/`PCLatency`, se existir. **Com as flags atuais ela não existe**: no 2.6 só o
+  formato padrão (sem `--v2_metrics`) tem `MsPCLatency`; `--track_pc_latency` não acrescenta coluna no `--v2_metrics`. O
+  formato não mudou (o leitor depende de `FrameTime`/`DisplayedTime`/`FrameType`), então `fps.pcLatency` fica sem leitura por ora.
+- O leitor só guarda os índices das colunas e para de percorrer a linha depois da última que interessa:
+  ~210 ns/linha depois vs ~237 ns antes (Release, cabeçalho real do 2.6; `ParserBenchTests`).
+
+**`snapshot.texts["fps.reason"]`** (`FpsReason`), só quando não há FPS, nesta ordem: `noPresentMon` (sem o exe) →
+`notAdmin` → `antiCheat` ("access denied" ao abrir a sessão ETW) → `otherCapture` (erro de limite de sessões ETW: "too many"
+/ "resources") → `noGame` → `starting` (sessão ETW ainda não abriu) → `noFrames` (jogo aberto, nenhum frame dele). Some
+quando o FPS volta.
+
+**CSV v3** (`# pitwall-csv v3`): coluna `marker` no **fim** do cabeçalho (`timestamp,game,<métricas…>,marker`); `1` na
+primeira linha gravada depois do marcador, vazio nas outras. As métricas novas entram como colunas normais (`fps.stutters`,
+`fps.animError`, `fps.pcLatency`). Quem lê pelo nome das colunas continua funcionando.
+
+**Marcadores**
+- Cliente → servidor: `{ "type": "addMarker", "note"?: string }` (nota com até 200 caracteres). Sem resposta direta.
+- Também pelo atalho `hotkeys.marker`. Em jogo: entra em `markers` da sessão aberta e marca o CSV; fora de jogo: marca o CSV
+  atual, o broadcast e o aviso (o número conta desde que o app abriu). Evento `TelemetryHub.MarkerAdded` (para o buffer do PC).
+- Servidor → todos os clientes locais: `{ "type": "marker", "index": 3, "at": "2026-11-19T21:14:05-03:00", "exe": "FC25.exe" }`
+  (`exe` ausente fora de jogo). A bandeja mostra "Marcador 3 · 21:14:05" / "Marker 3 · 21:14:05".
+
+**`getSessionSeries { start, points? }` → `sessionSeries`** (só para quem pediu). `start` = o `start` da sessão (ISO, tolerância
+de 1 s). Lê o CSV da sessão (`csvFile` na pasta de logs; sessão aberta sem `csvFile` ainda = CSV atual) em fluxo, até 50 MB,
+na thread do cliente do WebSocket (nunca na de telemetria). `points` 2–1000 (padrão 120); com menos linhas que pontos, um
+ponto por linha. Média por balde de tempo igual; balde sem leitura = `null`; série inteira vazia não vai. Colunas:
+`fps.current, fps.low1, gpu.temp, gpu.hotspot, gpu.power, gpu.clock, cpu.temp, cpu.load` (as que existirem).
+```json
+{ "type": "sessionSeries", "start": "2026-11-19T21:00:02-03:00", "stepSec": 45.8, "available": true,
+  "series": { "fps.current": [140.2, 143.9, null, 138.0], "gpu.temp": [65.1, 70.4, 71.0, 72.3] } }
+```
+`available: false` (com `series: {}`) = sessão não encontrada, sem CSV, arquivo apagado pela retenção ou ilegível.
+
+**Atalhos globais** (`config.hotkeys`, `RegisterHotKey` numa janela só de mensagens — nada de hook de teclado):
+`toggleWidget` = o mesmo que clicar no ícone da bandeja; `marker` = `addMarker`. Formato `Ctrl+Alt+Shift+Win+Tecla`
+(sem diferenciar maiúsculas; `Control`/`Windows` também valem), tecla A–Z, 0–9 ou F1–F24; letras e números precisam de pelo
+menos um modificador. Registrados de novo quando `config.hotkeys` muda. `catalog.hotkeys = { toggleWidget, marker }` com
+`ok | inUse` (a combinação já é de outro programa, ou os dois atalhos iguais) `| invalid | off` (vazio ou `enabled: false`).
+Só no socket local.
+
+**Catálogo › `hardware`**: além de `cpu`, `gpu`, `gpu2`: `ramGb` (total em GB inteiros), `os` ("Windows 11 24H2": build ≥ 22000
+= 11, mais o `DisplayVersion` do registro) e `gpuDriver` (NVML `nvmlSystemGetDriverVersion`, só NVIDIA). Lidos uma vez.

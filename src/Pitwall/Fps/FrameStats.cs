@@ -27,6 +27,12 @@ public sealed class FrameStats
     double _lastRenderedStart;
     bool _skippedSinceRendered;
 
+    // 1.2: erro de animação (|AnimationError|) e latência do PC por frame, com o início na CPU para a janela de ~1 s
+    const int ExtraCapacity = 2048;
+    readonly LatencyRing _anim = new(ExtraCapacity);
+    readonly LatencyRing _pcl = new(ExtraCapacity);
+    double _lastStart;
+
     public FrameStats(string application) => Application = application;
 
     /// <summary>
@@ -44,6 +50,9 @@ public sealed class FrameStats
                 if (_displayCount < DisplayCapacity) _displayCount++;
             }
             LastFrameTick = Environment.TickCount64;
+            _lastStart = r.CpuStartMs;
+            if (double.IsFinite(r.AnimErrorMs)) _anim.Add(r.CpuStartMs, Math.Abs(r.AnimErrorMs));
+            if (double.IsFinite(r.PcLatencyMs) && r.PcLatencyMs >= 0) _pcl.Add(r.CpuStartMs, r.PcLatencyMs);
             if (r.Kind is FrameKind.Generated or FrameKind.Repeated)
             {
                 _skippedSinceRendered = true;
@@ -151,7 +160,9 @@ public sealed class FrameStats
                 Low1: Low(sorted, 0.01),
                 Low01: Low(sorted, 0.001),
                 SessionAvg: SessionMs > 0 ? SessionFrames * 1000.0 / SessionMs : null,
-                Displayed: displayed);
+                Displayed: displayed,
+                AnimErrorMs: _anim.Average(_lastStart, CurrentWindowMs),
+                PcLatencyMs: _pcl.Average(_lastStart, CurrentWindowMs));
         }
     }
 
@@ -169,7 +180,43 @@ public sealed class FrameStats
 
 /// <param name="Current">FPS renderizado/apresentado (sem frames gerados quando o PresentMon sabe distingui-los).</param>
 /// <param name="Displayed">FPS que chegou à tela (inclui geração de frames); null sem rastreio de tela.</param>
-public readonly record struct FpsSnapshot(double Current, double FrametimeMs, double? Low1, double? Low01, double? SessionAvg, double? Displayed = null)
+/// <param name="AnimErrorMs">1.2: média do |erro de animação| no último ~1 s (PresentMon 2.x); null sem a coluna.</param>
+/// <param name="PcLatencyMs">1.2: média da latência do PC no último ~1 s; null sem a coluna.</param>
+public readonly record struct FpsSnapshot(double Current, double FrametimeMs, double? Low1, double? Low01, double? SessionAvg, double? Displayed = null,
+    double? AnimErrorMs = null, double? PcLatencyMs = null)
 {
     public bool HasData => FrametimeMs > 0;
+}
+
+/// <summary>Valores por frame com o início do frame (ms), para a média de uma janela de tempo. Não é thread-safe (usa o lock do FrameStats).</summary>
+sealed class LatencyRing(int capacity)
+{
+    readonly double[] _at = new double[capacity];
+    readonly float[] _v = new float[capacity];
+    int _head, _count;
+
+    public void Add(double atMs, double value)
+    {
+        _at[_head] = atMs;
+        _v[_head] = (float)value;
+        _head = (_head + 1) % _at.Length;
+        if (_count < _at.Length) _count++;
+    }
+
+    /// <summary>Média dos valores em (<paramref name="nowMs"/> − <paramref name="windowMs"/>, nowMs]; null sem valores nessa janela.</summary>
+    public double? Average(double nowMs, double windowMs)
+    {
+        if (_count == 0) return null;
+        var cap = _at.Length;
+        var newest = Math.Max(nowMs, _at[(_head - 1 + cap) % cap]);
+        double sum = 0; int n = 0;
+        for (int i = 0; i < _count; i++)
+        {
+            var k = (_head - 1 - i + cap) % cap;
+            if (newest - _at[k] >= windowMs) break;
+            sum += _v[k];
+            n++;
+        }
+        return n > 0 ? sum / n : null;
+    }
 }
