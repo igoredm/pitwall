@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "web/src/app/widget/widget.scss"
+        ],
+        "createdAt": "2026-11-20T02:14:39.916Z",
+        "reason": "docs/design-notes.md › Neon: 'Tiles com borda esquerda 2px' (tema Neon do widget, design aprovado)"
+      }
+    ]
+  }
+}
