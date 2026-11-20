@@ -12,6 +12,8 @@ import {
   PairError,
   PairedDevice,
   PairingMessage,
+  PcIncident,
+  PcReport,
   PerfCapReason,
   TuningPreset,
   TuningStatus,
@@ -22,6 +24,7 @@ import {
   MetricSetting,
   RemoteServerMessage,
   ServerMessage,
+  SessionSeries,
   SessionsPage,
 } from './models';
 import { PerfCapFilter, PerfCapShown } from './perfcap';
@@ -141,6 +144,11 @@ export class TelemetryService {
   readonly snapshotClockReasons = signal<ClockReasonStats | null>(null);
   /** 1.0: última resposta a getLogStats sem valores hipotéticos (uso atual da pasta de CSV). */
   readonly logStats = signal<LogStats | null>(null);
+  /** 1.2: Relatório do PC (resposta a getPcReport / dismissPcIncident) e quando chegou (ms, para o "ligado há"). */
+  readonly pcReport = signal<PcReport | null>(null);
+  readonly pcReportAt = signal(0);
+  /** 1.2: último incidente recebido (getPcIncident). */
+  readonly pcIncident = signal<PcIncident | null>(null);
 
   /** ?batteries=demo na URL: dispositivos de exemplo para pré-visualizar o visual em dev. */
   private readonly demoBatteries = urlParam('batteries') === 'demo';
@@ -180,6 +188,9 @@ export class TelemetryService {
   /** Respostas sem id chegam na ordem dos pedidos (um socket só): cada pedido espera a sua na fila. */
   private readonly logStatsWaiters: { current: boolean; resolve: (s: LogStats) => void }[] = [];
   private readonly sessionsWaiters: ((p: SessionsPage) => void)[] = [];
+  /** 1.2: getSessionSeries responde com o start da sessão (tolerância de 1 s); sessões terminadas ficam em cache. */
+  private readonly seriesWaiters: { start: number; resolve: (s: SessionSeries) => void }[] = [];
+  private readonly seriesCache = new Map<string, Promise<SessionSeries>>();
   /** 1.0: código digitado esperando o socket abrir. */
   private pendingCode: { code: string; name: string } | null = null;
 
@@ -248,6 +259,19 @@ export class TelemetryService {
       this.sessionsWaiters.push(resolve);
       this.send({ type: 'getSessions', offset, limit: Math.min(100, limit), ...(exe ? { exe } : {}) });
     });
+  }
+
+  /** 1.2: série da sessão inteira (do CSV, reamostrada). cache = sessão já terminada (não muda mais). */
+  requestSessionSeries(start: string, cache: boolean, points = 120): Promise<SessionSeries> {
+    const key = `${start}|${points}`;
+    const hit = cache ? this.seriesCache.get(key) : undefined;
+    if (hit) return hit;
+    const p = new Promise<SessionSeries>((resolve) => {
+      this.seriesWaiters.push({ start: new Date(start).getTime(), resolve });
+      this.send({ type: 'getSessionSeries', start, points });
+    });
+    if (cache) this.seriesCache.set(key, p);
+    return p;
   }
 
   /** 1.0: celular/TV sem token: manda o código digitado como primeira mensagem do socket da rede. */
@@ -403,6 +427,19 @@ export class TelemetryService {
       case 'update':
         this.update.set(msg.update);
         break;
+      case 'pcReport':
+        this.pcReport.set(msg);
+        this.pcReportAt.set(Date.now());
+        break;
+      case 'pcIncident':
+        this.pcIncident.set(msg);
+        break;
+      case 'sessionSeries': {
+        const at = new Date(msg.start).getTime();
+        const i = this.seriesWaiters.findIndex((w) => Math.abs(w.start - at) <= 1000);
+        if (i >= 0) this.seriesWaiters.splice(i, 1)[0].resolve(msg);
+        break;
+      }
       case 'extremes':
         this.applyExtremes(msg.epoch, msg.values, true);
         break;

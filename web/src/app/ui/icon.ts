@@ -57,6 +57,10 @@ const ICONS: Record<string, Prim[]> = {
   tray: [{ d: 'M4 14l2.5-8h11L20 14' }, { d: 'M4 14v5h16v-5h-5a3 3 0 0 1-6 0z' }],
   lock: [{ r: [5.5, 10.5, 13, 9.5, 2] }, { d: 'M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5' }],
   copy: [{ r: [8.5, 8.5, 11, 11, 2] }, { d: 'M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5' }],
+  // 1.2: relatórios (copiar para fórum, compartilhar, trocar A e B, relatório de jogo na navegação)
+  chat: [{ d: 'M4.5 5.5h15v10h-9l-4 3.5v-3.5h-2z' }, { d: 'M8 9.5h8M8 12.5h5' }],
+  share: [{ d: 'M12 15V4' }, { d: 'M7.5 8.5L12 4l4.5 4.5' }, { d: 'M5 13v6h14v-6' }],
+  swap: [{ d: 'M7 4.5L4 7.5l3 3' }, { d: 'M4 7.5h16' }, { d: 'M17 13.5l3 3-3 3' }, { d: 'M20 16.5H4' }],
   backspace: [{ d: 'M9 5.5h10.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H9L3 12z' }, { d: 'M12 9.5l5 5M17 9.5l-5 5' }],
 };
 

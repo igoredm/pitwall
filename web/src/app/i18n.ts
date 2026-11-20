@@ -1,5 +1,6 @@
 import { Injectable, computed, effect, inject } from '@angular/core';
 import { Level, SettingsPage, ThemeName } from './models';
+import { reportsEn, reportsPt } from './i18n-12-reports';
 import { TelemetryService, urlParam } from './telemetry.service';
 
 export type Lang = 'pt-BR' | 'en';
@@ -200,17 +201,9 @@ const ptBR = {
   powerOf: (w: number, limit: number) => `${w} de ${limit} W`,
 
   crashTitle: (exe: string) => `O PC desligou durante ${exe}`,
-  crashSub: (when: string) => `${when} · os 60 s antes da queda estão abaixo.`,
-  crashSubNoData: (when: string) => `${when} · sem leituras salvas desta sessão.`,
   crashView: 'Ver relatório',
   crashDismiss: 'Dispensar',
-  crashReportTitle: 'Últimos 60 s antes da queda',
-  crashNoSeries:
-    'Não há leituras dos últimos segundos desta sessão (o app foi fechado à força ou o PC desligou antes de gravar). O CSV da sessão continua na pasta de logs.',
-  crashSeries: { 'gpu.temp': 'GPU núcleo', 'gpu.hotspot': 'Hot spot', 'gpu.power': 'Consumo', 'gpu.clock': 'Clock', 'fps.current': 'FPS', 'cpu.temp': 'CPU' } as Record<string, string>,
   minMax: (min: string, max: string) => `mín ${min} · máx ${max}`,
-  lastReading: 'último',
-  openFolder: 'Abrir pasta',
   lastSession: 'Última sessão',
   stat: {
     duration: 'duração',
@@ -485,8 +478,6 @@ const ptBR = {
   historyEmptyGame: 'Nenhuma sessão deste jogo no período guardado.',
   inProgressShort: (d: string) => `em andamento · ${d}`,
   fpsAtEnd2: 'FPS médio e lows no fim',
-  crashRange: (exe: string, from: string, to: string) => `${exe} · ${from} → ${to}`,
-  crashOffLine: 'Relatório de queda',
   csvTitle: 'Gravação em CSV',
   csvHint: 'Também liga e desliga em Recursos › Log CSV.',
   autoOpenTitle: 'Abrir este resumo ao terminar um jogo',
@@ -697,6 +688,7 @@ const ptBR = {
 
   preview: 'Pré-visualização',
   close: 'Fechar',
+  ...reportsPt,
 };
 
 export type Dict = typeof ptBR;
@@ -878,17 +870,9 @@ const en: Dict = {
   powerOf: (w, limit) => `${w} of ${limit} W`,
 
   crashTitle: (exe) => `Your PC shut down during ${exe}`,
-  crashSub: (when) => `${when} · the 60 s before the shutdown are below.`,
-  crashSubNoData: (when) => `${when} · no readings were saved for this session.`,
   crashView: 'View report',
   crashDismiss: 'Dismiss',
-  crashReportTitle: 'Last 60 s before the shutdown',
-  crashNoSeries:
-    "There are no readings from this session's last seconds (the app was killed or the PC went down before saving). The session CSV is still in the logs folder.",
-  crashSeries: { 'gpu.temp': 'GPU core', 'gpu.hotspot': 'Hot spot', 'gpu.power': 'Power', 'gpu.clock': 'Clock', 'fps.current': 'FPS', 'cpu.temp': 'CPU' },
   minMax: (min, max) => `min ${min} · max ${max}`,
-  lastReading: 'last',
-  openFolder: 'Open folder',
   lastSession: 'Last session',
   stat: {
     duration: 'duration',
@@ -1159,8 +1143,6 @@ const en: Dict = {
   historyEmptyGame: 'No sessions of this game in the kept period.',
   inProgressShort: (d) => `in progress · ${d}`,
   fpsAtEnd2: 'Average FPS and lows at the end',
-  crashRange: (exe, from, to) => `${exe} · ${from} → ${to}`,
-  crashOffLine: 'Crash report',
   csvTitle: 'CSV recording',
   csvHint: 'Also on and off in Features › CSV log.',
   autoOpenTitle: 'Open this summary when a game ends',
@@ -1371,6 +1353,7 @@ const en: Dict = {
 
   preview: 'Preview',
   close: 'Close',
+  ...reportsEn,
 };
 
 const DICTS: Record<Lang, Dict> = { 'pt-BR': ptBR, en };

@@ -58,8 +58,16 @@ function buildIndex(s: Dict): Entry[] {
   add('games', 'rules', s.rules, s.rules, s.rulesHint, 'games', 'exe executavel executable incluir include ignorar ignore');
   add('games', 'profiles', s.profilesTitle, s.profilesTitle, s.profilesHint2, 'games', 'perfil profile por jogo per game');
 
-  add('sessions', 'crash', s.crashReportTitle, s.crashReportTitle, s.feat['crashReport'][1], 'power', 'queda crash desligou shutdown travou');
-  add('sessions', 'last', s.lastSession, s.lastSession, s.pageIntro.sessions, 'sessions', 'resumo summary fps medio average low');
+  // 1.2: Relatório do PC e Relatórios de jogo
+  add('health', 'latest', P.health, s.rp.latest, s.rp.healthIntro, 'power', s.rp.searchHealth);
+  add('health', 'latest', P.health, s.rp.readingsTitle, s.rp.copyForum, 'health', s.rp.searchReadings);
+  add('health', 'events', P.health, s.rp.eventsTitle, s.rp.eventsHint, 'health', s.rp.searchEvents);
+  add('health', 'history', P.health, s.rp.incHistory, s.rp.keeps20, 'health', s.rp.searchIncidents);
+  add('sessions', 'last', P.sessions, s.rp.stutters, s.rp.wholeMatch, 'sessions', s.rp.searchLast);
+  add('sessions', 'last', P.sessions, s.rp.avgTitle, s.rp.avgHint, 'sessions', s.rp.searchAvg);
+  add('sessions', 'compare', P.sessions, s.rp.cmpTitle, s.rp.cmpHint, 'sessions', s.rp.searchCompare);
+  add('sessions', 'last', P.sessions, s.rp.shareTitle, s.rp.pngHint, 'sessions', s.rp.searchShare);
+  add('sessions', 'last', s.rp.lastMatch, s.rp.lastMatch, s.rp.sessionsIntro, 'sessions', 'resumo summary fps medio average low');
   add('sessions', 'history', s.history, s.history, s.allGames, 'sessions', 'historico history partidas matches');
   add('sessions', 'csv', s.csvTitle, s.logEnable2, s.logEnableHint2, 'file', 'csv log gravar record');
   add('sessions', 'csv', s.csvTitle, s.logFolder2, '', 'folder', 'pasta folder csv');
