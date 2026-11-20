@@ -1,7 +1,6 @@
-// Teste da regra do layout automático. Sem dependências: node --test src/app/widget/auto-layout.spec.ts (Node ≥ 23)
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { autoLayout } from './auto-layout.ts';
+// Regra do layout automático (npm test)
+import { expect, test } from 'vitest';
+import { autoLayout } from './auto-layout';
 
 const cases: [number, number, string][] = [
   // faixa (strip)
@@ -34,6 +33,6 @@ const cases: [number, number, string][] = [
   [0, 0, 'full'],
 ];
 
-for (const [w, h, want] of cases) {
-  test(`${w}×${h} → ${want}`, () => assert.equal(autoLayout(w, h), want));
-}
+test.each(cases)('%i×%i → %s', (w, h, want) => {
+  expect(autoLayout(w, h)).toBe(want);
+});
