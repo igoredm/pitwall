@@ -26,8 +26,8 @@
           >
             <pw-icon [name]="icons[p]" [size]="17" />
             <span class="ell">{{ sx.pages[p] }}</span>
-            @if (p === 'sessions' && t.catalog()?.crashReport) {
-              <i class="dot st-ndot" style="background: var(--r)" [title]="sx.crashTitle(t.catalog()!.crashReport!.session.exe)"></i>
+            @if (p === 'health' && t.catalog()?.pcPending; as pend) {
+              <i class="dot st-ndot" style="background: var(--r)" [title]="sx.rp.pendingDot"></i>
             }
           </a>
         }

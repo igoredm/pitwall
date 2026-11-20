@@ -17,7 +17,7 @@ import { SettingsCtx } from './settings-ctx';
     <header class="ph">
       <div>
         <h1>{{ sx.pages[page()] }}</h1>
-        <p class="pd">{{ sx.pageIntro[page()] }}</p>
+        <p class="pd">{{ intro() ?? sx.pageIntro[page()] }}</p>
       </div>
       <div class="ph-actions">
         <ng-content />
@@ -40,4 +40,6 @@ export class PageHead {
   protected readonly s = inject(I18n).s;
   protected readonly ctx = inject(SettingsCtx);
   readonly page = input.required<SettingsPage>();
+  /** 1.2: descrição no lugar da de pageIntro (Relatório do PC, Relatórios de jogo). */
+  readonly intro = input<string>();
 }

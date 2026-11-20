@@ -45,6 +45,7 @@ import {
   UpdateState,
   WirelessDevice,
 } from './models';
+import { startReportsDemo } from './demo-reports';
 import { TelemetryService, urlParam } from './telemetry.service';
 import { demo12Monitor } from './demo-12-monitor';
 
@@ -337,6 +338,9 @@ export function startDemo(t: TelemetryService) {
     }
   }
 
+  // 1.2: Relatório do PC, campos novos das sessões e getSessionSeries (demo-reports.ts)
+  const reports = startReportsDemo({ now, empty, catalog, config: () => config, sessions, history, crashSession: empty ? undefined : crashSession });
+
   // 1.0: arquivos da pasta de CSV (um por sessão + alguns soltos), para getLogStats e a prévia da retenção
   const logFiles: { t: number; bytes: number }[] =
     empty || urlParam('logs') === 'empty' ? [] : Array.from({ length: 212 }, (_, i) => ({ t: now - i * 3.4 * 3600_000 - 600_000, bytes: Math.round((4.2 + ((i * 13) % 9)) * 1024 * 1024) }));
@@ -368,6 +372,7 @@ export function startDemo(t: TelemetryService) {
 
   let pairErrors = 0;
   t.attachDemo((msg: any) => {
+    if (reports.handle(msg, send)) return;
     switch (msg.type) {
       case 'setConfig':
         config = structuredClone(msg.config);

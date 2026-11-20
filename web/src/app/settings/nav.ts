@@ -31,6 +31,11 @@ export const LEGACY: Record<string, [SettingsPage, string?]> = {
   crash: ['health', 'latest'],
 };
 
+/** 1.2: âncoras que mudaram de página (o relatório de queda saiu de Sessões: sessions/crash → health/latest). */
+function remap(page: SettingsPage, anchor: string | null): { page: SettingsPage; anchor: string | null } {
+  return page === 'sessions' && anchor === 'crash' ? { page: 'health', anchor: 'latest' } : { page, anchor };
+}
+
 interface Target {
   page: SettingsPage;
   anchor: string | null;
@@ -67,6 +72,7 @@ export class SettingsNav {
   }
 
   go(page: SettingsPage, anchor?: string | null, flash = false) {
+    ({ page, anchor } = remap(page, anchor ?? null));
     this.flash = flash;
     this.page.set(page);
     this.anchor.set(anchor ?? null);
@@ -85,7 +91,7 @@ export class SettingsNav {
   private read(): Target {
     const path = location.hash.replace(/^#\/?/, '').split('?')[0].split('/');
     if (path[0] === 'settings' && PAGES.includes(path[1] as SettingsPage))
-      return { page: path[1] as SettingsPage, anchor: path[2] ? decodeURIComponent(path[2]) : null };
+      return remap(path[1] as SettingsPage, path[2] ? decodeURIComponent(path[2]) : null);
     // Apelidos (ex.: appearance → widget, phone → devices), também em #/settings/<apelido>
     const alias = path[0] === 'settings' ? LEGACY[path[1] ?? ''] : undefined;
     if (alias) return { page: alias[0], anchor: path[2] ? decodeURIComponent(path[2]) : (alias[1] ?? null) };
