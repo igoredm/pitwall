@@ -34,6 +34,7 @@ export const widgetPt = {
   gpuNvTitle: 'O ajuste precisa de uma GPU NVIDIA',
   gpuNvBody: (gpu: string) => `Esta é uma ${gpu}. O resto do Pitwall funciona igual: sensores, FPS, relatórios e alertas.`,
   gpuNvBodyNoName: 'O resto do Pitwall funciona igual: sensores, FPS, relatórios e alertas.',
+  gpuNvSwitchHint: 'Limita consumo e clock pela API oficial da NVIDIA. Desfaz sozinho.',
 };
 
 export const widgetEn: typeof widgetPt = {
@@ -67,4 +68,5 @@ export const widgetEn: typeof widgetPt = {
   gpuNvTitle: 'Tuning needs an NVIDIA GPU',
   gpuNvBody: (gpu) => `This is an ${gpu}. The rest of Pitwall works the same: sensors, FPS, reports and alerts.`,
   gpuNvBodyNoName: 'The rest of Pitwall works the same: sensors, FPS, reports and alerts.',
+  gpuNvSwitchHint: "Limits power and clock through NVIDIA's official API. Undoes itself.",
 };

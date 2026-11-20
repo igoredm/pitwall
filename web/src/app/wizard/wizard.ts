@@ -17,6 +17,8 @@ interface Check {
   text: string;
 }
 const LAYOUTS: WidgetLayout[] = ['auto', 'full', 'mid', 'compact'];
+type Corner = 'tl' | 'tr' | 'bl' | 'br';
+const CORNERS: Corner[] = ['tl', 'tr', 'bl', 'br'];
 
 /**
  * Assistente de primeira execução (diálogo 880×600, 3 passos): monitor + idioma, tema do widget + variante + layout,
@@ -48,6 +50,41 @@ const LAYOUTS: WidgetLayout[] = ['auto', 'full', 'mid', 'compact'];
       <div class="wz-body">
         @switch (step()) {
           @case (1) {
+            @if (oneMon(); as m) {
+              <!-- 1.2: um monitor só — celular/TV ou compacto num canto (com 2 monitores volta ao passo normal) -->
+              <div>
+                <h1 aria-live="polite">{{ sx.wiz1Title }}</h1>
+                <p class="pd">{{ sx.wizOneMonHint(m.width, m.height) }}</p>
+              </div>
+              <div class="grp wz-how" role="radiogroup" [attr.aria-label]="sx.wizHowAria">
+                <div class="row wz-opt" role="radio" tabindex="0" [class.on]="how() === 'phone'" [attr.aria-checked]="how() === 'phone'" (click)="how.set('phone')" (keydown.enter)="how.set('phone')" (keydown.space)="$event.preventDefault(); how.set('phone')">
+                  <span class="wz-radio" aria-hidden="true"></span>
+                  <span class="wz-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="13" height="10" rx="1.5" /><path d="M6.5 19h5" /><rect x="17" y="9" width="5" height="10" rx="1.2" /></svg></span>
+                  <div class="rl">
+                    <div class="lb">{{ sx.wizPhoneTitle }}</div>
+                    <div class="ht">{{ sx.wizPhoneHint }}</div>
+                  </div>
+                </div>
+                <div class="row bt wz-opt" role="radio" tabindex="0" [class.on]="how() === 'corner'" [attr.aria-checked]="how() === 'corner'" (click)="how.set('corner')" (keydown.enter)="how.set('corner')" (keydown.space)="$event.preventDefault(); how.set('corner')">
+                  <span class="wz-radio" aria-hidden="true"></span>
+                  <span class="wz-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2" /><rect x="13.5" y="13" width="5" height="4" rx="1" fill="currentColor" stroke="none" /></svg></span>
+                  <div class="rl">
+                    <div class="lb">{{ sx.wizCornerTitle }}</div>
+                    <div class="ht">{{ sx.wizCornerHint(toggleKeys()) }}</div>
+                    @if (how() === 'corner') {
+                      <div class="wz-corner">
+                        <span class="cap">{{ sx.wizCorner }}</span>
+                        <span class="seg" role="group" [attr.aria-label]="sx.wizCornerAria">
+                          @for (k of corners; track k) {
+                            <button type="button" [attr.aria-pressed]="corner() === k" (click)="$event.stopPropagation(); corner.set(k)">{{ sx.wizCorners[k] }}</button>
+                          }
+                        </span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            } @else {
             <div>
               <h1 aria-live="polite">{{ sx.wiz1Title }}</h1>
               <p class="pd">{{ sx.wiz1Hint2 }}</p>
@@ -74,6 +111,7 @@ const LAYOUTS: WidgetLayout[] = ['auto', 'full', 'mid', 'compact'];
                 <button type="button" class="btn sm wz-id" (click)="t.host({ type: 'identifyMonitors' })">{{ sx.identifyMonitors }}</button>
               }
             </div>
+            }
             <div class="grp">
               <div class="row">
                 <div class="rl">
@@ -163,6 +201,9 @@ const LAYOUTS: WidgetLayout[] = ['auto', 'full', 'mid', 'compact'];
 
       <footer class="wz-foot">
         <button type="button" class="btn qt sm" (click)="finish(false)">{{ sx.skipSetup }}</button>
+        @if (step() === 1 && oneMon()) {
+          <span class="cap wz-more">{{ sx.wizMoreMonitors }}</span>
+        }
         <span class="grow"></span>
         @if (step() > 1) {
           <button type="button" class="btn sm" (click)="go(step() - 1)">{{ sx.back }}</button>
@@ -190,6 +231,20 @@ export class Wizard {
   protected readonly theme = computed<ThemeName>(() => (this.cfg()?.widgetTheme as ThemeName) || 'lumen');
   protected readonly darkOnly = computed(() => THEMES.find((x) => x.id === this.theme())?.darkOnly ?? false);
   protected readonly mon = computed(() => selectedMonitor(this.t.catalog(), this.cfg()));
+
+  /** 1.2: um monitor só (ao vivo: ligou outro, volta ao passo normal). */
+  protected readonly oneMon = computed(() => {
+    const list = this.t.catalog()?.monitors ?? [];
+    return list.length === 1 ? list[0] : null;
+  });
+  protected readonly how = signal<'phone' | 'corner'>('corner');
+  protected readonly corners = CORNERS;
+  protected readonly corner = signal<Corner>('tr');
+  /** "Ctrl Alt P" (atalho de mostrar/esconder), ou vazio se desligado. */
+  protected readonly toggleKeys = computed(() => {
+    const h = this.cfg()?.hotkeys;
+    return h && h.enabled !== false && h.toggleWidget ? h.toggleWidget.split('+').join(' ') : '';
+  });
 
   /** Monitores proporcionais à resolução (o maior com ~340×192, como no canvas). */
   protected readonly monitors = computed(() => {
@@ -234,6 +289,9 @@ export class Wizard {
   }
 
   protected go(i: number) {
+    // Um monitor + "Deixar no canto": o widget vai já para o canto escolhido, no compacto
+    if (this.step() === 1 && i === 2 && this.oneMon() && this.how() === 'corner')
+      this.t.send({ type: 'placeTopRight', layout: 'compact', corner: this.corner() });
     this.step.set(i);
   }
 
@@ -266,5 +324,10 @@ export class Wizard {
   protected finish(done: boolean) {
     this.apply(done ? { firstRunDone: true, startWithWindows: this.startWin() } : { firstRunDone: true });
     this.done.emit(done);
+    // Um monitor + "Ver no celular ou na TV": ao concluir, abre Celular e TV para parear
+    if (done && this.oneMon() && this.how() === 'phone') {
+      if (this.ctx) this.ctx.go('devices');
+      else location.hash = '#/settings/devices';
+    }
   }
 }

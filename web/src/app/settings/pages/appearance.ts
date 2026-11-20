@@ -20,7 +20,7 @@ const THEME_ACCENT: Record<ThemeName, [string, string]> = {
   terminal: ['#4AF626', '#4AF626'],
   splash: ['#FF2E88', '#FF2E88'],
 };
-const LAYOUTS: WidgetLayout[] = ['auto', 'full', 'mid', 'compact'];
+const LAYOUTS: WidgetLayout[] = ['auto', 'full', 'mid', 'compact', 'strip', 'mini'];
 
 /** Widget › Aparência e posição: tema (prévias), variante, destaque, layout, monitor e janela. */
 @Component({
@@ -113,7 +113,7 @@ const LAYOUTS: WidgetLayout[] = ['auto', 'full', 'mid', 'compact'];
                 <span class="shape-box"><span [class]="'shape s-' + l"></span></span>
                 <span>
                   <span class="lname">{{ name(l) }}</span>
-                  <span class="ldesc">{{ sx.layoutDesc[l] }}</span>
+                  <span class="ldesc">{{ sx.layoutDesc[l] ?? sx.layoutDesc12[l] }}</span>
                 </span>
               </button>
             }
@@ -208,6 +208,13 @@ const LAYOUTS: WidgetLayout[] = ['auto', 'full', 'mid', 'compact'];
               <button type="button" class="btn sm" (click)="t.send({ type: 'placeTopRight', layout: 'compact' })">{{ sx.layoutCompactBtn }}</button>
               <button type="button" class="btn sm" (click)="t.send({ type: 'placeTopRight', layout: 'mid' })">{{ sx.layoutMidBtn }}</button>
             </span>
+          </div>
+          <div class="row">
+            <div class="rl">
+              <div class="lb">{{ sx.fillMonitorBtn }}</div>
+              <div class="ht">{{ sx.fillMonitorHint }}</div>
+            </div>
+            <button type="button" class="btn sm" (click)="t.send({ type: 'fillMonitor' })">{{ sx.fillMonitorBtn }}</button>
           </div>
         </div>
       </section>
@@ -337,7 +344,7 @@ const LAYOUTS: WidgetLayout[] = ['auto', 'full', 'mid', 'compact'];
     }
     .layouts {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
       padding: 16px;
     }
@@ -393,6 +400,14 @@ const LAYOUTS: WidgetLayout[] = ['auto', 'full', 'mid', 'compact'];
     .s-compact {
       width: 34px;
       height: 24px;
+    }
+    .s-strip {
+      width: 88px;
+      height: 22px;
+    }
+    .s-mini {
+      width: 50px;
+      height: 30px;
     }
     .lname {
       display: block;

@@ -151,6 +151,61 @@ pw-wizard:not(.pw-app pw-wizard) {
   min-height: 100%;
 }
 
+// 1.2: passo 1 com um monitor só — duas opções de rádio (linha inteira clicável; escolhida com --acs)
+.pw-app.wz {
+  .wz-how {
+    overflow: hidden;
+  }
+  .wz-opt {
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px;
+    cursor: pointer;
+    &.on {
+      background: var(--acs);
+    }
+    &:focus-visible {
+      outline: 2px solid var(--ac);
+      outline-offset: -2px;
+    }
+  }
+  .wz-radio {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 1.5px solid var(--bd);
+    background: var(--sf);
+  }
+  .wz-opt.on .wz-radio {
+    border: 5px solid var(--ac);
+  }
+  .wz-ico {
+    display: flex;
+    margin-top: 1px;
+    color: var(--tx3);
+  }
+  .wz-opt.on .wz-ico {
+    color: var(--ac);
+  }
+  .wz-corner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    .cap {
+      color: var(--tx2);
+      font-weight: 600;
+    }
+  }
+  .wz-more {
+    margin-left: 8px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pw-app.wz {
     .wz-frame {
