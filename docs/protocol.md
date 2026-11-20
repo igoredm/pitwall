@@ -501,3 +501,36 @@ Os cinco campos sempre vêm: `string` com a versão ou `null` explícito (compon
   (os últimos dados gravados, úteis depois de um desligamento abrupto); sem CSV, abre a pasta.
 - Bandeja: "Resumo da última sessão…", "Abrir últimos dados gravados (CSV)" e, quando há relatório de queda pendente,
   "Relatório da queda (últimos 60 s)…".
+
+## 10. 1.2
+
+### 10.1 Relatório do PC
+Cliente → servidor (socket local; o celular não recebe nada disto):
+
+| tipo | campos | resposta (só para quem pediu) |
+|---|---|---|
+| `getPcReport` | — | `pcReport` |
+| `getPcIncident` | `id` | `pcIncident` (id inexistente/inválido = sem resposta) |
+| `dismissPcIncident` | `id` | `pcReport`; marca `seen` e faz broadcast do `catalog` (sem `pcPending` se não houver outro não visto) |
+
+```json
+{ "type": "pcReport", "bootTime": "2026-11-18T21:16:02-03:00", "uptimeSec": 5400, "lastCleanExit": "2026-11-17T23:40:11-03:00",
+  "incidents": [ { "id": "20261118-211405", "kind": "abruptShutdown", "time": "2026-11-18T21:14:05-03:00", "bootTime": "2026-11-18T21:16:02-03:00",
+                   "exe": "FC25.exe", "sessionStart": "2026-11-18T20:34:05-03:00", "uptimeSec": 10800, "events": [], "seen": false } ],
+  "events": [ { "time": "2026-11-18T21:16:10-03:00", "kind": "kernelPower41", "source": "Microsoft-Windows-Kernel-Power 41", "eventId": 41,
+                "message": "The system has rebooted without cleanly shutting down first. …" } ],
+  "ringActive": true }
+```
+- `pcIncident` = `{ "type": "pcIncident", ...PcIncident }`: o resumo + `intervalMs`, `series` (as `PcSeriesId` que existem no PC,
+  até 120 pontos), `last` (todas as métricas numéricas na última gravação) e `csvFile?` (quando havia jogo).
+- `catalog.pcPending` = incidente mais novo com `seen: false` (some com `features.crashReport` desligado e no catálogo do celular).
+- `id` = hora local da última gravação, `yyyyMMdd-HHmmss`. Ficam os 20 mais novos em `%LOCALAPPDATA%\Pitwall\incidents\`.
+- Regra ao abrir: `pc-ring.json` sem `cleanExit` e boot do Windows depois de `savedAt` → incidente (`bugcheck` se houver BugCheck
+  1001, ou Kernel-Power 41 com código, por perto); boot antes de `savedAt` = o Pitwall fechou sozinho (sem incidente).
+- Eventos anexados: de `time − 10 min` até `bootTime + 10 min`. Relidos ao abrir, no `getPcReport` (cache de 10 min) e uma vez
+  10 min depois de um incidente novo (o BugCheck 1001 chega minutos após o boot); os que chegarem depois são anexados e podem
+  mudar `kind` para `bugcheck`.
+- Saída normal (Sair, logoff ou desligar pelo Windows: `WM_QUERYENDSESSION`/`WM_ENDSESSION`) grava `cleanExit`; desligamento
+  cancelado volta a gravar normalmente.
+- Queda durante um jogo: a sessão ganha `endedByCrash: true` e `incidentId`; `catalog.crashReport` continua no mesmo formato
+  (6 séries, 60 s), agora tirado do buffer do PC. Balões e o item da bandeja abrem `health/latest`.
