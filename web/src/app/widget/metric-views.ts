@@ -104,7 +104,7 @@ export function groupLabel(config: AppConfig | null, group: MetricGroup, catalog
 
 export function shortGpu(name?: string) {
   if (!name) return 'GPU';
-  const m = name.match(/(?:RTX|GTX|RX|Arc)\s*\w+(?:\s*(?:Ti|Super|XT|XTX))?/i);
+  const m = name.match(/(?:RTX|GTX|RX|Arc)\s*\w+(?:\s*(?:Ti|Super|XTX|XT))?/i);
   return m ? m[0] : name.replace(/NVIDIA|GeForce|AMD|Radeon/gi, '').trim();
 }
 
