@@ -297,16 +297,20 @@ public class CrashDetectorTests
     }
 
     [Fact]
-    public void Ring_KeepsLast60Samples()
+    public void CrashRing_FromPcRing_KeepsOldShape()
     {
-        var ring = new CrashRing();
+        var ring = new Pitwall.Health.PcRing();
         for (int i = 0; i < 100; i++)
             ring.Sample(new Dictionary<string, double?> { ["gpu.temp"] = i, ["fps.current"] = null }, i * 1000L + 1);
-        var series = ring.Series();
-        Assert.Equal(CrashRing.Ids.Length, series.Count);
-        Assert.Equal(60, series["gpu.temp"].Length);
-        Assert.Equal(40, series["gpu.temp"][0]);
-        Assert.Equal(99, series["gpu.temp"][^1]);
-        Assert.All(series["fps.current"], v => Assert.Null(v));
+        var pc = new Pitwall.Health.PcRingFile { Exe = "FC25.exe", SessionStart = Start, SavedAt = Start.AddMinutes(5), Series = ring.Series(), CsvFile = "a.csv" };
+        var old = CrashRing.FromPcRing(pc)!;
+        Assert.Equal(CrashRing.Ids.Length, old.Series.Count);
+        Assert.Equal(60, old.Series["gpu.temp"].Length);
+        Assert.Equal(40, old.Series["gpu.temp"][0]);
+        Assert.Equal(99, old.Series["gpu.temp"][^1]);
+        Assert.All(old.Series["fps.current"], v => Assert.Null(v));
+        Assert.False(old.Series.ContainsKey("ram.load"));
+        Assert.Equal("a.csv", old.CsvFile);
+        Assert.Null(CrashRing.FromPcRing(new Pitwall.Health.PcRingFile { SavedAt = Start })); // fora de jogo
     }
 }

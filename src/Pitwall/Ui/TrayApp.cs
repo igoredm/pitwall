@@ -14,6 +14,7 @@ public sealed class TrayApp : ApplicationContext
     readonly WidgetForm _widget;
     readonly SynchronizationContext _ui;
     SettingsForm? _settings;
+    readonly SessionEndWatcher _sessionEnd;
     bool _autostartState;
 
     public TrayApp(ConfigStore config, TelemetryHub hub, Func<string> dumpSensors)
@@ -23,6 +24,8 @@ public sealed class TrayApp : ApplicationContext
         _dumpSensors = dumpSensors;
         _ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
 
+        // Logoff/desligamento pelo Windows = saída normal para o Relatório do PC
+        _sessionEnd = new SessionEndWatcher(hub.MarkCleanExit, hub.ResumeAfterCancel);
         _widget = new WidgetForm(config, hub.Port);
         _tray = new NotifyIcon
         {
@@ -72,13 +75,14 @@ public sealed class TrayApp : ApplicationContext
             ShowBalloon(8000, title, text, ToolTipIcon.Warning, "alerts");
             if (_config.Current.Alerts.Sound) System.Media.SystemSounds.Exclamation.Play();
         }, null);
-        // Clicar no balão abre as configurações na página dele (crash → sessions/crash, alerta → alerts, atualização → app/updates)
+        // Clicar no balão abre as configurações na página dele (crash → health/latest, alerta → alerts, atualização → app/updates)
         _tray.BalloonTipClicked += (_, _) => OpenSettings(_balloonTarget.Page, _balloonTarget.Anchor);
         // Instalação nova: abre as configurações, onde o assistente de primeira execução aparece
         if (!config.Current.FirstRunDone) _ui.Post(_ => OpenSettings(), null);
 
         // Relatório de crash: a detecção roda em segundo plano e pode terminar antes ou depois daqui
         hub.CrashReportDetected += r => _ui.Post(_ => ShowCrashBalloon(r), null);
+        hub.PcIncidentDetected += i => _ui.Post(_ => ShowPcIncidentBalloon(i), null);
         // "Abrir resumo ao terminar o jogo": espera um pouco para não abrir se outro jogo começar logo em seguida
         hub.SessionEnded += _ => _ui.Post(async _ =>
         {
@@ -86,6 +90,7 @@ public sealed class TrayApp : ApplicationContext
             await Task.Delay(3000);
             if (_hub.CurrentGame == null) OpenSettings("sessions", "last");
         }, null);
+        if (hub.PendingPcIncident is { } pc && pc.BootTime is { } b && b >= DateTime.Now.AddMinutes(-30)) ShowPcIncidentBalloon(pc);
         if (hub.PendingCrashReport is { } pending) ShowCrashBalloon(pending);
         // Reaberto pelo instalador depois de uma atualização: volta para a tela (não só para a bandeja) e avisa
         if (Program.JustUpdated)
@@ -115,8 +120,8 @@ public sealed class TrayApp : ApplicationContext
 
         menu.Items.Add(new ToolStripMenuItem(L.T("Configurações…", "Settings…"), null, (_, _) => OpenSettings()) { Font = new Font(menu.Font, FontStyle.Bold) });
         // Atalhos para depois do jogo ou de um desligamento abrupto
-        if (_hub.PendingCrashReport != null)
-            menu.Items.Add(new ToolStripMenuItem(L.T("Relatório da queda (últimos 60 s)…", "Crash report (last 60 s)…"), null, (_, _) => OpenSettings("sessions", "crash")));
+        if (_hub.PendingCrashReport != null || _hub.PendingPcIncident != null)
+            menu.Items.Add(new ToolStripMenuItem(L.T("Relatório da queda (últimos 2 min)…", "Crash report (last 2 min)…"), null, (_, _) => OpenSettings("health", "latest")));
         menu.Items.Add(new ToolStripMenuItem(L.T("Resumo da última sessão…", "Last session summary…"), null, (_, _) => OpenSettings("sessions", "last")));
         menu.Items.Add(new ToolStripMenuItem(L.T("Abrir últimos dados gravados (CSV)", "Open latest recorded data (CSV)"), null, (_, _) =>
             Pitwall.Logging.LatestLog.Reveal(_config.Current.Log.Folder)));
@@ -198,7 +203,27 @@ public sealed class TrayApp : ApplicationContext
                   $"Windows logged an unexpected shutdown (Kernel-Power 41) after {r.Session.Exe}. Click to see the report.")
             : L.T($"O PC desligou ou travou durante {r.Session.Exe} ({when}). Clique para ver os últimos 60 s.",
                   $"The PC shut down or froze during {r.Session.Exe} ({when}). Click to see the last 60 s.");
-        ShowBalloon(10000, L.T("Pitwall · relatório de crash", "Pitwall · crash report"), text, ToolTipIcon.Warning, "sessions", "crash");
+        ShowBalloon(10000, L.T("Pitwall · relatório de crash", "Pitwall · crash report"), text, ToolTipIcon.Warning, "health", "latest");
+    }
+
+    /// <summary>1.2: desligamento abrupto do PC (com ou sem jogo). Tem prioridade sobre o balão do relatório do jogo.</summary>
+    void ShowPcIncidentBalloon(Health.PcIncidentSummary i)
+    {
+        if (_crashShown) return;
+        _crashShown = true;
+        var at = i.Time.ToString("HH:mm");
+        var text = (i.Kind == "bugcheck", i.Exe) switch
+        {
+            (true, { } exe) => L.T($"O PC reiniciou depois de uma tela azul às {at}, durante {exe}. Veja as últimas medições.",
+                                   $"The PC restarted after a blue screen at {at}, during {exe}. See the last readings."),
+            (true, null) => L.T($"O PC reiniciou depois de uma tela azul às {at}. Veja as últimas medições.",
+                                $"The PC restarted after a blue screen at {at}. See the last readings."),
+            (false, { } exe) => L.T($"O PC desligou sem aviso às {at}, durante {exe}. Veja as últimas medições.",
+                                    $"The PC shut down without warning at {at}, during {exe}. See the last readings."),
+            _ => L.T($"O PC desligou sem aviso às {at}. Veja as últimas medições.",
+                     $"The PC shut down without warning at {at}. See the last readings."),
+        };
+        ShowBalloon(10000, L.T("Pitwall · relatório do PC", "Pitwall · PC report"), text, ToolTipIcon.Warning, "health", "latest");
     }
 
     /// <summary>Destino do último balão mostrado (o Windows mostra um por vez; clicar nele abre essa página).</summary>
@@ -252,6 +277,8 @@ public sealed class TrayApp : ApplicationContext
 
     protected override void ExitThreadCore()
     {
+        _hub.MarkCleanExit();
+        _sessionEnd.Dispose();
         _tray.Visible = false;
         _tray.Dispose();
         _widget.Dispose();

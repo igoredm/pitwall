@@ -33,6 +33,10 @@ public sealed class GameSession
     public Dictionary<string, double>? ClockReasonSec { get; set; }
     /// <summary>Nome do arquivo CSV da sessão (sem a pasta).</summary>
     public string? CsvFile { get; set; }
+    /// <summary>1.2: a sessão terminou num desligamento abrupto do PC (Relatório do PC).</summary>
+    public bool? EndedByCrash { get; set; }
+    /// <summary>1.2: id do incidente do Relatório do PC (incidents\&lt;id&gt;.json).</summary>
+    public string? IncidentId { get; set; }
 }
 
 /// <summary>
@@ -143,6 +147,21 @@ public sealed class SessionStore
             _open = null;
             Save();
             return kept;
+        }
+    }
+
+    /// <summary>1.2: marca a sessão (exe + início) que terminou numa queda do PC. False = não encontrada.</summary>
+    public bool MarkCrashed(string exe, DateTime start, string incidentId)
+    {
+        lock (_gate)
+        {
+            var s = _sessions.FirstOrDefault(x => string.Equals(x.Exe, exe, StringComparison.OrdinalIgnoreCase)
+                && Math.Abs((x.Start - start).TotalSeconds) < 1);
+            if (s == null) return false;
+            s.EndedByCrash = true;
+            s.IncidentId = incidentId;
+            Save();
+            return true;
         }
     }
 

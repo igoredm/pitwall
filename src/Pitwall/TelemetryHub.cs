@@ -7,6 +7,7 @@ using Pitwall.Config;
 using Pitwall.Fps;
 using Pitwall.Games;
 using Pitwall.Gpu;
+using Pitwall.Health;
 using Pitwall.Logging;
 using Pitwall.Metrics;
 using Pitwall.Native;
@@ -46,8 +47,16 @@ public sealed class TelemetryHub : IDisposable
     long _extremesSentAt;
     long _sessionSavedAt;
 
-    // Relatório de crash: buffer dos últimos 60 s (em disco durante o jogo) e o relatório detectado ao abrir
-    readonly CrashRing _ring = new();
+    // Relatório do PC (1.2): buffer de 120 s em disco, com ou sem jogo; o relatório de crash do jogo sai dele
+    readonly PcHealth _health;
+    /// <summary>1.2: desligamento abrupto do PC detectado ao abrir (thread de fundo).</summary>
+    public event Action<PcIncidentSummary>? PcIncidentDetected;
+    /// <summary>Incidente do PC ainda não visto (null com features.crashReport desligado).</summary>
+    public PcIncidentSummary? PendingPcIncident => _crashFeature ? _health.Pending : null;
+    /// <summary>Saída normal (sair, logoff, desligar pelo Windows): grava cleanExit no buffer.</summary>
+    public void MarkCleanExit() => _health.MarkCleanExit();
+    /// <summary>O Windows cancelou o logoff/desligamento: o buffer volta a gravar.</summary>
+    public void ResumeAfterCancel() => _health.ResumeAfterCancel();
     volatile CrashReport? _crashReport;
     /// <summary>Relatório pendente (null com features.crashReport desligado).</summary>
     public CrashReport? PendingCrashReport => _crashFeature ? _crashReport : null;
@@ -85,6 +94,7 @@ public sealed class TelemetryHub : IDisposable
         if (presentMon.Available)
             foreach (var d in MetricCatalog.Static.Where(d => d.Group == MetricGroup.Fps)) _available.Add(d.Id);
         if (tuner.ClockReasonsMask() != null) _available.Add("gpu.perfcap");
+        _health = new PcHealth(_definitions, _available);
 
         var dynamicMissing = sensors.DynamicDefinitions.Where(d => config.Current.Metrics.All(m => m.Id != d.Id)).ToList();
         if (dynamicMissing.Count > 0) config.Update(c => MetricCatalog.EnsureSettings(c, dynamicMissing));
@@ -210,22 +220,44 @@ public sealed class TelemetryHub : IDisposable
         new Thread(Loop) { IsBackground = true, Name = "Telemetry", Priority = ThreadPriority.BelowNormal }.Start();
         // Relatório de crash desligado: nem olha o sessions.json/log do Windows (roda se for ligado depois)
         if (_config.Current.Features.CrashReport && Interlocked.Exchange(ref _crashDetectStarted, 1) == 0) _ = Task.Run(DetectCrash);
+        else if (!_config.Current.Features.CrashReport) _health.DiscardPrevious();
         ApplyRemote(_config.Current.Remote);
     }
 
     /// <summary>A última sessão não terminou, ou o Windows registrou Kernel-Power 41 depois dela?</summary>
     void DetectCrash()
     {
+        DetectPcIncident();
         try
         {
             var last = _sessions.LastAtStartup;
             if (last == null) return;
-            var kp41 = CrashDetector.LastKernelPower41(last.Start);
-            var report = CrashDetector.Detect(last, CrashRing.Load(), kp41, CrashDetector.DismissedSessionStart());
+            var kp41 = _health.Events().Where(e => e.Kind == "kernelPower41" && e.Time >= last.Start).Select(e => (DateTime?)e.Time).FirstOrDefault();
+            var report = CrashDetector.Detect(last, CrashRing.FromPcRing(_health.Previous), kp41, CrashDetector.DismissedSessionStart());
             if (report == null) return;
             _crashReport = report;
             _ws.Broadcast(CatalogMessage());
             if (_crashFeature) CrashReportDetected?.Invoke(report);
+        }
+        catch { }
+    }
+
+    /// <summary>1.2: a execução anterior terminou num desligamento abrupto? Vira incidente (e marca a sessão de jogo).</summary>
+    void DetectPcIncident()
+    {
+        try
+        {
+            var inc = _health.DetectAtStartup();
+            if (inc == null) return;
+            if (inc.Exe != null && inc.SessionStart is { } start && _sessions.MarkCrashed(inc.Exe, start, inc.Id))
+                _ws.Broadcast(SessionsMessage());
+            _ws.Broadcast(CatalogMessage());
+            if (_crashFeature) PcIncidentDetected?.Invoke(inc.ToSummary());
+            // O BugCheck 1001 costuma ser gravado alguns minutos depois do boot: relê uma vez daqui a 10 min
+            _ = Task.Delay(TimeSpan.FromMinutes(10)).ContinueWith(_ =>
+            {
+                try { _health.Events(force: true); _ws.Broadcast(CatalogMessage()); } catch { }
+            });
         }
         catch { }
     }
@@ -321,7 +353,6 @@ public sealed class TelemetryHub : IDisposable
     // Motivos do limite de clock da última sessão (mostrados fora de jogo); atualizado só quando uma sessão termina
     (string Exe, Dictionary<string, double> Sec)? _lastReasons;
     bool _peaksOn;
-    bool _ringDirty;
 
     void RefreshLastReasons()
     {
@@ -368,7 +399,6 @@ public sealed class TelemetryHub : IDisposable
             _stats = game != null ? new SessionStatsAccumulator() : null;
             _statsCursor = 0;
             _sessionSavedAt = now;
-            _ring.Reset();
             if (game != null)
             {
                 _extremes.Reset();
@@ -425,18 +455,9 @@ public sealed class TelemetryHub : IDisposable
         }
         CheckAlerts(cfg, now);
 
-        // Buffer do relatório de crash: desligado = nada na memória nem no disco
-        if (features.CrashReport && game != null && _sessions.Open is { } open)
-        {
-            _ring.Sample(_values, now);
-            _ring.PersistIfDue(open, _log.CurrentPath is { } p ? Path.GetFileName(p) : null, now);
-            _ringDirty = true;
-        }
-        else if (_ringDirty)
-        {
-            _ring.Reset();
-            _ringDirty = false;
-        }
+        // Buffer do Relatório do PC (com ou sem jogo): desligado = nada na memória nem no disco
+        if (features.CrashReport) _health.Tick(_values, game != null ? _sessions.Open : null, _log.CurrentPath is { } p ? Path.GetFileName(p) : null, now);
+        else if (_health.Active) _health.Stop();
 
         var values = new JsonObject();
         foreach (var (k, v) in _values)
@@ -518,6 +539,7 @@ public sealed class TelemetryHub : IDisposable
             battery = _battery.Available,
             hardware = new { cpu = _sensors.CpuName, gpu = _sensors.GpuName, gpu2 = _sensors.Gpu2Name },
             crashReport = _crashFeature ? _crashReport : null,
+            pcPending = _crashFeature ? _health.Pending : null,
             remote = new { running = _remote.Running, port = _remote.Running ? _remote.Port : (int?)null, error = _remote.LastError },
             tuning = _tuner.Caps,
             update = Updater?.State,
@@ -554,7 +576,7 @@ public sealed class TelemetryHub : IDisposable
         // Sobre: componente ausente vai como null explícito (o resto do catálogo omite nulls)
         node["about"] = JsonSerializer.SerializeToNode(AboutInfo.Current, AboutJson);
         if (remote)
-            foreach (var key in new[] { "admin", "crashReport", "remote", "tuning", "tuningPresets", "monitors", "update", "about" }) node.Remove(key);
+            foreach (var key in new[] { "admin", "crashReport", "pcPending", "remote", "tuning", "tuningPresets", "monitors", "update", "about" }) node.Remove(key);
         return node.ToJsonString(ConfigStore.Json);
     }
 
@@ -680,6 +702,11 @@ public sealed class TelemetryHub : IDisposable
         }); // sem ConfigStore.Json: oldest vai como null explícito
     }
 
+    static string? Str(JsonNode? n)
+    {
+        try { return n?.GetValue<string>(); } catch { return null; }
+    }
+
     /// <summary>Número inteiro de um campo JSON (aceita 30 ou 30.0); ausente/inválido = null.</summary>
     static int? Int(JsonNode? n)
     {
@@ -791,6 +818,13 @@ public sealed class TelemetryHub : IDisposable
                         _ws.Broadcast(CatalogMessage());
                     }
                     return null;
+                case "getPcReport":
+                    return _health.ReportMessage(_crashFeature);
+                case "getPcIncident":
+                    return _health.IncidentMessage(Str(node["id"]));
+                case "dismissPcIncident":
+                    if (_health.Dismiss(Str(node["id"]))) _ws.Broadcast(CatalogMessage());
+                    return _health.ReportMessage(_crashFeature);
                 case "acceptGameSuggestion":
                 case "dismissGameSuggestion":
                 {
@@ -856,6 +890,7 @@ public sealed class TelemetryHub : IDisposable
     public void Dispose()
     {
         _cts.Cancel();
+        _health.MarkCleanExit();
         EndSession();
         _ws.Dispose();
         _remote.Dispose(); // a regra do firewall fica enquanto o recurso estiver ligado; sai ao desligar ou desinstalar

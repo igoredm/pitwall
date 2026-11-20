@@ -1,6 +1,6 @@
 using System.Diagnostics.Eventing.Reader;
 using System.Text.Json;
-using Pitwall.Config;
+using Pitwall.Health;
 
 namespace Pitwall.Games;
 
@@ -33,96 +33,36 @@ public sealed class CrashReport
 }
 
 /// <summary>
-/// Buffer circular de 60 s (1 amostra/s) de GPU temp, hot spot, consumo, clock, FPS e CPU temp.
-/// Durante o jogo vai para %LOCALAPPDATA%\Pitwall\crash-ring.json a cada ~5 s, com escrita atômica
-/// (arquivo temporário gravado direto no disco + rename).
+/// 1.2: o buffer em disco agora é o do Relatório do PC (Health/PcRing, 120 s, com ou sem jogo). O relatório de crash
+/// do jogo continua com o mesmo formato: as 6 séries antigas e os últimos 60 s.
 /// </summary>
-public sealed class CrashRing
+public static class CrashRing
 {
     public static readonly string[] Ids = ["gpu.temp", "gpu.hotspot", "gpu.power", "gpu.clock", "fps.current", "cpu.temp"];
-    const int Points = 60;
-    const long SampleMs = 1_000, PersistMs = 5_000;
+    public const int Points = 60;
+    /// <summary>%LOCALAPPDATA%Pitwall (pasta dos arquivos que sobrevivem a um desligamento).</summary>
+    public static readonly string Dir = PcRing.Dir;
 
-    public static readonly string Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Pitwall");
-    public static readonly string FilePath = Path.Combine(Dir, "crash-ring.json");
-
-    readonly double?[][] _data = Ids.Select(_ => new double?[Points]).ToArray();
-    int _head, _count;
-    long _lastSample, _lastPersist;
-
-    public void Reset()
+    /// <summary>pc-ring.json → formato antigo (só se a gravação era de um jogo).</summary>
+    public static CrashRingFile? FromPcRing(PcRingFile? pc)
     {
-        _head = _count = 0;
-        _lastSample = _lastPersist = 0;
-        foreach (var s in _data) Array.Clear(s);
-    }
-
-    public void Sample(IReadOnlyDictionary<string, double?> values, long nowMs)
-    {
-        if (_lastSample != 0 && nowMs - _lastSample < SampleMs - 50) return;
-        _lastSample = nowMs;
-        for (int i = 0; i < Ids.Length; i++)
-            _data[i][_head] = values.TryGetValue(Ids[i], out var v) && v is { } d && double.IsFinite(d) ? Math.Round(d, 1) : null;
-        _head = (_head + 1) % Points;
-        if (_count < Points) _count++;
-    }
-
-    public Dictionary<string, double?[]> Series()
-    {
-        var result = new Dictionary<string, double?[]>();
-        for (int i = 0; i < Ids.Length; i++)
+        if (pc?.Exe == null || pc.SessionStart is not { } start) return null;
+        return new CrashRingFile
         {
-            var arr = new double?[_count];
-            for (int k = 0; k < _count; k++) arr[k] = _data[i][(_head - _count + k + Points) % Points];
-            result[Ids[i]] = arr;
-        }
-        return result;
-    }
-
-    /// <summary>Grava se passaram ~5 s desde a última vez.</summary>
-    public void PersistIfDue(GameSession session, string? csvFile, long nowMs)
-    {
-        if (nowMs - _lastPersist < PersistMs) return;
-        _lastPersist = nowMs;
-        var file = new CrashRingFile
-        {
-            Exe = session.Exe,
-            SessionStart = session.Start,
-            SavedAt = DateTime.Now,
-            IntervalMs = (int)SampleMs,
-            Series = Series(),
-            CsvFile = csvFile,
+            Exe = pc.Exe,
+            SessionStart = start,
+            SavedAt = pc.SavedAt,
+            IntervalMs = pc.IntervalMs,
+            Series = Ids.Where(pc.Series.ContainsKey).ToDictionary(id => id, id => pc.Series[id].TakeLast(Points).ToArray()),
+            CsvFile = pc.CsvFile,
         };
-        try
-        {
-            Directory.CreateDirectory(Dir);
-            var tmp = FilePath + ".tmp";
-            using (var fs = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
-            {
-                JsonSerializer.Serialize(fs, file, Compact);
-                fs.Flush(flushToDisk: true);
-            }
-            File.Move(tmp, FilePath, overwrite: true);
-        }
-        catch { } // não é crítico
-    }
-
-    internal static readonly JsonSerializerOptions Compact = new(ConfigStore.Json) { WriteIndented = false };
-
-    public static CrashRingFile? Load()
-    {
-        try
-        {
-            return File.Exists(FilePath) ? JsonSerializer.Deserialize<CrashRingFile>(File.ReadAllText(FilePath), Compact) : null;
-        }
-        catch { return null; }
     }
 }
 
 /// <summary>Decide se há relatório de crash ao abrir o app.</summary>
 public static class CrashDetector
 {
-    static readonly string StatePath = Path.Combine(CrashRing.Dir, "crash-state.json");
+    static readonly string StatePath = Path.Combine(PcRing.Dir, "crash-state.json");
 
     /// <summary>
     /// Regra (pura, testável): há relatório se a última sessão não terminou, ou se houve Kernel-Power 41 depois do
@@ -182,7 +122,7 @@ public static class CrashDetector
     {
         try
         {
-            Directory.CreateDirectory(CrashRing.Dir);
+            Directory.CreateDirectory(PcRing.Dir);
             File.WriteAllText(StatePath, JsonSerializer.Serialize(new { dismissedSessionStart = sessionStart }));
         }
         catch { }
