@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-11-20T02:14:39.916Z",
         "reason": "docs/design-notes.md › Neon: 'Tiles com borda esquerda 2px' (tema Neon do widget, design aprovado)"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "site/index.html"
+        ],
+        "createdAt": "2026-11-20T16:42:28.205Z",
+        "reason": "Claude (sessão Pitwall): checado no CSS — os filhos têm padding próprio (.pipe li 20–30px, .scenes span 0 14px/44px, .sec é divisória de seção com padding vertical grande); o detector lê o wrapper"
       }
     ]
   }

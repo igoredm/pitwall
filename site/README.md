@@ -57,5 +57,4 @@ subpasta. A pasta `tools/` e este README podem ficar de fora.
 O servidor só precisa mandar os tipos MIME certos, o que quase todos já fazem: `.woff2` → `font/woff2`,
 `.webp` → `image/webp`, `.webmanifest` → `application/manifest+json`, `.mjs`/`.js` → `text/javascript`.
 
-Quando o site tiver domínio, troque o `SITE_URL` marcado no `<head>` do `index.html`: `canonical`, `og:url` e
-`og:image` precisam de URL absoluta para as prévias de link (WhatsApp, Discord, X) mostrarem a imagem.
+Domínio: https://pitwall.igoredm.com/ (já no `canonical`, `og:url`, `og:image` e `twitter:image` do `index.html`).
