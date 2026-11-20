@@ -123,7 +123,10 @@ public sealed class WidgetForm : Form
     /// <summary>
     /// Widget no canto superior direito do monitor escolhido: "compact" = 260×180, "mid" = 300×300 (pixels lógicos).
     /// </summary>
-    public void PlaceTopRight(string layout)
+    public void PlaceTopRight(string layout) => PlaceCorner(layout, "tr");
+
+    /// <summary>1.2: igual ao PlaceTopRight, no canto pedido (tl, tr, bl, br). Assistente com um monitor só.</summary>
+    public void PlaceCorner(string layout, string corner)
     {
         var screen = FindScreen(_config.Current.Widget.Monitor);
         var scale = DpiOf(screen) / 96.0;
@@ -132,8 +135,23 @@ public sealed class WidgetForm : Form
         var height = (int)Math.Round(h * scale);
         var margin = (int)Math.Round(16 * scale);
         var wa = screen.WorkingArea; // respeita a barra de tarefas
-        Bounds = new Rectangle(wa.Right - width - margin, wa.Top + margin, width, height);
+        var x = corner is "tl" or "bl" ? wa.Left + margin : wa.Right - width - margin;
+        var y = corner is "bl" or "br" ? wa.Bottom - height - margin : wa.Top + margin;
+        Bounds = new Rectangle(x, y, width, height);
         _config.Update(c => c.Widget.Layout = layout);
+        SavePlacement();
+        if (!Visible) _config.Update(c => c.Widget.Visible = true);
+    }
+
+    /// <summary>
+    /// 1.2: o widget ocupa o monitor inteiro (telinha de 5"/7", Xeneon Edge). Layout volta ao Automático, que escolhe
+    /// faixa ou mini pela proporção do monitor.
+    /// </summary>
+    public void FillMonitor()
+    {
+        var screen = Screen.FromControl(this);
+        Bounds = screen.Bounds;
+        _config.Update(c => c.Widget.Layout = "auto");
         SavePlacement();
         if (!Visible) _config.Update(c => c.Widget.Visible = true);
     }

@@ -42,7 +42,8 @@ public sealed class TrayApp : ApplicationContext
         };
         _tray.MouseDoubleClick += (_, e) => { if (e.Button == MouseButtons.Left) OpenSettings(); };
         _widget.SettingsRequested += (page, anchor) => OpenSettings(page, anchor);
-        hub.PlaceTopRightRequested += layout => _ui.Post(_ => _widget.PlaceTopRight(layout), null);
+        hub.PlaceTopRightRequested += (layout, corner) => _ui.Post(_ => _widget.PlaceCorner(layout, corner), null);
+        hub.FillMonitorRequested += () => _ui.Post(_ => _widget.FillMonitor(), null);
 
         // "Iniciar com o Windows" pode ser alterado pela tela de configurações: sincroniza a tarefa agendada.
         config.Changed += c =>
@@ -160,9 +161,12 @@ public sealed class TrayApp : ApplicationContext
         layout.DropDownItems.Add(Check(L.T("Completo", "Full"), c.Widget.Layout == "full", () => Toggle(x => x.Widget.Layout = "full")));
         layout.DropDownItems.Add(Check(L.T("Médio", "Medium"), c.Widget.Layout == "mid", () => Toggle(x => x.Widget.Layout = "mid")));
         layout.DropDownItems.Add(Check(L.T("Compacto", "Compact"), c.Widget.Layout == "compact", () => Toggle(x => x.Widget.Layout = "compact")));
+        layout.DropDownItems.Add(Check(L.T("Faixa (Xeneon Edge, 1920×480)", "Strip (Xeneon Edge, 1920×480)"), c.Widget.Layout == "strip", () => Toggle(x => x.Widget.Layout = "strip")));
+        layout.DropDownItems.Add(Check(L.T("Mini (telinha de 5\" ou 7\")", "Small screen (5\" or 7\")"), c.Widget.Layout == "mini", () => Toggle(x => x.Widget.Layout = "mini")));
         layout.DropDownItems.Add(new ToolStripSeparator());
         layout.DropDownItems.Add(L.T("Compacto no canto superior direito", "Compact in the top-right corner"), null, (_, _) => _widget.PlaceTopRight("compact"));
         layout.DropDownItems.Add(L.T("Médio no canto superior direito", "Medium in the top-right corner"), null, (_, _) => _widget.PlaceTopRight("mid"));
+        layout.DropDownItems.Add(L.T("Ocupar o monitor inteiro", "Fill the whole monitor"), null, (_, _) => _widget.FillMonitor());
         menu.Items.Add(layout);
 
         var theme = new ToolStripMenuItem(L.T("Aparência", "Appearance"));
