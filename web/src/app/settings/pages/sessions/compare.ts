@@ -57,7 +57,7 @@ const CHARTS: SeriesKey[] = ['fps.current', 'gpu.hotspot'];
           </div>
           @for (r of tb.rows; track r.key) {
             <div class="tbl-r ccols crow">
-              <span class="b6 ell">{{ r.name }}</span>
+              <span class="b6 nm">{{ r.name }}</span>
               <span class="r">{{ r.a }}</span>
               <span class="r t2">{{ r.b }}</span>
               <span class="r" [class]="'r d-' + r.tone">{{ r.delta }}</span>
@@ -150,6 +150,12 @@ const CHARTS: SeriesKey[] = ['fps.current', 'gpu.hotspot'];
     .crow {
       min-height: 38px;
       font-size: 13.5px;
+    }
+    /* nomes longos ("Acima do limite crítico definido") quebram em vez de cortar */
+    .nm {
+      min-width: 0;
+      line-height: 1.3;
+      padding-block: 6px;
     }
     .r {
       text-align: right;

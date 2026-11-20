@@ -30,7 +30,7 @@ interface Row {
     <div class="grp">
       @if (rows().length) {
         <div class="tbl-r th acols hd">
-          <span>{{ sx.rp.colSensor }}</span><span class="r">{{ sx.rp.colAvg }}</span><span class="r">{{ sx.rp.colPeak }}</span><span class="r">{{ sx.rp.colYellow }}</span><span class="r">{{ sx.rp.colRed }}</span>
+          <span>{{ sx.rp.colSensor }}</span><span class="r">{{ sx.rp.colAvg }}</span><span class="r">{{ sx.rp.colPeak }}</span><span class="r">{{ sx.rp.colYellow }}</span><span class="r wrap">{{ sx.rp.colRed }}</span>
         </div>
         @for (r of rows(); track r.id) {
           <div class="tbl-r acols arow">
@@ -73,10 +73,16 @@ interface Row {
       container-type: inline-size;
     }
     .acols {
-      grid-template-columns: minmax(0, 1fr) 90px 90px 110px 110px;
+      grid-template-columns: minmax(0, 1fr) 90px 90px 110px 128px;
     }
     .hd {
       min-height: 34px;
+      padding-block: 6px;
+    }
+    /* "Acima do limite crítico definido" quebra em 2 linhas */
+    .r.wrap {
+      white-space: normal;
+      line-height: 1.3;
     }
     .arow {
       min-height: 38px;
@@ -115,7 +121,7 @@ interface Row {
     }
     @container (max-width: 600px) {
       .acols {
-        grid-template-columns: minmax(0, 1fr) 70px 70px 84px 84px;
+        grid-template-columns: minmax(0, 1fr) 70px 70px 84px 108px;
         gap: 8px;
       }
     }

@@ -68,7 +68,7 @@ const DEFS: Def[] = [
   ['fps.graph', 'fps', 'Gráfico de frametime', 'graph'],
   ['gpu.load', 'gpu', 'Uso', '%', true],
   ['gpu.temp', 'gpu', 'Núcleo', '°C', true, 80, 87, true],
-  ['gpu.hotspot', 'gpu', 'Hot spot', '°C', true, 95, 105, true],
+  ['gpu.hotspot', 'gpu', 'Hot spot', '°C', true, 95, 100, true],
   ['gpu.memjunction', 'gpu', 'Memory junction', '°C', true, 95, 104, true],
   ['gpu.hotspotDelta', 'gpu', 'Δ hot spot − núcleo', '°C', true, 20, 25],
   ['gpu.power', 'gpu', 'Consumo', 'W', true],
