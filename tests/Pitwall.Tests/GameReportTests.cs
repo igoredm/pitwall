@@ -192,6 +192,9 @@ public class SessionAveragesTests
         Assert.DoesNotContain("avgGpuTemp", json); // null não vai
         var back = JsonSerializer.Deserialize<GameSession>(json, ConfigStore.Json)!;
         Assert.Equal("travou", back.Markers![0].Note);
+        Assert.DoesNotContain("\"via\"", json); // marcador antigo, sem origem
+        s.Markers[0].Via = SessionMarker.ViaHotkey;
+        Assert.Contains("\"via\": \"hotkey\"", JsonSerializer.Serialize(s, ConfigStore.Json));
     }
 }
 
@@ -259,6 +262,29 @@ public class SessionSeriesTests
         var text = "timestamp,game,fps.current\n2026-11-19 21:00:00.000,g,60\n2026-11-19 21:00:01.000,g,70\n2026-11-19 21:00:02.000,g,80\n";
         var r = SessionSeries.Read(new StringReader(text), 120)!;
         Assert.Equal([60, 70, 80], r.Series["fps.current"]);
+    }
+
+    [Fact]
+    public void DownsampleLast_TakesLastValue_CarriesForward()
+    {
+        double[] t = [0, 1, 2, 3, 4, 5, 6, 7];
+        float[] v = [float.NaN, 0, 1, 2, float.NaN, float.NaN, 5, 5];
+        Assert.Equal([0, 2, 2, 5], SessionSeries.DownsampleLast(t, v, 4, 8));
+        Assert.Equal([null, 2], SessionSeries.DownsampleLast([0.0, 1, 2, 3], [float.NaN, float.NaN, 1f, 2f], 2, 4));
+    }
+
+    [Fact]
+    public void Read_Stutters_CumulativeWhenLogged()
+    {
+        var text = "timestamp,game,fps.current,fps.stutters,marker\n" +
+            "2026-11-19 21:00:00.000,g,60,0,\n2026-11-19 21:00:01.000,g,60,0,\n" +
+            "2026-11-19 21:00:02.000,g,60,3,\n2026-11-19 21:00:03.000,g,60,4,\n";
+        var r = SessionSeries.Read(new StringReader(text), 2)!;
+        Assert.Equal([0, 4], r.Series["fps.stutters"]);
+        var without = SessionSeries.Read(new StringReader("timestamp,game,fps.current\n2026-11-19 21:00:00.000,g,60\n"), 2)!;
+        Assert.False(without.Series.ContainsKey("fps.stutters"));
+        var empty = SessionSeries.Read(new StringReader("timestamp,game,fps.current,fps.stutters\n2026-11-19 21:00:00.000,g,60,\n"), 2)!;
+        Assert.False(empty.Series.ContainsKey("fps.stutters")); // coluna sem leitura (features.stutters off)
     }
 
     [Fact]

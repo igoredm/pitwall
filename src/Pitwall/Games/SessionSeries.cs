@@ -10,6 +10,8 @@ public static class SessionSeries
 {
     /// <summary>Colunas do CSV (ids das métricas) que viram série. Só vão as que existem no cabeçalho.</summary>
     public static readonly string[] Ids = ["fps.current", "fps.low1", "gpu.temp", "gpu.hotspot", "gpu.power", "gpu.clock", "cpu.temp", "cpu.load"];
+    /// <summary>Colunas acumuladas (contagem desde o início da sessão): o balde leva o último valor, não a média.</summary>
+    public static readonly string[] CumulativeIds = ["fps.stutters"];
     public const int DefaultPoints = 120;
     public const int MaxPoints = 1000;
     public const long MaxBytes = 50L * 1024 * 1024;
@@ -35,9 +37,10 @@ public static class SessionSeries
         var ids = new List<string>();
         for (int i = 0; i < header.Length; i++)
         {
-            var k = Array.IndexOf(Ids, header[i].Trim());
-            want[i] = k < 0 ? -1 : ids.Count;
-            if (k >= 0) ids.Add(Ids[k]);
+            var id = header[i].Trim();
+            var known = Ids.Contains(id) || CumulativeIds.Contains(id);
+            want[i] = known ? ids.Count : -1;
+            if (known) ids.Add(id);
         }
         var last = Array.FindLastIndex(want, w => w >= 0);
 
@@ -73,7 +76,9 @@ public static class SessionSeries
         var series = new Dictionary<string, double?[]>();
         for (int i = 0; i < ids.Count; i++)
         {
-            var s = Downsample(times.ToArray(), cols[i].ToArray(), buckets, span0);
+            var s = CumulativeIds.Contains(ids[i])
+                ? DownsampleLast(times.ToArray(), cols[i].ToArray(), buckets, span0)
+                : Downsample(times.ToArray(), cols[i].ToArray(), buckets, span0);
             // Coluna inteira vazia (ex.: fps fora de jogo): não vai
             if (s.Any(x => x != null)) series[ids[i]] = s;
         }
@@ -100,6 +105,24 @@ public static class SessionSeries
         }
         for (int b = 0; b < buckets; b++)
             if (n[b] > 0) result[b] = Math.Round(sum[b] / n[b], 1);
+        return result;
+    }
+
+    /// <summary>
+    /// Regra pura para contagens acumuladas (fps.stutters): cada balde leva a última leitura até o fim dele. Balde sem
+    /// leitura repete o anterior (a contagem não volta); antes da primeira leitura = null.
+    /// </summary>
+    public static double?[] DownsampleLast(ReadOnlySpan<double> t, ReadOnlySpan<float> v, int buckets, double span)
+    {
+        var result = new double?[Math.Max(0, buckets)];
+        if (buckets <= 0) return result;
+        for (int i = 0; i < t.Length && i < v.Length; i++)
+        {
+            if (!float.IsFinite(v[i])) continue;
+            var b = span > 0 ? (int)(t[i] / span * buckets) : 0;
+            result[Math.Clamp(b, 0, buckets - 1)] = Math.Round(v[i], 1);
+        }
+        for (int b = 1; b < buckets; b++) result[b] ??= result[b - 1];
         return result;
     }
 }

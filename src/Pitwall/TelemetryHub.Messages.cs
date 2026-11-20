@@ -127,7 +127,7 @@ public sealed partial class TelemetryHub
                 {
                     string? note = null;
                     try { note = node["note"]?.GetValue<string>(); } catch { }
-                    AddMarker(note);
+                    AddMarker(note, SessionMarker.ViaButton);
                     return null;
                 }
                 case "resetExtremes":
@@ -152,16 +152,17 @@ public sealed partial class TelemetryHub
     /// <summary>
     /// 1.2: grava um marcador. Em jogo: na sessão aberta (markers) e no CSV (coluna marker); fora: só o CSV atual, o
     /// broadcast e o aviso. Pode ser chamado de qualquer thread (salva o sessions.json: não chamar na thread da interface).
+    /// <paramref name="via"/> = <see cref="SessionMarker.ViaHotkey"/> (atalho) ou <see cref="SessionMarker.ViaButton"/> (addMarker).
     /// </summary>
-    public MarkerEvent AddMarker(string? note)
+    public MarkerEvent AddMarker(string? note, string? via = null)
     {
         note = string.IsNullOrWhiteSpace(note) ? null : note.Trim()[..Math.Min(note.Trim().Length, 200)];
         var at = DateTime.Now;
         var exe = CurrentGame?.Exe;
-        var index = _sessions.AddMarker(at, note) ?? Interlocked.Increment(ref _pcMarkers);
+        var index = _sessions.AddMarker(at, note, via) ?? Interlocked.Increment(ref _pcMarkers);
         _log.MarkNext();
         var ev = new MarkerEvent(index, at, _sessions.Open != null ? exe : null, note);
-        _ws.Broadcast(JsonSerializer.Serialize(new { type = "marker", index, at, exe = ev.Exe }, ConfigStore.Json));
+        _ws.Broadcast(JsonSerializer.Serialize(new { type = "marker", index, at, exe = ev.Exe, via }, ConfigStore.Json));
         MarkerAdded?.Invoke(ev);
         return ev;
     }

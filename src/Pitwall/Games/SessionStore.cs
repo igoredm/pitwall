@@ -65,6 +65,11 @@ public sealed class SessionMarker
     public double T { get; set; }
     public DateTime At { get; set; }
     public string? Note { get; set; }
+    /// <summary>De onde veio: <see cref="ViaHotkey"/> ou <see cref="ViaButton"/> (addMarker). Ausente nos marcadores antigos.</summary>
+    public string? Via { get; set; }
+
+    public const string ViaHotkey = "hotkey";
+    public const string ViaButton = "button";
 }
 
 /// <summary>1.2: marcador gravado (TelemetryHub.MarkerAdded). <paramref name="Exe"/> = jogo da sessão aberta; null fora de jogo.</summary>
@@ -148,12 +153,12 @@ public sealed class SessionStore
     }
 
     /// <summary>1.2: acrescenta um marcador à sessão aberta e salva. Retorna o número dele (1, 2, …) ou null fora de jogo.</summary>
-    public int? AddMarker(DateTime at, string? note)
+    public int? AddMarker(DateTime at, string? note, string? via = null)
     {
         lock (_gate)
         {
             if (_open == null) return null;
-            var m = new SessionMarker { T = Math.Round(Math.Max(0, (at - _open.Start).TotalSeconds), 1), At = at, Note = note };
+            var m = new SessionMarker { T = Math.Round(Math.Max(0, (at - _open.Start).TotalSeconds), 1), At = at, Note = note, Via = via };
             _open.Markers = [.. _open.Markers ?? [], m];
             Save();
             return _open.Markers.Count;

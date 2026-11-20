@@ -618,7 +618,7 @@ temperatura sempre em °C; nomes no idioma do app; `game: null` fora de jogo. Gu
 **`GameSession` (sessions / sessionsPage / crashReport)** ganha, todos opcionais (sessões antigas não têm; `null` não vai):
 `avgGpuTemp, avgHotspot, avgGpuPower, avgGpuClock, avgGpuLoad, avgCpuTemp, avgCpuLoad` (média dos ticks da sessão com
 leitura; clock inteiro, o resto com 1 casa), `peakCpuTemp`, `stutters` (ausente com `features.stutters` desligado),
-`markers: [{ t, at, note? }]` (`t` = segundos desde `start`), `animErrorMs` (média do `fps.animError`, 2 casas),
+`markers: [{ t, at, note?, via? }]` (`t` = segundos desde `start`; `via` = `hotkey | button`), `animErrorMs` (média do `fps.animError`, 2 casas),
 `pcLatencyMs`, `gpu`, `cpu` (nomes no começo da sessão). Gravados junto com o resto (a cada ~30 s e no fim).
 ```json
 { "exe": "FC25.exe", "start": "2026-11-19T21:00:02-03:00", "end": "2026-11-19T22:31:40-03:00", "durationSec": 5498,
@@ -658,14 +658,16 @@ primeira linha gravada depois do marcador, vazio nas outras. As métricas novas 
 - Cliente → servidor: `{ "type": "addMarker", "note"?: string }` (nota com até 200 caracteres). Sem resposta direta.
 - Também pelo atalho `hotkeys.marker`. Em jogo: entra em `markers` da sessão aberta e marca o CSV; fora de jogo: marca o CSV
   atual, o broadcast e o aviso (o número conta desde que o app abriu). Evento `TelemetryHub.MarkerAdded` (para o buffer do PC).
-- Servidor → todos os clientes locais: `{ "type": "marker", "index": 3, "at": "2026-11-19T21:14:05-03:00", "exe": "FC25.exe" }`
-  (`exe` ausente fora de jogo). A bandeja mostra "Marcador 3 · 21:14:05" / "Marker 3 · 21:14:05".
+- Servidor → todos os clientes locais: `{ "type": "marker", "index": 3, "at": "2026-11-19T21:14:05-03:00", "exe": "FC25.exe", "via": "hotkey" }`
+  (`exe` ausente fora de jogo; `via` = `hotkey` pelo atalho, `button` pelo `addMarker`). A bandeja mostra "Marcador 3 · 21:14:05" / "Marker 3 · 21:14:05".
 
 **`getSessionSeries { start, points? }` → `sessionSeries`** (só para quem pediu). `start` = o `start` da sessão (ISO, tolerância
 de 1 s). Lê o CSV da sessão (`csvFile` na pasta de logs; sessão aberta sem `csvFile` ainda = CSV atual) em fluxo, até 50 MB,
 na thread do cliente do WebSocket (nunca na de telemetria). `points` 2–1000 (padrão 120); com menos linhas que pontos, um
 ponto por linha. Média por balde de tempo igual; balde sem leitura = `null`; série inteira vazia não vai. Colunas:
 `fps.current, fps.low1, gpu.temp, gpu.hotspot, gpu.power, gpu.clock, cpu.temp, cpu.load` (as que existirem).
+`fps.stutters` (só se a coluna existir e tiver leitura) é **acumulada**: cada balde leva a última contagem até o fim dele
+(engasgos desde o início da sessão), balde sem leitura repete o anterior, `null` antes da primeira leitura.
 ```json
 { "type": "sessionSeries", "start": "2026-11-19T21:00:02-03:00", "stepSec": 45.8, "available": true,
   "series": { "fps.current": [140.2, 143.9, null, 138.0], "gpu.temp": [65.1, 70.4, 71.0, 72.3] } }

@@ -405,6 +405,8 @@ export interface SessionMarker {
   /** ISO 8601. */
   at: string;
   note?: string;
+  /** De onde veio (ausente nos marcadores antigos). */
+  via?: 'hotkey' | 'button';
 }
 
 /** 1.2: séries do buffer do PC (pc-ring.json). */
@@ -520,6 +522,7 @@ export interface MarkerMessage {
   index: number;
   at: string;
   exe?: string;
+  via?: 'hotkey' | 'button';
 }
 
 /** 1.2: mín/máx desde que o app abriu (Monitor). Completo ao conectar; depois só as mudanças em snapshot.extremesApp. */
