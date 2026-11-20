@@ -73,7 +73,7 @@ public sealed class TrayApp : ApplicationContext
         // 1.2: atalhos globais (RegisterHotKey, sem hook de teclado) e aviso curto de cada marcador
         _hotkeys = new HotkeyService(
             () => Toggle(c => c.Widget.Visible = !c.Widget.Visible),
-            () => Task.Run(() => { try { _hub.AddMarker(null); } catch { } })); // salva o sessions.json: fora da thread da interface
+            () => Task.Run(() => { try { _hub.AddMarker(null, Games.SessionMarker.ViaHotkey); } catch { } })); // salva o sessions.json: fora da thread da interface
         _hotkeys.StatusChanged += (toggle, marker) => _hub.SetHotkeyStatus(toggle, marker);
         _hotkeys.Apply(config.Current.Hotkeys);
         config.Changed += _ => _ui.Post(_ => _hotkeys.Apply(_config.Current.Hotkeys), null);

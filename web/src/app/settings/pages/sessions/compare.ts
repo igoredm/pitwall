@@ -2,17 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { I18n } from '../../../i18n';
 import { GameSession, SessionSeries } from '../../../models';
 import { Icon } from '../../../ui/icon';
-import { fmtDuration } from '../../format';
-import { extent, minuteTicks, num, seriesPaths, shortDayTime, yTicks } from '../../reports';
-import { SeriesKey, crashed, durationSec, optionLabel, perMinute, secondsRed } from './session-util';
-
-type Better = 'higher' | 'lower' | null;
-interface Spec {
-  key: string;
-  get: (x: GameSession) => number | null | undefined;
-  better: Better;
-  fmt: (v: number) => string;
-}
+import { extent, minuteTicks, seriesPaths, shortDayTime, yTicks } from '../../reports';
+import { SeriesKey, compareRows, crashed, durationSec, optionLabel } from './session-util';
 
 const CHARTS: SeriesKey[] = ['fps.current', 'gpu.hotspot'];
 
@@ -314,40 +305,7 @@ export class SessionCompare {
     const a = this.a();
     const b = this.b();
     if (!a || !b) return null;
-    const int = (unit = '') => (v: number) => `${Math.round(v)}${unit ? ' ' + unit : ''}`;
-    const specs: Spec[] = [
-      { key: 'dur', get: (x) => durationSec(x), better: null, fmt: (v) => fmtDuration(v) },
-      { key: 'avgFps', get: (x) => x.avgFps, better: 'higher', fmt: int() },
-      { key: 'low1', get: (x) => x.low1, better: 'higher', fmt: int() },
-      { key: 'low01', get: (x) => x.low01, better: 'higher', fmt: int() },
-      { key: 'stutters', get: (x) => x.stutters, better: 'lower', fmt: int() },
-      { key: 'stuttersPm', get: (x) => perMinute(x), better: 'lower', fmt: (v) => num(v, 2, s) },
-      { key: 'peakHot', get: (x) => x.peakHotspot, better: 'lower', fmt: int('°C') },
-      { key: 'avgCore', get: (x) => x.avgGpuTemp, better: 'lower', fmt: int('°C') },
-      { key: 'avgPower', get: (x) => x.avgGpuPower, better: null, fmt: int('W') },
-      { key: 'avgClock', get: (x) => x.avgGpuClock, better: null, fmt: int('MHz') },
-      { key: 'red', get: (x) => secondsRed(x), better: 'lower', fmt: (v) => fmtDuration(v, true) },
-    ];
-    const rows = specs.flatMap((sp) => {
-      const va = sp.get(a);
-      const vb = sp.get(b);
-      if (va == null && vb == null) return [];
-      let delta = '—';
-      let tone: 'g' | 'r' | 'n' = 'n';
-      if (va != null && vb != null) {
-        const diff = va - vb;
-        const small = Math.abs(diff) < 0.02 * Math.max(Math.abs(vb), Math.abs(va)) || Math.abs(diff) < 1e-9;
-        const sign = diff > 0 ? '+' : '−';
-        const mag = sp.key === 'stuttersPm' ? num(Math.abs(diff), 2, s) : sp.fmt(Math.abs(diff));
-        if (sp.better == null) delta = Math.abs(diff) < 1e-9 || mag.startsWith('0 ') || mag === '0' ? s.rp.cmpSame : sign + mag;
-        else if (small) delta = s.rp.cmpSame;
-        else {
-          delta = sign + mag;
-          tone = (sp.better === 'higher' ? diff > 0 : diff < 0) ? 'g' : 'r';
-        }
-      }
-      return [{ key: sp.key, name: s.rp.cmpRows[sp.key], a: va == null ? '—' : sp.fmt(va), b: vb == null ? '—' : sp.fmt(vb), delta, tone }];
-    });
+    const rows = compareRows(a, b, s);
     return { aWhen: shortDayTime(a.start, s), bWhen: shortDayTime(b.start, s), rows };
   });
 

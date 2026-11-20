@@ -65,7 +65,7 @@ Formato dos atalhos: `Ctrl+Alt+Shift+Win+<tecla>` (tecla = A–Z, 0–9, F1–F2
 - `snapshot`/texts: `texts["fps.reason"]` = `FpsReason` quando não há FPS (ver tipos).
 - `pcReport`, `pcIncident`, `sessionSeries`, `marker`, `sensorDump`, `apiToken` — tipos em `models.ts`.
 - `GameSession` ganha: `avgGpuTemp, avgHotspot, avgGpuPower, avgGpuClock, avgGpuLoad, avgCpuTemp, avgCpuLoad, peakCpuTemp,
-  stutters, markers[{ t, at, note? }], animErrorMs?, pcLatencyMs?, endedByCrash?, incidentId?, gpu?, cpu?`.
+  stutters, markers[{ t, at, note?, via? }], animErrorMs?, pcLatencyMs?, endedByCrash?, incidentId?, gpu?, cpu?`.
 - Métricas novas no catálogo (desligadas no widget por padrão): `fps.stutters` (engasgos na sessão), `fps.animError`
   (ms, PresentMon 2.x `MsAnimationError`, média do |erro| em 1 s), `fps.pcLatency` (ms, `MsPCLatency`, se existir).
 

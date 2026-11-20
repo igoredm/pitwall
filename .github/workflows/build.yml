@@ -48,6 +48,10 @@ jobs:
         working-directory: web
         run: npm ci
 
+      - name: Frontend tests
+        working-directory: web
+        run: npm test
+
       - name: Third-party binaries (pinned + verified)
         shell: pwsh
         run: ./installer/fetch-deps.ps1

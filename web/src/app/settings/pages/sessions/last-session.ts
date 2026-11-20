@@ -6,7 +6,7 @@ import { Icon } from '../../../ui/icon';
 import { clock, dayTime, fmtDuration } from '../../format';
 import { extent, num } from '../../reports';
 import { SettingsCtx } from '../../settings-ctx';
-import { MarkerVia, crashed, durationSec, endTime, fmtPm, perMinute } from './session-util';
+import { crashed, durationSec, endTime, fmtPm, perMinute } from './session-util';
 import { Timeline } from './timeline';
 
 interface Cell {
@@ -279,7 +279,7 @@ export class LastSession {
     const s = this.s();
     const hk = (this.ctx.draft()?.hotkeys?.marker ?? 'Ctrl+Alt+M').split('+').join(' ');
     return (this.session().markers ?? []).map((m, i) => {
-      const via = (m as MarkerVia).via;
+      const via = m.via;
       return {
         n: i + 1,
         at: clock(new Date(m.at), s, true),

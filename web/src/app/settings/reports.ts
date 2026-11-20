@@ -136,7 +136,8 @@ export function yTicks(min: number, max: number, count = 4): { ticks: number[]; 
     min -= 1;
     max += 1;
   }
-  const steps = [1, 2, 2.5, 5, 10];
+  // 4 entra para 42–158 virar 40/80/120/160 (sem ele, o passo pulava para 100 e a escala ia a 0–300)
+  const steps = [1, 2, 2.5, 4, 5, 10];
   const raw = (max - min) / (count - 1);
   const mag = 10 ** Math.floor(Math.log10(raw));
   const fits = (st: number) => Math.floor(min / st) * st + st * (count - 1) >= max;
