@@ -2,7 +2,7 @@
 
 # Pitwall
 
-[English](README.md) · **Português**
+[English](README.md) · **Português** · **[pitwall.igoredm.com](https://pitwall.igoredm.com/)** — teste o widget no navegador
 
 Monitor de hardware para Windows que mostra um widget num monitor secundário — sem overlay e sem tocar no processo do jogo.
 Uma alternativa leve ao MSI Afterburner/RTSS: FPS, 1% / 0.1% low, frametime, temperaturas (incluindo hot spot e memory junction da GPU),
