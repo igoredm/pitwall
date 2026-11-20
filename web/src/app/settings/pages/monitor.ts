@@ -221,7 +221,7 @@ function sparkOf(vals: number[], warn: number | null | undefined, unit: string, 
       </div>
     </header>
 
-    <div class="grp strip" [class.r2]="nar" role="status">
+    <div class="grp strip" [class.r2]="nar" role="status" data-tour="monitor-strip">
       @for (c of strip(); track c.label) {
         <div>
           <div class="sl">{{ c.label }}</div>

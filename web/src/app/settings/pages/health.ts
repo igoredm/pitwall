@@ -27,7 +27,7 @@ import { PcReadings } from './health/readings';
     <pw-page-head page="health" [intro]="sx.rp.healthIntro" />
 
     <!-- ================================================= agora -->
-    <div class="grp now">
+    <div class="grp now" data-tour="pc-now">
       <div class="row tight">
         <i class="dot" [style.background]="on() ? 'var(--g)' : 'var(--tx3)'"></i>
         <div class="rl">
@@ -56,7 +56,7 @@ import { PcReadings } from './health/readings';
     </div>
 
     <!-- ================================================= última queda -->
-    <section class="sec first" data-anchor="latest">
+    <section class="sec first" data-anchor="latest" data-tour="pc-latest">
       <div class="sh"><h2>{{ sx.rp.latest }}</h2></div>
       @if (!r) {
         <div class="grp"><div class="row"><span class="cap">{{ sx.rp.loading }}</span></div></div>

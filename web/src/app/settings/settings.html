@@ -19,6 +19,7 @@
         @for (p of g.pages; track p) {
           <a
             class="st-ni"
+            [attr.data-nav]="p"
             [class.on]="nav.page() === p"
             [attr.aria-current]="nav.page() === p ? 'page' : null"
             [href]="nav.href(p)"
@@ -125,7 +126,7 @@
         <p class="pd">{{ sx.inviteBody }}</p>
         <ul class="st-topics">
           @for (tp of sx.inviteTopics; track $index) {
-            <li><pw-icon [name]="['widget', 'widget', 'metrics', 'games', 'gpu', 'devices', 'alerts', 'tray'][$index]" [size]="16" />{{ tp }}</li>
+            <li><pw-icon [name]="['widget', 'monitor', 'health', 'widget', 'metrics', 'sessions', 'gpu', 'key', 'tray'][$index]" [size]="16" />{{ tp }}</li>
           }
         </ul>
         <div class="st-iacts">

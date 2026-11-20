@@ -313,6 +313,23 @@ Lentes usadas: impeccable (modo *Operate*: escaneabilidade e consistência acima
 | V12-Assistente-UmMonitor | diálogo 880×600 | Passo 1 com um monitor só |
 | V12-Pecas | 1840×860 | Atalhos (capturando / em uso / inválido), Integrações (token mostrado uma vez), Ajuste da GPU sem NVIDIA, pico com unidade |
 
+### Tour (1.2.1)
+Substitui a tabela de 8 passos da v1.0. Cada passo destaca **duas** coisas, as duas recortadas do `--dim` e com o mesmo anel accent de 2 px: o **item da barra lateral** da página (onde fica, já no estado ativo) e o **alvo** na página (o quê). O título do balão vem com um chip "Grupo › Página" exatamente como na barra lateral (`--acs` + `--ac`, 11.5/700); sem página, "Bandeja do Windows" / "Windows tray". O balão nunca cobre a barra lateral. Alvo mais alto que 60% da janela: vale o próximo alvo da lista (o cabeçalho `.ph` é o último recurso, numa instalação nova sem quedas nem partidas); se só houver ele, mostra o começo e o anel termina antes do balão. Movimento igual à v1.0 (os dois anéis com o mesmo tempo). `config.tour.step` vai até 9; um passo salvo maior é limitado.
+
+| # | Barra lateral › alvo | PT | EN |
+|---|---|---|---|
+| 1 | Visão geral › miniatura do widget | **Este é o widget.** | **This is the widget.** |
+| 2 | PC › Monitor › faixa de estado | **Todos os sensores, ao vivo.** | **Every sensor, live.** |
+| 3 | PC › Relatório do PC › Última queda (ou "Agora") | **Se o PC desligar do nada.** | **If your PC shuts off out of nowhere.** |
+| 4 | Widget › Aparência e posição › Layout | **Um tamanho para cada tela.** | **A size for every screen.** |
+| 5 | Widget › Métricas › tabela | **A ordem é a prioridade.** | **Order is priority.** |
+| 6 | Jogo › Relatórios de jogo › Última partida (ou cabeçalho) | **Cada partida vira um relatório.** | **Every match becomes a report.** |
+| 7 | Jogo › Ajuste da GPU › switch | **Ajuste seguro da GPU.** | **Safe GPU tuning.** |
+| 8 | Pitwall › App e atualizações › Atalhos | **Atalhos de teclado.** | **Keyboard shortcuts.** |
+| 9 | (bandeja; réplica do menu) | **Tudo também pela bandeja.** → [Concluir] | **Everything from the tray too.** → [Finish] |
+
+Textos completos em `web/src/app/i18n.ts` › `tourSteps`.
+
 ### Navegação (sidebar)
 Novo grupo **PC** entre Visão geral e Widget: Monitor (ícone de pulso `M3 12h3.5l2.5-6 4 12 2.5-6H21`) e Relatório do PC (folha com pulso). "Sessões" vira **Relatórios de jogo** (ícone de eixo com linha: `M4 4.5v15h16` + `M7.5 15l3.5-4.5 3 2.5 4.5-6`). O ponto vermelho de incidente não visto (`catalog.pcPending`) sai de Sessões e vai para Relatório do PC. Versão na marca: 1.2.0. EN: grupo "PC", páginas "Monitor", "PC report", "Game reports".
 Com 12 itens, **abaixo de 720 px de altura** a sidebar fica justa (item 30 px, grupo com padding 10/8/3) e o bloco "Widget no monitor N" do rodapé some (o aviso de atualização fica).

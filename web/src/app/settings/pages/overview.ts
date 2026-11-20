@@ -115,10 +115,10 @@ interface NowRow {
             <div class="row">
               <div class="rl">
                 <div class="lb">{{ sx.tourCardTitle }}</div>
-                <div class="ht">{{ tc.step ? sx.tourCardSeen(tc.step) : sx.tourCardNew }}</div>
+                <div class="ht">{{ tc.step ? sx.tourCardSeen(tc.step, tourTotal) : sx.tourCardNew }}</div>
               </div>
               @if (tc.step) {
-                <span class="bar tbar" role="img" [attr.aria-label]="sx.tourOf(tc.step, 8)"><span [style.width.%]="(tc.step / 8) * 100" style="background: var(--ac)"></span></span>
+                <span class="bar tbar" role="img" [attr.aria-label]="sx.tourOf(tc.step, tourTotal)"><span [style.width.%]="(tc.step / tourTotal) * 100" style="background: var(--ac)"></span></span>
               }
               <button type="button" class="btn sm pri" (click)="ctx.startTour(true)">{{ tc.step ? sx.resumeTour : sx.startTour }}</button>
               <button type="button" class="btn qt sm" (click)="dismissTour()">{{ sx.dismiss }}</button>
@@ -343,6 +343,7 @@ export class OverviewPage {
     return rows;
   });
 
+  protected readonly tourTotal = TOUR_STEPS.length;
   /** "Primeiros passos" até concluir ou dispensar o tour. */
   protected readonly tourCard = computed(() => {
     const tour = this.ctx.draft()?.tour;

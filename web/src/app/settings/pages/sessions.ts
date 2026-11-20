@@ -32,7 +32,7 @@ const PAGE = 20;
 
     @if (d) {
       <!-- ================================================= última partida -->
-      <section class="sec first" data-anchor="last">
+      <section class="sec first" data-anchor="last" data-tour="game-last">
         @if (shown(); as x) {
           <pw-last-session [session]="x" [live]="isLive(x)" [latest]="isLatest(x)" [series]="lastSeries()" (share)="shareFor.set(x)" (seePc)="seePc($event)" />
         } @else {

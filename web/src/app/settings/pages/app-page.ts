@@ -71,7 +71,7 @@ const RATES = [250, 500, 1000, 2000];
         </div>
       </section>
 
-      <section class="sec" data-anchor="hotkeys">
+      <section class="sec" data-anchor="hotkeys" data-tour="hotkeys">
         <div class="sh"><h2>{{ sx.hkSec }}</h2></div>
         <div class="grp">
           <div class="row">

@@ -17,19 +17,24 @@ import { SettingsPage } from '../models';
 import { TelemetryService } from '../telemetry.service';
 import { Icon } from '../ui/icon';
 import { selectedMonitor } from './helpers';
-import { SettingsNav } from './nav';
+import { NAV, SettingsNav } from './nav';
 import { SettingsCtx } from './settings-ctx';
 import { UpdateNotice } from './update-notice';
 
-/** Os 8 passos (design-notes › Assistente + tour): página, âncora e alvo (o primeiro que existir na tela). */
+/**
+ * Os 9 passos (1.2): página, âncora e alvos. Vale o primeiro alvo que existir e caiba na tela (até 60% da altura);
+ * se nenhum couber, o primeiro que existir. O cabeçalho da página (.ph) é o último recurso: sempre existe, mesmo
+ * numa instalação nova (sem quedas, sem partidas).
+ */
 export const TOUR_STEPS: { page: SettingsPage | null; anchor?: string; targets: string[] }[] = [
   { page: 'overview', targets: ['[data-tour="widget-thumb"]'] },
+  { page: 'monitor', targets: ['[data-tour="monitor-strip"]', '.ph'] },
+  { page: 'health', targets: ['[data-tour="pc-latest"]', '[data-tour="pc-now"]', '.ph'] },
   { page: 'widget', anchor: 'layout', targets: ['[data-tour="layout"]'] },
   { page: 'metrics', anchor: 'gpu', targets: ['[data-tour="metrics-table"]'] },
-  { page: 'games', anchor: 'detection', targets: ['[data-tour="detection"]'] },
+  { page: 'sessions', targets: ['[data-tour="game-last"]', '.ph'] },
   { page: 'gpu', anchor: 'tuning', targets: ['[data-tour="gpu-switch"]', '.na'] },
-  { page: 'devices', anchor: 'pair', targets: ['[data-tour="pair"]', '[data-tour="remote"]'] },
-  { page: 'alerts', anchor: 'windows', targets: ['[data-tour="alerts-switch"]'] },
+  { page: 'app', anchor: 'hotkeys', targets: ['[data-tour="hotkeys"]'] },
   { page: null, targets: [] },
 ];
 const N = TOUR_STEPS.length;
@@ -46,7 +51,7 @@ export class TourService {
     return this.injector.get(SettingsCtx);
   }
   private readonly s = inject(I18n).s;
-  /** Passo na tela (1–8); 0 = tour fechado. */
+  /** Passo na tela (1–N); 0 = tour fechado. */
   readonly step = signal(0);
   readonly running = computed(() => this.step() > 0);
 
@@ -54,11 +59,12 @@ export class TourService {
   /** Quem tinha o foco antes do tour (ex.: "Começar tour"): volta para ele ao fechar ou concluir. */
   private returnFocus: HTMLElement | null = null;
 
-  start(resume = false) {
+  /** `at`: o passo exato (o Retomar do aviso volta para onde fechou, mesmo revendo um tour já concluído). */
+  start(resume = false, at?: number) {
     if (this.running()) return;
     this.returnFocus = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
     const saved = this.ctx.draft()?.tour;
-    const from = resume && saved && !saved.done && saved.step > 0 ? Math.min(saved.step, N) : 1;
+    const from = at ? Math.min(at, N) : resume && saved && !saved.done && saved.step > 0 ? Math.min(saved.step, N) : 1;
     this.go(from);
   }
 
@@ -78,7 +84,7 @@ export class TourService {
     this.step.set(0);
     this.restoreFocus();
     const s = this.s();
-    this.ctx.toast({ title: s.tourClosed(at), body: s.tourClosedHint, action: { label: s.resume, run: () => this.start(true) } });
+    this.ctx.toast({ title: s.tourClosed(at, N), body: s.tourClosedHint, action: { label: s.resume, run: () => this.start(true, at) } });
   }
 
   finish() {
@@ -116,8 +122,8 @@ interface Box {
 }
 
 /**
- * Coach marks sobre a UI real: anel accent de 2 px no alvo, o resto escurecido com --dim (box-shadow, sem blur) e o
- * balão de 348 px. O anel não voa entre alvos: some em 100 ms, a página troca e rola na hora, e anel + balão voltam
+ * Coach marks sobre a UI real: anel accent de 2 px no item da navegação (onde fica) e no alvo (o quê), o resto
+ * escurecido com --dim (SVG com os dois recortes, sem blur) e o balão de 348 px com "Grupo › Página". Os anéis não voam entre alvos: somem em 100 ms, a página troca e rola na hora, e anéis + balão voltam
  * em 160 ms (balão com translateY 4 px → 0).
  */
 @Component({
@@ -128,10 +134,12 @@ interface Box {
     @let sx = s();
     @if (tour.running()) {
       <div class="layer" [class.vis]="visible()" (pointerdown)="$event.preventDefault()">
-        @if (box(); as b) {
-          <div class="ring" [style.left.px]="b.x" [style.top.px]="b.y" [style.width.px]="b.w" [style.height.px]="b.h"></div>
-        } @else {
-          <div class="dim"></div>
+        <!-- Fundo escurecido com dois recortes: o item da navegação (onde fica) e o alvo na página (o quê) -->
+        <svg class="dim" aria-hidden="true">
+          <path class="fill" fill-rule="evenodd" [attr.d]="dimPath()" />
+        </svg>
+        @for (h of holes(); track $index) {
+          <div class="ring" [style.left.px]="h.x" [style.top.px]="h.y" [style.width.px]="h.w" [style.height.px]="h.h" [style.border-radius.px]="h.r"></div>
         }
         <div
           #coach
@@ -150,7 +158,7 @@ interface Box {
           @if (box() && pos().arrow; as a) {
             <span class="arrow" [class]="'arrow ' + a.side" [style.left.px]="a.at"></span>
           }
-          <h3 aria-live="polite">{{ title() }}</h3>
+          <h3 aria-live="polite"><span class="crumb">{{ crumb() }}</span>{{ title() }}</h3>
           <p id="tour-body">{{ body() }}</p>
           @if (shown() === total) {
             <div class="tray-wrap">
@@ -202,14 +210,30 @@ interface Box {
     }
     .ring {
       position: fixed;
-      border-radius: 10px;
-      box-shadow: 0 0 0 2px var(--ac), 0 0 0 9999px var(--dim);
+      box-shadow: 0 0 0 2px var(--ac);
       pointer-events: none;
     }
     .dim {
       position: fixed;
       inset: 0;
-      background: var(--dim);
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      .fill {
+        fill: var(--dim);
+      }
+    }
+    .crumb {
+      display: flex;
+      width: fit-content;
+      margin-bottom: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--acs);
+      color: var(--ac);
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0;
     }
     .coach {
       position: fixed;
@@ -351,12 +375,42 @@ export class Tour {
   protected readonly dots = Array.from({ length: N }, (_, i) => i + 1);
   protected readonly visible = signal(false);
   protected readonly box = signal<Box | null>(null);
+  /** Item da navegação da página do passo (anel "você está aqui"). */
+  protected readonly navBox = signal<Box | null>(null);
+  protected readonly holes = computed(() => {
+    const n = this.navBox();
+    const b = this.box();
+    return [...(n ? [{ ...n, r: 9 }] : []), ...(b ? [{ ...b, r: 10 }] : [])];
+  });
+  /** Tamanho da janela (medido junto com os anéis). */
+  private readonly vp = signal({ w: innerWidth, h: innerHeight });
+  /**
+   * Janela inteira menos os recortes (evenodd, sem máscara: url(#id) quebra com <base href>). O retângulo de fora tem o
+   * tamanho exato da janela: com coordenadas enormes o Chrome deixa de pintar o caminho.
+   */
+  protected readonly dimPath = computed(() => {
+    const hole = ({ x, y, w, h, r }: Box & { r: number }) =>
+      `M${x + r},${y}H${x + w - r}A${r},${r} 0 0 1 ${x + w},${y + r}V${y + h - r}A${r},${r} 0 0 1 ${x + w - r},${y + h}H${x + r}A${r},${r} 0 0 1 ${x},${y + h - r}V${y + r}A${r},${r} 0 0 1 ${x + r},${y}Z`;
+    const { w, h } = this.vp();
+    return `M0,0H${w}V${h}H0Z` + this.holes().map(hole).join('');
+  });
+  /** Borda direita da barra lateral: o balão nunca a cobre (o anel da navegação fica à vista). */
+  private readonly sideRight = signal(0);
   private readonly coachH = signal(180);
   private target: Element | null = null;
+  private navItem: Element | null = null;
   private seq = 0;
 
   /** Passo que o balão mostra: só troca quando o anel volta (o texto não muda durante o fade-out). */
   protected readonly shown = signal(0);
+  /** "PC › Relatório do PC": grupo e página exatamente como na barra lateral. */
+  protected readonly crumb = computed(() => {
+    const s = this.s();
+    const page = TOUR_STEPS[this.shown() - 1]?.page;
+    if (!page) return s.tourTrayCrumb;
+    const g = NAV.find((x) => x.pages.includes(page))?.group;
+    return g ? `${s.navGroups[g]} › ${s.pages[page]}` : s.pages[page];
+  });
   protected readonly title = computed(() => this.s().tourSteps[this.shown() - 1]?.[0] ?? '');
   protected readonly body = computed(() => {
     const m = selectedMonitor(this.t.catalog(), this.ctx.draft());
@@ -373,7 +427,8 @@ export class Tour {
     const h = this.coachH();
     if (!b) return { x: Math.round((vw - w) / 2), y: Math.round(Math.max(24, (vh - h) / 2)), arrow: null };
     const gap = 14;
-    const x = Math.round(Math.min(Math.max(16, b.x + b.w - w), vw - w - 16));
+    const minX = Math.max(16, this.sideRight() + 16);
+    const x = Math.round(Math.max(minX, Math.min(b.x + b.w - w, vw - w - 16)));
     let y: number;
     let side: 'up' | 'down' | null;
     if (b.y + b.h + gap + h <= vh - 16) {
@@ -414,6 +469,7 @@ export class Tour {
     if (!i) {
       this.visible.set(false);
       this.target = null;
+      this.navItem = null;
       return;
     }
     const wasVisible = this.visible();
@@ -434,11 +490,19 @@ export class Tour {
     requestAnimationFrame(() => {
       if (id !== this.seq) return;
       const main = document.querySelector('.pw-app main');
-      const el = sel.map((x) => main?.querySelector(x)).find((x) => !!x) ?? null;
-      if (!el && sel.length && tries < 20) return this.findTarget(sel, id, tries + 1, step);
+      const found = sel.map((x) => main?.querySelector(x)).filter((x): x is Element => !!x);
+      // Espera a página nova: sem nenhum alvo, até ~20 quadros; sem o principal (mas com um reserva), 3
+      const waitMain = sel.length > 0 && !main?.querySelector(sel[0]) && tries < 3;
+      if (sel.length && (!found.length || waitMain) && tries < 20) return this.findTarget(sel, id, tries + 1, step);
+      const fits = (x: Element) => x.getBoundingClientRect().height <= innerHeight * 0.6;
+      const el = found.find(fits) ?? found[0] ?? null;
+      const page = TOUR_STEPS[step - 1]?.page;
+      this.navItem = page ? document.querySelector(`.st-side [data-nav="${page}"]`) : null;
       this.target = el;
       this.shown.set(step);
-      el?.scrollIntoView({ block: 'center', behavior: 'instant' });
+      this.navItem?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+      // Alvo alto demais (ex.: a tabela de Métricas): mostra o começo dele, e o anel termina antes do balão
+      el?.scrollIntoView({ block: fits(el) ? 'center' : 'start', behavior: 'instant' });
       requestAnimationFrame(() => {
         if (id !== this.seq) return;
         this.measure();
@@ -454,15 +518,22 @@ export class Tour {
     if (!this.tour.running()) return;
     const c = this.coach()?.nativeElement;
     if (c) this.coachH.set(c.offsetHeight);
-    if (!this.target || !this.target.isConnected) {
-      this.box.set(null);
-      return;
-    }
-    const r = this.target.getBoundingClientRect();
-    const pad = 4;
+    this.vp.set({ w: innerWidth, h: innerHeight });
+    this.sideRight.set(document.querySelector('.st-side')?.getBoundingClientRect().right ?? 0);
+    this.navBox.set(this.navItem?.isConnected ? this.rect(this.navItem, 3) : null);
+    const b = this.target?.isConnected ? this.rect(this.target, 4) : null;
+    // Sem espaço acima nem abaixo: corta o anel na parte de cima do alvo para o balão caber embaixo sem cobri-lo
+    const h = this.coachH();
+    if (b && b.y + b.h + 14 + h > innerHeight - 16 && b.y - 14 - h < 16) b.h = Math.max(60, innerHeight - 30 - h - b.y);
+    this.box.set(b);
+  }
+
+  /** Caixa do anel: o elemento com folga, cortado na parte visível da janela. */
+  private rect(el: Element, pad: number): Box {
+    const r = el.getBoundingClientRect();
     const top = Math.max(r.top - pad, 8);
     const bottom = Math.min(r.bottom + pad, innerHeight - 8);
-    this.box.set({ x: Math.round(r.left - pad), y: Math.round(top), w: Math.round(r.width + pad * 2), h: Math.round(Math.max(24, bottom - top)) });
+    return { x: Math.round(r.left - pad), y: Math.round(top), w: Math.round(r.width + pad * 2), h: Math.round(Math.max(24, bottom - top)) };
   }
 
   /** → / Enter avança, ← volta, Esc fecha (sem animação extra: é teclado). */
