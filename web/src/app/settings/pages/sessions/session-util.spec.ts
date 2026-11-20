@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { DICTS } from '../../../i18n';
-import type { GameSession } from '../../../models';
-import { compareRows, crashed, durationSec, endTime, gameName, perMinute, sameStart, secondsRed } from './session-util';
+import type { Catalog, GameSession } from '../../../models';
+import { compareRows, crashed, durationSec, endTime, gameName, perMinute, redCaption, sameStart, secondsRed } from './session-util';
 
 const pt = DICTS['pt-BR'];
 const session = (x: Partial<GameSession> = {}): GameSession => ({ exe: 'FC25.exe', start: '2026-11-19T21:00:00', ...x });
@@ -19,6 +19,15 @@ describe('helpers', () => {
     expect(perMinute(session({ stutters: 12, durationSec: 1200 }))).toBe(0.6);
     expect(perMinute(session({ durationSec: 1200 }))).toBeNull(); // não contado
     expect(perMinute(session({ stutters: 3 }))).toBeNull(); // sem duração
+  });
+
+  test('redCaption: a métrica que mais ficou acima do limite crítico, com o limite e +N', () => {
+    const lim = new Map([['gpu.hotspot', { id: 'gpu.hotspot', enabled: true, order: 0, sparkline: false, crit: 100 }]]);
+    const cat = { metrics: [{ id: 'gpu.temp', group: 'gpu', name: 'Núcleo', unit: '°C', isTemperature: true, available: true, defaultCrit: 87.5 }] } as unknown as Catalog;
+    expect(redCaption(session({ secondsAboveCrit: { 'gpu.temp': 12, 'gpu.hotspot': 40 } }), pt, lim, cat)).toBe('hot spot ≥ 100 °C +1');
+    expect(redCaption(session({ secondsAboveCrit: { 'gpu.temp': 12 } }), pt, new Map(), cat)).toBe('GPU núcleo ≥ 87,5 °C');
+    expect(redCaption(session({ secondsAboveCrit: { 'gpu.hotspot': 0 } }), pt, lim, null)).toBeNull();
+    expect(redCaption(session({ secondsAboveCrit: { 'x.y': 3 } }), pt, new Map(), null)).toBe('x.y');
   });
 
   test('secondsRed: maior tempo no vermelho', () => {

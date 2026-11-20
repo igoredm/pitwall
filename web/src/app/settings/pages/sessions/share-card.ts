@@ -3,7 +3,7 @@ import { Catalog, GameSession, MetricSetting } from '../../../models';
 import { level } from '../../../widget/metric-views';
 import { fmtDuration } from '../../format';
 import { extent } from '../../reports';
-import { durationSec, fmtPm, gameName, hardwareLine, perMinute, secondsRed } from './session-util';
+import { durationSec, fmtPm, gameName, hardwareLine, perMinute, redCaption, secondsRed } from './session-util';
 
 /**
  * Card PNG 1200×630 (design-notes › v1.2 › 4, frame V12-Card-Compartilhar): sempre escuro, hex fixos (nunca os
@@ -29,8 +29,11 @@ export interface ShareData {
   stutters: number | null;
   perMin: string | null;
   peaks: { key: 'hot' | 'core' | 'power'; text: string; alert: boolean }[];
+  /** Tempo acima do limite crítico (a métrica que mais ficou). */
   red: string | null;
   redOn: boolean;
+  /** "hot spot ≥ 100 °C" (+N se outras também passaram). */
+  redCap: string | null;
   fps: (number | null)[] | null;
   version: string;
 }
@@ -66,9 +69,15 @@ export function shareData(x: GameSession, s: Dict, cat: Catalog | null, settings
     peaks,
     red: red ? fmtDuration(red, true) : null,
     redOn: !!red,
+    redCap: red ? redCaption(x, s, settings, cat) : null,
     fps: fps && extent(fps) ? fps : null,
     version: cat?.version ?? cat?.about?.app ?? '',
   };
+}
+
+/** "Acima do limite crítico definido: 48 s (hot spot ≥ 100 °C)"; '' sem tempo. */
+function redLine(v: ShareData, s: Dict): string {
+  return v.red ? `${s.rp.tRed}: ${v.red}${v.redCap ? ` (${v.redCap})` : ''}` : '';
 }
 
 /** Texto simples (funciona em qualquer lugar). */
@@ -81,7 +90,7 @@ export function shareText(v: ShareData, s: Dict): string {
     fps,
     v.stutters != null && v.perMin ? s.rp.tStutters(v.stutters, v.perMin) : '',
     v.peaks.length ? `${s.rp.tPeaks}: ${v.peaks.map((p) => `${peakName[p.key]} ${p.text}`).join(' · ')}` : '',
-    v.red ? `${s.rp.tRed}: ${v.red}` : '',
+    redLine(v, s),
     `Pitwall ${v.version}`.trim(),
   ]
     .filter(Boolean)
@@ -101,7 +110,7 @@ export function shareMarkdown(v: ShareData, s: Dict): string {
   if (v.hw) out.push(v.hw);
   if (cols.length) out.push('', `| ${cols.map((c) => c[0]).join(' | ')} |`, `|${cols.map(() => '---:').join('|')}|`, `| ${cols.map((c) => c[1]).join(' | ')} |`, '');
   if (v.peaks.length) out.push(`${s.rp.tPeaks}: ${v.peaks.map((p, i) => `${peakName[p.key]} ${i === 0 ? `**${p.text}**` : p.text}`).join(' · ')}`);
-  out.push([v.red ? `${s.rp.tRed}: ${v.red}` : '', `*Pitwall ${v.version}*`].filter(Boolean).join(' · '));
+  out.push([redLine(v, s), `*Pitwall ${v.version}*`].filter(Boolean).join(' · '));
   return out.join('\n');
 }
 
@@ -208,14 +217,13 @@ export async function drawCard(canvas: HTMLCanvasElement, v: ShareData, s: Dict)
     x += Math.max(wv, wl) + 32;
   }
 
-  // Direita (300 px): Picos e No vermelho, com divisores
+  // Direita (300 px): Picos e, por último, o tempo acima do limite crítico, com divisores
   const rows: { label: string; value: string; red: boolean }[] = v.peaks.map((p) => ({
     label: p.key === 'hot' ? s.rp.cardHot : p.key === 'core' ? s.rp.cardCore : s.rp.cardPower,
     value: p.text,
     red: p.alert,
   }));
-  if (v.red) rows.push({ label: s.rp.cardRed, value: v.red, red: v.redOn });
-  if (rows.length) {
+  if (rows.length || v.red) {
     font(700, 15);
     text(s.rp.cardPeaks, 844, base(126, 15, 21), C.tx3);
     rows.forEach((r, i) => {
@@ -229,6 +237,23 @@ export async function drawCard(canvas: HTMLCanvasElement, v: ShareData, s: Dict)
       text(r.value, 1144, 202 + i * 66, r.red ? C.red : C.tx, 'right');
       ctx.letterSpacing = '0px';
     });
+    // O rótulo é longo ("Acima do limite crítico definido"): linha inteira em cima; embaixo a métrica (tx3) e o tempo
+    if (v.red) {
+      const top = 157 + rows.length * 66;
+      ctx.fillStyle = C.hair;
+      ctx.fillRect(844, top, 300, 1);
+      font(600, 17);
+      text(fit(ctx, s.rp.cardRed, 300), 844, top + 29, C.tx2);
+      font(700, 30);
+      ctx.letterSpacing = '-0.3px';
+      const wv = ctx.measureText(v.red).width;
+      text(v.red, 1144, top + 66, v.redOn ? C.red : C.tx, 'right');
+      ctx.letterSpacing = '0px';
+      if (v.redCap) {
+        font(600, 15);
+        text(fit(ctx, v.redCap, 300 - wv - 16), 844, top + 66, C.tx3);
+      }
+    }
   }
 
   // Base: linha do FPS da partida (104 px, área 10%) e o rodapé

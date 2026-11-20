@@ -48,6 +48,7 @@ describe('relatório de jogo (Compartilhar)', () => {
     expect(lines).toContain('RTX 3080 · i5-12600K · 32 GB');
     expect(lines).toContain(`${en.rp.avgFps} 141 · ${en.rp.low1} 88`);
     expect(lines).toContain(en.rp.tStutters(17, '0.2'));
+    expect(lines).toContain('Above your critical limit: 1 min 15 s (hot spot ≥ 100 °C)');
     expect(lines.at(-1)).toBe('Pitwall 1.2.0');
     expect(lines.join('\n')).not.toContain('**');
   });
@@ -59,7 +60,8 @@ describe('relatório de jogo (Compartilhar)', () => {
     expect(md).toContain('|---:|---:|---:|');
     expect(md).toContain('| 141 | 88 | 17 |');
     expect(md).toContain(`${pt.rp.tPeaks}: ${pt.rp.tHot} **102 °C** · ${pt.rp.tCore} 78 °C`);
-    expect(md.at(-1)).toBe(`${pt.rp.tRed}: 1 min 15 s · *Pitwall 1.2.0*`);
+    expect(md.at(-1)).toBe(`${pt.rp.tRed}: 1 min 15 s (hot spot ≥ 100 °C) · *Pitwall 1.2.0*`);
+    expect(pt.rp.tRed).toBe('Acima do limite crítico definido');
   });
 });
 

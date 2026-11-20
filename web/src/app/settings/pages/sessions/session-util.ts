@@ -1,6 +1,6 @@
 import type { Dict } from '../../../i18n';
-import { Catalog, GameSession, SessionSeries } from '../../../models';
-import { shortCpu, shortGpu } from '../../../widget/metric-views';
+import { Catalog, GameSession, MetricSetting, SessionSeries } from '../../../models';
+import { shortCpu, shortGpu, unitLabel } from '../../../widget/metric-views';
 import { fmtDuration } from '../../format';
 import { num, shortDayTime } from '../../reports';
 
@@ -32,13 +32,43 @@ export function fmtPm(v: number, s: Dict, digits = 1): string {
   return num(v, digits, s);
 }
 
-/** Maior tempo no vermelho entre as métricas (s). */
+/** Maior tempo acima do limite crítico (vermelho) entre as métricas (s). */
 export function secondsRed(x: GameSession): number | null {
   const crit = x.secondsAboveCrit;
   if (!crit) return x.secondsAboveWarn ? 0 : null;
   const vals = Object.values(crit);
   return vals.length ? Math.max(...vals) : 0;
 }
+
+/**
+ * Legenda do "Acima do limite crítico definido": a métrica que mais tempo ficou no limite vermelho, com o limite
+ * ("hot spot ≥ 100 °C"), e "+N" quando outras também passaram. Limite = o do usuário (config.metrics), senão o padrão
+ * do catálogo; sem limite conhecido, só o nome. null = nenhuma métrica passou.
+ */
+export function redCaption(x: GameSession, s: Dict, settings: Map<string, MetricSetting>, cat: Catalog | null): string | null {
+  const list = Object.entries(x.secondsAboveCrit ?? {})
+    .filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1]);
+  if (!list.length) return null;
+  const [id] = list[0];
+  const def = cat?.metrics?.find((m) => m.id === id);
+  const name = s.rp.redNames[id] ?? def?.name ?? id;
+  const crit = settings.get(id)?.crit ?? def?.defaultCrit;
+  // Limites ficam sempre em °C (o card e os textos também)
+  const unit = def ? unitLabel(def) : (RED_UNITS[id] ?? '');
+  const lim = crit != null ? ` ≥ ${num(crit, Number.isInteger(crit) ? 0 : 1, s)}${unit ? ' ' + unit : ''}` : '';
+  return `${name}${lim}${list.length > 1 ? ` +${list.length - 1}` : ''}`;
+}
+
+/** Unidade sem o catálogo (demo, testes): as métricas com limite mais comuns. */
+const RED_UNITS: Record<string, string> = {
+  'gpu.temp': '°C',
+  'gpu.hotspot': '°C',
+  'gpu.hotspotDelta': '°C',
+  'gpu.memjunction': '°C',
+  'cpu.temp': '°C',
+  'gpu.power': 'W',
+};
 
 /** Terminou numa queda: marcado pelo backend, ou (sessão antiga) sem fim e não está aberta. */
 export function crashed(x: GameSession, live: boolean): boolean {
