@@ -24,13 +24,13 @@ import { evKey, evSource, evTime } from '../../reports';
   styles: `
     :host {
       display: grid;
-      grid-template-columns: 96px minmax(0, 1.1fr) minmax(0, 1.6fr);
+      grid-template-columns: 108px minmax(0, 1.1fr) minmax(0, 1.6fr);
       gap: 16px;
       padding: 10px 16px;
       align-items: start;
     }
     :host(.near) {
-      grid-template-columns: 86px minmax(0, 1.1fr) minmax(0, 1.6fr);
+      grid-template-columns: 104px minmax(0, 1.1fr) minmax(0, 1.6fr);
     }
     :host + :host {
       border-top: 1px solid var(--hair);
@@ -63,7 +63,7 @@ import { evKey, evSource, evTime } from '../../reports';
     @container (max-width: 560px) {
       :host,
       :host(.near) {
-        grid-template-columns: 86px minmax(0, 1fr);
+        grid-template-columns: 104px minmax(0, 1fr);
       }
       .evm {
         grid-column: 2;

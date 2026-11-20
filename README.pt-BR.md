@@ -10,20 +10,27 @@ clocks, consumo, RAM, bateria de mouse/headset sem fio, log CSV por sessão de j
 
 - **Seguro para anti-cheat:** o FPS vem do PresentMon (eventos ETW do Windows); nada é injetado no jogo.
 - **Leve:** ~0,3% de CPU no app + ~1,3% no WebView2, ~50–80 MB.
-- **5 temas** (Lumen, Mínimo, Neon, Terminal, Splash), claro/escuro, e 3 layouts (completo, médio, compacto).
+- **5 temas** (Lumen, Mínimo, Neon, Terminal, Splash), claro/escuro, e 5 layouts (completo, médio, compacto, além de
+  **faixa** para telas ultrawide em barra e **mini** para telinhas de 5–8").
+- **Monitor:** todos os sensores ao vivo, com gráfico recente, mínimo/máximo e o motivo quando um sensor não tem leitura.
+- **Relatório do PC:** quando o PC desliga ou dá tela azul, os últimos 2 minutos de leituras e os eventos do Windows daquela hora.
+- **Relatórios de jogo:** cada partida com FPS, engasgos, marcadores e temperaturas; compare duas partidas ou compartilhe um card PNG.
+- **Atalhos** (mostrar/esconder o widget, marcar momento) e uma API só leitura para o **Home Assistant**.
 - **Idiomas:** português e inglês (segue o Windows, ou escolha nas configurações).
 Spec: [docs/spec.md](docs/spec.md) · Design: [docs/design-notes.md](docs/design-notes.md)
 
 ## Capturas de tela
 
-![Widget, layout completo, tema Lumen escuro](docs/screenshots/widget-full-lumen-dark.png)
-![Widget, layout completo, tema Splash](docs/screenshots/widget-full-splash.png)
+![Widget, layout completo, tema Lumen escuro, valores de demonstração ao vivo](docs/screenshots/widget.gif)
 
-<img src="docs/screenshots/settings-overview.png" width="620" alt="Configurações: Visão geral com a prévia do widget e o que o Pitwall está fazendo agora"> <img src="docs/screenshots/pair-phone.png" width="200" alt="Parear o celular digitando o código de 6 dígitos">
+| | |
+|---|---|
+| ![Monitor: todos os sensores ao vivo com gráfico, mínimo e máximo](docs/screenshots/settings-monitor.png) | ![Relatório do PC: os 2 minutos antes do PC desligar, com os eventos do Windows](docs/screenshots/settings-pc-report.png) |
+| ![Relatório de jogo: a partida inteira com marcadores e engasgos](docs/screenshots/settings-game-report.png) | ![Comparando duas partidas lado a lado](docs/screenshots/settings-compare.png) |
+| ![Card de compartilhar: PNG 1200×630 de uma partida](docs/screenshots/share-card.png) | ![Configurações: Visão geral com a prévia do widget](docs/screenshots/settings-overview.png) |
+| ![Widget, layout faixa para telas ultrawide em barra](docs/screenshots/widget-strip-lumen-dark.png) | ![Widget, layout mini para telinhas](docs/screenshots/widget-mini-lumen-dark.png) |
 
-![Tour da primeira execução: destaque no layout do widget](docs/screenshots/tour.png)
-
-Mais em [docs/screenshots](docs/screenshots) (todos os temas do widget, layouts médio e compacto, Configurações no claro e no escuro, a tela de parear da TV).
+Mais em [docs/screenshots](docs/screenshots) (todos os temas do widget, layouts médio e compacto, Configurações no claro e no escuro, parear celular e TV, o tour da primeira execução).
 
 ## É seguro?
 

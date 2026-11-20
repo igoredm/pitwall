@@ -158,9 +158,9 @@ interface Cell {
       font-size: 12px;
       color: var(--tx2);
       margin-top: 1px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      /* quebra em vez de cortar: em inglês "the game doesn't send it" não cabe na célula de 1/6 */
+      line-height: 1.35;
+      overflow-wrap: anywhere;
       display: block;
       min-height: 17px;
     }

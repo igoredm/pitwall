@@ -390,13 +390,16 @@ function sparkOf(vals: number[], warn: number | null | undefined, unit: string, 
       }
     }
     .ss {
-      display: block;
       font-size: 12px;
       color: var(--tx2);
       margin-top: 1px;
-      white-space: nowrap;
+      line-height: 1.35;
+      /* o motivo do FPS ("Precisa abrir como administrador") é a informação: até 2 linhas antes da reticência */
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
       overflow: hidden;
-      text-overflow: ellipsis;
     }
     .sl2 {
       display: block;
@@ -454,7 +457,7 @@ function sparkOf(vals: number[], warn: number | null | undefined, unit: string, 
       padding: 0 14px;
       min-height: 44px;
       &.w1 {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 96px 104px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 96px 132px;
       }
       &.one {
         display: flex;
@@ -478,10 +481,17 @@ function sparkOf(vals: number[], warn: number | null | undefined, unit: string, 
     .sn {
       font-size: 13.5px;
       font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
       min-width: 0;
+      /* em 2 colunas (1200) a coluna do nome tem ~130 px: "980 PRO · temperatura" quebra em 2 linhas em vez de
+         virar "980 PRO · tempera…"; a reticência fica só para o que não cabe em 2 */
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      padding: 4px 0;
     }
     .off .sn {
       color: var(--tx2);

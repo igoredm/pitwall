@@ -192,7 +192,7 @@ import { PcReadings } from './health/readings';
       container-type: inline-size;
     }
     .hcols {
-      grid-template-columns: 104px minmax(0, 1fr) 92px 150px 210px 20px;
+      grid-template-columns: 112px minmax(0, 1fr) 92px 150px 200px 20px;
     }
     .hrow {
       width: 100%;
@@ -233,7 +233,7 @@ import { PcReadings } from './health/readings';
     }
     @container (max-width: 700px) {
       .hcols {
-        grid-template-columns: 96px minmax(0, 1fr) 120px 150px 16px;
+        grid-template-columns: 112px minmax(0, 1fr) 120px 150px 16px;
         gap: 10px;
       }
       .c-up {

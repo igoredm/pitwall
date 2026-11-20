@@ -1374,6 +1374,15 @@ header {
 .t-splash .layout.strip .card { --name-size: 20; }
 .st-wide .layout.strip > .s-fps { flex-basis: calc(340 * var(--u0)); }
 .st-wide .s-aside { flex-basis: u(190); }
+// faixa larga (2560×720): com a 5ª coluna, CPU e RAM voltavam a cortar o nome ("Ryzen 7 5800…", "Mem…")
+.st-wide .layout.strip {
+  > .card-cpu { min-width: u(300); }
+  > .card-ram { min-width: u(245); }
+}
+.t-splash.st-wide .layout.strip {
+  > .card-cpu { min-width: u(338); }
+  > .card-ram { min-width: u(250); }
+}
 .s-fpsrow {
   position: relative;
   display: flex;
@@ -1428,6 +1437,13 @@ header {
 .t-minimo .layout.strip {
   > .card, > .s-aside { border-left: 1px solid var(--hair); padding-left: u(22); }
 }
+// Terminal na faixa: o card da CPU é estreito para tag + nome + máx + gráfico + valor numa linha; o gráfico sai
+// (o nome não pode virar "p…") e o cabeçalho corta com reticências em vez de sumir com o uso
+.t-terminal .layout.strip .card-cpu .spark { display: none; }
+// no Terminal o tile é uma linha com divisor tracejado, sem fundo: o recuo lateral do tile da faixa só roubava largura
+.t-terminal .layout.strip .tile { padding-inline: 0; }
+.t-terminal .layout.strip .card-cpu .term-head > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.t-terminal .layout.strip .card-cpu .term-head > span:last-child { flex-shrink: 0; }
 .t-neon .s-clock { letter-spacing: 0; font-size: f(36); }
 .t-terminal .s-clock { color: var(--accent); letter-spacing: 0; font-size: f(38); }
 
