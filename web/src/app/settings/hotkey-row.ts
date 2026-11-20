@@ -1,20 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { I18n } from '../i18n';
 import { HotkeyState } from '../models';
-
-const MODS: Record<string, string> = { Control: 'Ctrl', Alt: 'Alt', Shift: 'Shift', Meta: 'Win', OS: 'Win' };
-
-/** Tecla aceita pelo backend (A–Z, 0–9, F1–F24) a partir do KeyboardEvent.code; null = não vale. */
-function keyOf(code: string): string | null {
-  if (/^Key[A-Z]$/.test(code)) return code.slice(3);
-  if (/^Digit[0-9]$/.test(code)) return code.slice(5);
-  if (/^F([1-9]|1[0-9]|2[0-4])$/.test(code)) return code;
-  return null;
-}
-
-function heldMods(e: KeyboardEvent): string[] {
-  return [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Win'].filter(Boolean) as string[];
-}
+import { MODS, comboOf, heldMods, hotkeyParts, sameHotkey } from './hotkey';
 
 /**
  * 1.2 · App › Atalhos: uma linha com o atalho em teclas, [Alterar] e a captura ("Pressione as teclas…"). Esc cancela,
@@ -129,13 +116,13 @@ export class HotkeyRow {
   protected readonly invalid = signal(false);
   private readonly box = viewChild<ElementRef<HTMLElement>>('box');
 
-  protected readonly parts = computed(() => (this.value() ? this.value().split('+') : []));
+  protected readonly parts = computed(() => hotkeyParts(this.value()));
 
   protected readonly hint = computed<{ text: string; color?: string }>(() => {
     const s = this.s();
     if (this.capturing()) return { text: this.invalid() ? s.hkInvalid : s.hkCaptureHint, color: this.invalid() ? 'var(--y)' : undefined };
     if (this.disabled() || !this.value()) return { text: '' };
-    if (this.other() && this.other().toLowerCase() === this.value().toLowerCase()) return { text: s.hkSame, color: 'var(--r)' };
+    if (sameHotkey(this.other(), this.value())) return { text: s.hkSame, color: 'var(--r)' };
     if (this.status() === 'inUse') return { text: s.hkInUseHint(this.parts().join(' + ')), color: 'var(--r)' };
     if (this.status() === 'invalid') return { text: s.hkInvalid, color: 'var(--y)' };
     return { text: '' };
@@ -165,13 +152,13 @@ export class HotkeyRow {
     }
     if (!mods.length && e.key === 'Escape') return this.cancel();
     if (!mods.length && e.key === 'Backspace') return this.finish('');
-    const key = keyOf(e.code);
     // Letras e números precisam de um modificador; F1–F24 podem ir sozinhas
-    if (!key || (!mods.length && !key.startsWith('F'))) {
+    const combo = comboOf(mods, e.code);
+    if (combo == null) {
       this.invalid.set(true);
       return;
     }
-    this.finish([...mods, key].join('+'));
+    this.finish(combo);
   }
 
   protected up(e: KeyboardEvent) {

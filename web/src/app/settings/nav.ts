@@ -32,7 +32,7 @@ export const LEGACY: Record<string, [SettingsPage, string?]> = {
 };
 
 /** 1.2: âncoras que mudaram de página (o relatório de queda saiu de Sessões: sessions/crash → health/latest). */
-function remap(page: SettingsPage, anchor: string | null): { page: SettingsPage; anchor: string | null } {
+export function remap(page: SettingsPage, anchor: string | null): { page: SettingsPage; anchor: string | null } {
   return page === 'sessions' && anchor === 'crash' ? { page: 'health', anchor: 'latest' } : { page, anchor };
 }
 

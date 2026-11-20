@@ -1362,7 +1362,8 @@ const en: Dict = {
   ...reportsEn,
 };
 
-const DICTS: Record<Lang, Dict> = { 'pt-BR': ptBR, en };
+/** Exportado para os testes (npm test); a página usa I18n.s. */
+export const DICTS: Record<Lang, Dict> = { 'pt-BR': ptBR, en };
 
 /** Nomes dos idiomas no próprio idioma (o seletor não muda de texto ao trocar). */
 export const LANGUAGES: { id: Lang; name: string }[] = [
