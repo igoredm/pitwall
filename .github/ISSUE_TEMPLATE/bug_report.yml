@@ -50,19 +50,20 @@ body:
   - type: textarea
     id: sensors
     attributes:
-      label: Dump de sensores · Sensor dump
+      label: Lista de sensores · Sensor list (opcional · optional)
       description: |
-        **Obrigatório para problemas de sensor, temperatura, GPU ou métrica faltando.**
-        Clique com o botão direito no ícone da bandeja → **Listar sensores detectados…** (abre `%APPDATA%\Pitwall\sensores.txt`
-        no Bloco de Notas) e cole o conteúdo aqui, ou arraste o arquivo. Pela linha de comando:
+        **Ajuda muito em problemas de sensor, temperatura, GPU ou métrica faltando.**
+        No Pitwall: **App › Ajuda › Copiar lista de sensores** e cole aqui (1.2 ou mais nova). Versões antigas: botão direito
+        no ícone da bandeja → **Listar sensores detectados…** (abre `%APPDATA%\Pitwall\sensores.txt`), ou
         `"C:\Program Files\Pitwall\Pitwall.exe" --dump-sensors C:\temp\sensores.txt` (como administrador).
 
-        **Required for sensor, temperature, GPU or missing-metric issues.**
-        Right-click the tray icon → **List detected sensors…** (opens `%APPDATA%\Pitwall\sensores.txt` in Notepad) and paste it
-        here, or drag the file in. From the command line:
+        **Very helpful for sensor, temperature, GPU or missing-metric issues.**
+        In Pitwall: **App › Help › Copy sensor list** and paste it here (1.2 or newer). Older versions: right-click the tray
+        icon → **List detected sensors…** (opens `%APPDATA%\Pitwall\sensores.txt`), or
         `"C:\Program Files\Pitwall\Pitwall.exe" --dump-sensors C:\temp\sensors.txt` (as administrator).
 
-        O dump lista nomes de hardware e leituras; revise antes de colar. · The dump lists hardware names and readings; review it before pasting.
+        A lista traz nomes de hardware e leituras, sem nome do PC, usuário, pastas ou números de série. ·
+        The list has hardware names and readings, without machine name, user name, folders or serial numbers.
       render: text
 
   - type: textarea

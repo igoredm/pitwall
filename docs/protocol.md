@@ -501,3 +501,82 @@ Os cinco campos sempre vêm: `string` com a versão ou `null` explícito (compon
   (os últimos dados gravados, úteis depois de um desligamento abrupto); sem CSV, abre a pasta.
 - Bandeja: "Resumo da última sessão…", "Abrir últimos dados gravados (CSV)" e, quando há relatório de queda pendente,
   "Relatório da queda (últimos 60 s)…".
+
+## 10. 1.2
+
+### 10.3 Sensores, lista de sensores e Home Assistant
+
+**Sensor sem leitura, com o motivo.** Cada `MetricDef` do `catalog` com `available: false` ganha:
+- `missing`: `notExposed | needsNvidia | needsPawnIO | needsAdmin | noDevice | needsPresentMon | off`;
+- `missingText`: frase pronta no idioma do backend (ex.: "A NVIDIA tirou o sensor de hot spot nas RTX 50: nenhum programa consegue ler.").
+
+A regra é pura (`Metrics/MissingReasons.cs`, entrada = id + fabricante/nome da GPU, PawnIO, admin, PresentMon, aparelho):
+
+| Caso | `missing` |
+|---|---|
+| `fps.*` sem `tools\PresentMon.exe` | `needsPresentMon` |
+| `fps.*` sem administrador (ETW) | `needsAdmin` |
+| `gpu.perfcap` em GPU que não é NVIDIA | `needsNvidia` |
+| `gpu.hotspot` / `gpu.hotspotDelta` em RTX 50xx | `notExposed` (texto da RTX 50) |
+| `gpu.*` / `gpu2.*` em AMD/Intel sem o sensor no LHM | `notExposed` (texto cita a marca) |
+| `gpu.*` sem GPU; `gpu2.*` sem segunda GPU; `disk*`/`net.*` sumidos | `noDevice` |
+| `cpu.temp`, `cpu.power`, `cpu.clockAvg`, `cpu.<núcleo>.temp/.clock`, `ram.dimm*`, `mb.*` sem PawnIO | `needsPawnIO` |
+| os mesmos com PawnIO mas sem administrador | `needsAdmin` |
+| `battery.*` sem aparelho / leitura de bateria desligada | `noDevice` / `off` |
+| resto | `notExposed` |
+
+**Lista de sensores** (cliente → servidor, só no socket local):
+```json
+{ "type": "getSensorDump" }
+→ { "type": "sensorDump", "text": "# Pitwall · lista de sensores · sensor list\napp: 1.2.0\n..." }
+```
+Texto simples para colar numa issue (a bandeja "Listar sensores detectados…" e `Pitwall.exe --dump-sensors` usam o mesmo):
+cabeçalho `chave: valor` (`app`, `windows`, `gpuDriver`, `gpu`, `gpuVendor`, `gpu2`, `gpu2Vendor`, `gpuOrder`, `pawnIO`,
+`admin`, `presentMon`, `generated`), depois `== Hardware ==` com cada hardware (`[Tipo] Nome | identificador`, subhardware com
+2 espaços a mais) e sensor (`Tipo | Nome | valor | mín | máx | identificador`, `-` = sem leitura, ponto decimal),
+`== Mapeamento · Mapping ==` (`id <- hardware / tipo / sensor (identificador)`) e `== Sem leitura · Missing ==`
+(`id | motivo | texto`). Sem nome do PC, usuário, caminhos, GUIDs, MACs ou números de série (`SensorDumpText.Scrub`); filtros
+de rede `…-0000` ficam de fora. Montado na thread do socket (não no tick): só o hardware que o tick não atualiza é lido.
+O formato é o dos fixtures em `tests/Pitwall.Tests/Fixtures/` — uma lista de uma issue pode ser jogada lá como está.
+
+**Token de API** (só no socket local; o socket da rede ignora mensagens do cliente):
+```json
+{ "type": "createApiToken", "name": "Home Assistant" }
+→ broadcast { "type": "devices", ... }   // a lista já com o aparelho novo
+→ { "type": "apiToken", "token": "<43 caracteres base64url>",
+    "device": { "id": "a1b2c3d4e5f60718", "name": "Home Assistant", "created": "...", "kind": "integration", "online": false } }
+```
+256 bits aleatórios; só o SHA-256 fica em `remote.pairedDevices` (`kind: "integration"`); o token só aparece nessa resposta.
+Até 10 tokens de integração (passou disso → `{ type: "error", message }`). Revogar = `revokeDevice { id }` (o mesmo dos
+celulares). `lastSeen` atualiza no máximo 1x/min quando o token é usado.
+
+**API de leitura** (servidor da rede, porta `remote.port`, padrão 48124):
+`GET /api/v1/state` com `Authorization: Bearer <token>`. Só existe com `remote.enabled && remote.apiEnabled` (senão 404).
+
+| Situação | Status |
+|---|---|
+| API desligada | 404 |
+| método ≠ GET | 405 |
+| IP bloqueado (mesmo `AttemptLimiter` do pareamento: 5 erros/min → 5 min) | 429 + `Retry-After` |
+| sem token, malformado, errado, revogado ou de celular/TV | 401 + `WWW-Authenticate: Bearer` (conta 1 erro para o IP) |
+| ok | 200 `application/json` |
+
+Sempre `Cache-Control: no-store`, sem cabeçalhos CORS. Comparação dos hashes em tempo constante. Token de integração **não**
+abre o WebSocket `/ws` (o `auth` responde `invalidToken`) e token de celular **não** vale na API.
+```json
+{
+  "version": "1.2.0",
+  "time": "2026-11-19T21:14:05-03:00",
+  "game": { "exe": "cyberpunk2077.exe" },
+  "values": {
+    "gpu.temp":    { "name": "GPU · Núcleo",   "value": 61.2,  "unit": "°C" },
+    "gpu.hotspot": { "name": "GPU · Hot spot", "value": 74.5,  "unit": "°C" },
+    "gpu.power":   { "name": "GPU · Consumo",  "value": 286.4, "unit": "W" },
+    "cpu.temp":    { "name": "CPU · Package",  "value": 58,    "unit": "°C" },
+    "fps.current": { "name": "FPS · FPS",      "value": 141.3, "unit": "fps" },
+    "gpu.perfcap": { "name": "GPU · Motivo de limitação do clock", "value": "power", "unit": "text" }
+  }
+}
+```
+`values` = métricas disponíveis do último snapshot (nenhuma leitura extra de sensor), `value: null` = sem leitura agora;
+temperatura sempre em °C; nomes no idioma do app; `game: null` fora de jogo. Guia: [home-assistant.md](home-assistant.md).

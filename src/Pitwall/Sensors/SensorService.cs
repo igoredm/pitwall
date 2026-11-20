@@ -30,6 +30,9 @@ public sealed partial class SensorService : IDisposable
     public string? GpuName { get; private set; }
     public string? Gpu2Name { get; private set; }
     public string? GpuIdentifier { get; private set; }
+    /// <summary>nvidia | amd | intel | null.</summary>
+    public string? GpuVendor { get; private set; }
+    public string? Gpu2Vendor { get; private set; }
 
     /// <summary>Métricas que dependem do hardware detectado (por núcleo etc.).</summary>
     public IReadOnlyList<MetricDefinition> DynamicDefinitions => _dynamic;
@@ -54,18 +57,7 @@ public sealed partial class SensorService : IDisposable
     /// <summary>IDs de métricas com sensor real (ou derivadas cujas fontes existem).</summary>
     public HashSet<string> AvailableIds()
     {
-        var ids = _map.Keys.ToHashSet();
-        ids.UnionWith(_coreLoads.Keys);
-        if (_nics.Count > 0) { ids.Add("net.up"); ids.Add("net.down"); }
-        if (ids.Contains("gpu.temp") && ids.Contains("gpu.hotspot")) ids.Add("gpu.hotspotDelta");
-        if (ids.Contains("ram.used") && _map.ContainsKey("ram.available")) ids.Add("ram.total");
-        if (_coreClocks.Count > 0) ids.Add("cpu.clockAvg");
-        if (_map.ContainsKey("gpu.vramUsedMb")) ids.Add("gpu.vramUsed");
-        if (_map.ContainsKey("gpu.vramUsedMb") && _map.ContainsKey("gpu.vramTotalMb")) ids.Add("gpu.vramLoad");
-        ids.Remove("gpu.vramUsedMb");
-        ids.Remove("gpu.vramTotalMb");
-        ids.Remove("ram.available");
-        return ids;
+        return SensorMapping.Available(_map.Keys.Concat(_coreLoads.Keys), _coreClocks.Count > 0, _nics.Count > 0);
     }
 
     readonly Lock _gate = new();
@@ -145,9 +137,7 @@ public sealed partial class SensorService : IDisposable
         if (cpu != null)
         {
             CpuName = cpu.Name;
-            Map("cpu.load", cpu, SensorType.Load, "CPU Total");
-            Map("cpu.temp", cpu, SensorType.Temperature, "CPU Package", "Core (Tctl/Tdie)", "Core Max");
-            Map("cpu.power", cpu, SensorType.Power, "CPU Package", "Package");
+            MapRole(HardwareRole.Cpu, cpu);
 
             var cores = new List<(string Key, string Label)>();
             foreach (var s in cpu.Sensors.Where(s => s.SensorType == SensorType.Temperature).OrderBy(s => s.Index))
@@ -194,27 +184,16 @@ public sealed partial class SensorService : IDisposable
             var g = ordered[0];
             GpuName = g.Name;
             GpuIdentifier = g.Identifier.ToString();
-            Map("gpu.load", g, SensorType.Load, "GPU Core", "D3D 3D");
-            Map("gpu.temp", g, SensorType.Temperature, "GPU Core");
-            Map("gpu.hotspot", g, SensorType.Temperature, "GPU Hot Spot", "GPU Hotspot");
-            Map("gpu.memjunction", g, SensorType.Temperature, "GPU Memory Junction", "GPU Memory");
-            Map("gpu.clock", g, SensorType.Clock, "GPU Core");
-            Map("gpu.memclock", g, SensorType.Clock, "GPU Memory");
-            Map("gpu.power", g, SensorType.Power, "GPU Package", "GPU Board Power", "GPU Power");
-            Map("gpu.powerLimit", g, SensorType.Load, "GPU Power", "GPU Board Power");
-            Map("gpu.vramUsedMb", g, SensorType.SmallData, "GPU Memory Used", "D3D Dedicated Memory Used");
-            Map("gpu.vramTotalMb", g, SensorType.SmallData, "GPU Memory Total", "D3D Dedicated Memory Total");
-            Map("gpu.fan", g, SensorType.Control, "GPU Fan 1", "GPU Fan");
-            Map("gpu.fanRpm", g, SensorType.Fan, "GPU Fan 1", "GPU Fan");
-            Map("gpu.voltage", g, SensorType.Voltage, "GPU Core Voltage", "GPU Core");
+            GpuVendor = SensorMapping.Vendor(g.HardwareType);
+            MapRole(HardwareRole.Gpu, g);
             _toUpdate.Add((g, 1));
         }
         if (ordered.Count > 1)
         {
             var g2 = ordered[1];
             Gpu2Name = g2.Name;
-            Map("gpu2.load", g2, SensorType.Load, "GPU Core", "D3D 3D");
-            Map("gpu2.temp", g2, SensorType.Temperature, "GPU Core");
+            Gpu2Vendor = SensorMapping.Vendor(g2.HardwareType);
+            MapRole(HardwareRole.Gpu2, g2);
             _toUpdate.Add((g2, 1));
         }
 
@@ -222,15 +201,13 @@ public sealed partial class SensorService : IDisposable
         var ram = all.FirstOrDefault(h => h.HardwareType == HardwareType.Memory && h.Identifier.ToString() == "/ram");
         if (ram != null)
         {
-            Map("ram.load", ram, SensorType.Load, "Memory");
-            Map("ram.used", ram, SensorType.Data, "Memory Used");
-            Map("ram.available", ram, SensorType.Data, "Memory Available");
+            MapRole(HardwareRole.Ram, ram);
             _toUpdate.Add((ram, 2));
         }
         var vram = all.FirstOrDefault(h => h.HardwareType == HardwareType.Memory && h.Identifier.ToString() == "/vram");
         if (vram != null)
         {
-            Map("ram.virtualLoad", vram, SensorType.Load, "Memory");
+            MapRole(HardwareRole.VirtualRam, vram);
             _toUpdate.Add((vram, 4));
         }
         // Temperatura dos pentes (SPD) — "DIMM #n"
@@ -342,12 +319,14 @@ public sealed partial class SensorService : IDisposable
         _dynamic.Add(new MetricDefinition(id, group, name, unit, false, warn, crit));
     }
 
-    void Map(string id, IHardware hw, SensorType type, params string[] names)
+    /// <summary>Aplica as regras fixas (<see cref="SensorMapping.Rules"/>) do papel ao hardware.</summary>
+    void MapRole(HardwareRole role, IHardware hw)
     {
-        foreach (var name in names)
+        var sensors = hw.Sensors.Select(s => (s.SensorType, s.Name)).ToList();
+        foreach (var rule in SensorMapping.For(role))
         {
-            var s = hw.Sensors.FirstOrDefault(x => x.SensorType == type && string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
-            if (s != null) { _map[id] = s; return; }
+            if (SensorMapping.Pick(rule, sensors) is not { } name) continue;
+            _map[rule.Id] = hw.Sensors.First(s => s.SensorType == rule.Type && s.Name == name);
         }
     }
 
@@ -361,36 +340,61 @@ public sealed partial class SensorService : IDisposable
     }
 
     /// <summary>Lista todos os sensores expostos pelo LibreHardwareMonitor neste PC.</summary>
-    public string Dump()
+    public string Dump() => SensorDumpText.Write(DumpData(
+    [
+        ("app", typeof(SensorService).Assembly.GetName().Version?.ToString(3) ?? "-"),
+        ("windows", SystemInfo.WindowsVersion()),
+        ("gpuDriver", SystemInfo.GpuDriver(GpuName) ?? "-"),
+    ]));
+
+    /// <summary>
+    /// Todos os sensores com valor/mín/máx e o mapeamento métrica → sensor. Chamar fora da thread de telemetria:
+    /// o hardware que o tick já atualiza não é relido; só o que está parado (discos, placa-mãe, rede desligados) é
+    /// atualizado aqui, uma vez, com o tick esperando no lock.
+    /// </summary>
+    /// <param name="header">Linhas do cabeçalho que vêm antes das da GPU (app, Windows, driver...).</param>
+    public SensorDumpData DumpData(IEnumerable<(string Key, string Value)>? header = null)
     {
-        lock (_gate) return DumpCore();
+        var d = new SensorDumpData();
+        foreach (var (k, v) in header ?? []) d.Header[k] = v;
+        d.Header["gpu"] = GpuName ?? "-";
+        d.Header["gpuVendor"] = GpuVendor ?? "-";
+        d.Header["gpu2"] = Gpu2Name ?? "-";
+        d.Header["gpu2Vendor"] = Gpu2Vendor ?? "-";
+        try
+        {
+            var order = GpuOrdering.Describe().Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            d.Header["gpuOrder"] = order.Length > 0 ? string.Join("; ", order) : "-";
+        }
+        catch { }
+        lock (_gate)
+        {
+            var fresh = _toUpdate.Select(t => t.Hardware).Concat(_activeOptional.Select(t => t.Hardware)).ToHashSet();
+            if (_netActive) fresh.UnionWith(_nics.Select(n => n.Hardware));
+            foreach (var hw in _computer.Hardware.SelectMany(h => h.SubHardware.Prepend(h)))
+                if (!fresh.Contains(hw))
+                    try { hw.Update(); } catch { }
+            foreach (var hw in _computer.Hardware) DumpHardware(d, hw, 0);
+
+            foreach (var (id, s) in _map.OrderBy(k => k.Key, StringComparer.Ordinal))
+                d.Mapping.Add(new DumpMapping(id, $"{s.Hardware.Name} / {s.SensorType} / {s.Name} ({s.Identifier})"));
+            foreach (var (id, loads) in _coreLoads.OrderBy(k => k.Key, StringComparer.Ordinal))
+                d.Mapping.Add(new DumpMapping(id, $"{loads[0].Hardware.Name} / Load / {string.Join(" + ", loads.Select(l => l.Name))}"));
+            foreach (var id in new[] { "gpu.hotspotDelta", "ram.total", "cpu.clockAvg", "gpu.vramLoad", "net.up", "net.down" })
+                if (AvailableIds().Contains(id) && SourceOf(id) is { } src) d.Mapping.Add(new DumpMapping(id, src));
+        }
+        return d;
     }
 
-    string DumpCore()
+    static void DumpHardware(SensorDumpData d, IHardware hw, int depth)
     {
-        UpdateHardware(_computer.Hardware);
-        var sb = new StringBuilder();
-        sb.AppendLine($"Pitwall sensor dump — {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-        sb.AppendLine($"GPU principal: {GpuName ?? "-"} ({GpuIdentifier ?? "-"}) · GPU 2: {Gpu2Name ?? "-"}");
-        sb.AppendLine();
-        foreach (var hw in _computer.Hardware) DumpHardware(sb, hw, 0);
-        sb.AppendLine();
-        sb.AppendLine("Mapeamento:");
-        foreach (var (id, s) in _map.OrderBy(k => k.Key))
-            sb.AppendLine($"  {id,-22} <- {s.Hardware.Name} / {s.SensorType} / {s.Name}");
-        sb.AppendLine();
-        sb.AppendLine("Ordem das GPUs:");
-        sb.AppendLine(GpuOrdering.Describe());
-        return sb.ToString();
-    }
-
-    static void DumpHardware(StringBuilder sb, IHardware hw, int depth)
-    {
-        var pad = new string(' ', depth * 2);
-        sb.AppendLine($"{pad}[{hw.HardwareType}] {hw.Name}  ({hw.Identifier})");
-        foreach (var s in hw.Sensors.OrderBy(s => s.SensorType).ThenBy(s => s.Index))
-            sb.AppendLine($"{pad}  {s.SensorType,-12} {s.Name,-36} {(s.Value is { } v ? v.ToString("0.##") : "null"),10}   {s.Identifier}");
-        foreach (var sub in hw.SubHardware) DumpHardware(sb, sub, depth + 1);
+        // Filtros/drivers intermediários de rede ("…-0000"): só ruído (e dizem que antivírus/VPN o PC tem)
+        if (hw.HardwareType == HardwareType.Network && hw.Name.EndsWith("-0000")) return;
+        d.Hardware.Add(new DumpHardware(hw.HardwareType.ToString(), hw.Name, hw.Identifier.ToString(), depth,
+            hw.Sensors.OrderBy(s => s.SensorType).ThenBy(s => s.Index)
+                .Select(s => new DumpSensor(s.SensorType.ToString(), s.Name, s.Identifier.ToString(), s.Value, s.Min, s.Max))
+                .ToList()));
+        foreach (var sub in hw.SubHardware) DumpHardware(d, sub, depth + 1);
     }
 
     public void Dispose() => _computer.Close();

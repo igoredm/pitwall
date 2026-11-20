@@ -34,6 +34,28 @@ What it does **not** do:
 - The local WebSocket (`localhost:48123`) only accepts connections with a per-run random token and the app's own origin.
 - The CSV log folder cannot be pointed at system or network folders.
 
+### LAN view and Home Assistant API (off by default)
+
+The optional LAN server (port 48124, "View on phone or TV") is separate from the local control socket and **read-only**.
+Since 1.2 it can also serve `GET /api/v1/state` for Home Assistant, only when both `remote.enabled` and
+`remote.apiEnabled` are on (otherwise 404).
+
+- Tokens are 256-bit random values; only their SHA-256 is stored, compared in constant time. API tokens are created only
+  from the local settings page (`createApiToken`), never from the network, and shown once.
+- **Token separation (decision):** integration tokens (`kind: "integration"`) are accepted **only** on the API and are
+  rejected by the LAN WebSocket view; phone/TV tokens are **not** accepted on the API. A Home Assistant token sits in a
+  plain config file and a phone token sits in browser storage, so each one only grants what its client needs, and revoking
+  one never breaks the other.
+- Wrong or missing tokens count toward the same per-IP limit as pairing (5 failures/min → 5-minute block, then 429).
+- Responses carry `Cache-Control: no-store` and no CORS headers (other web pages can't read them, and the `Authorization`
+  header doesn't survive a cross-origin preflight). The Host header must be an IP or this PC's name (DNS-rebinding defense).
+- Plain HTTP on the LAN: don't forward the port to the internet. Guide: [docs/home-assistant.md](docs/home-assistant.md).
+
+### Sensor list (bug reports)
+
+"Copy sensor list" produces plain text with hardware names and readings. Machine name, user name, file paths, GUIDs, MAC
+addresses and anything that looks like a serial number are removed before it leaves the app.
+
 ### Updater
 
 Because the app is elevated, the updater is treated as the most sensitive part. It only talks to GitHub hosts over HTTPS,
@@ -61,3 +83,11 @@ sem injetar nada no jogo), aplicar o ajuste opcional da GPU via NVML e criar a t
 Não há telemetria; a única conexão de saída é a verificação de atualização no GitHub (sem dados do usuário) e, com o seu
 consentimento, o download do instalador, que é verificado por SHA-256 e assinatura antes de rodar
 (ver [docs/updater.md](docs/updater.md)).
+
+**Rede local e Home Assistant (desligados por padrão).** O servidor da rede (porta 48124) é somente leitura. A API
+`GET /api/v1/state` só responde com `remote.enabled` e `remote.apiEnabled` ligados; o token (256 bits, guardado só como
+SHA-256) é criado apenas pela tela local e mostrado uma vez. **Decisão:** token de integração só vale na API e não abre a
+visualização (WebSocket); token de celular/TV não vale na API. Tokens errados entram no mesmo limite por IP do pareamento.
+Sem CORS, `Cache-Control: no-store`. Não exponha a porta para a internet. Guia: [docs/home-assistant.md](docs/home-assistant.md).
+
+A lista de sensores (para issues) sai sem nome do PC, usuário, caminhos, GUIDs, MACs e números de série.
