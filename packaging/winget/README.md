@@ -4,50 +4,50 @@ Manifestos do pacote `igoredm.Pitwall` para o [winget-pkgs](https://github.com/m
 pasta do repositório (`manifests/i/igoredm/Pitwall/<versão>/`). Schema **1.28.0** (a versão documentada em
 `doc/manifest/schema/` do winget-pkgs e a que o komac/wingetcreate geram hoje).
 
-**Status:** `1.0.1` pronto e validado (`winget validate`), **ainda não enviado**. Enviar é decisão do dono do repositório.
+**Status:** PR [microsoft/winget-pkgs#484115](https://github.com/microsoft/winget-pkgs/pull/484115) aberto com a `1.2.1` (validado com `winget validate`). Aguarda o CLA do dono e a revisão de um moderador.
 
-| Arquivo (`manifests/i/igoredm/Pitwall/1.0.1/`) | Conteúdo |
+| Arquivo (`manifests/i/igoredm/Pitwall/1.2.1/`) | Conteúdo |
 |---|---|
 | `igoredm.Pitwall.yaml` | versão (`ManifestType: version`), locale padrão `en-US` |
 | `igoredm.Pitwall.installer.yaml` | Inno, x64, escopo máquina, `elevationRequired`, URL + SHA-256 da release, `ProductCode` |
 | `igoredm.Pitwall.locale.en-US.yaml` | locale padrão: nome, descrição, tags, licença, links, `Moniker: pitwall` |
 | `igoredm.Pitwall.locale.pt-BR.yaml` | tradução pt-BR (o `Moniker` só existe no locale padrão) |
 
-## Enviar a 1.0.1
+## Enviar a 1.2.1
 
-Pré-requisitos: a release `v1.0.1` publicada (não rascunho, não pré-lançamento) e o hash conferido. Na 1.0.1 o
+Pré-requisitos: a release `v1.2.1` publicada (não rascunho, não pré-lançamento) e o hash conferido. Na 1.2.1 o
 `InstallerSha256` já foi conferido contra o `SHA256SUMS.txt`, o `digest` do asset na API do GitHub e `winget hash` do
 arquivo baixado (`AC026FF0…4A16CB`).
 
 1. Valide (não precisa de admin):
    ```powershell
-   winget validate --manifest packaging\winget\manifests\i\igoredm\Pitwall\1.0.1
+   winget validate --manifest packaging\winget\manifests\i\igoredm\Pitwall\1.2.1
    ```
 2. (Opcional) Teste a instalação **só no Windows Sandbox ou numa VM**, nunca na máquina onde o Pitwall já está
    instalado e rodando. O winget-pkgs tem um script para isso:
    ```powershell
    # no clone/fork do winget-pkgs, com o recurso "Windows Sandbox" habilitado
-   .\Tools\SandboxTest.ps1 -Manifest <caminho>\packaging\winget\manifests\i\igoredm\Pitwall\1.0.1
+   .\Tools\SandboxTest.ps1 -Manifest <caminho>\packaging\winget\manifests\i\igoredm\Pitwall\1.2.1
    ```
    (Fora do Sandbox, `winget install --manifest` exige `winget settings --enable LocalManifestFiles` como admin.)
 3. Envie, de **um** destes jeitos:
    - **wingetcreate** (mais simples; cria o fork e o PR sozinho):
      ```powershell
      winget install Microsoft.WingetCreate
-     wingetcreate submit --token <PAT> --prtitle "New package: igoredm.Pitwall version 1.0.1" `
-       packaging\winget\manifests\i\igoredm\Pitwall\1.0.1
+     wingetcreate submit --token <PAT> --prtitle "New package: igoredm.Pitwall version 1.2.1" `
+       packaging\winget\manifests\i\igoredm\Pitwall\1.2.1
      ```
      O PAT é um token clássico do GitHub com escopo `public_repo`.
    - **Manual** (fork + PR):
      ```powershell
      gh repo fork microsoft/winget-pkgs --clone; cd winget-pkgs
-     git switch -c igoredm.Pitwall-1.0.1
-     New-Item -ItemType Directory -Force manifests\i\igoredm\Pitwall\1.0.1
-     Copy-Item <Pitwall>\packaging\winget\manifests\i\igoredm\Pitwall\1.0.1\* manifests\i\igoredm\Pitwall\1.0.1\
-     git add manifests\i\igoredm\Pitwall\1.0.1
-     git commit -m "New package: igoredm.Pitwall version 1.0.1"
-     git push -u origin igoredm.Pitwall-1.0.1
-     gh pr create -R microsoft/winget-pkgs --title "New package: igoredm.Pitwall version 1.0.1" --fill
+     git switch -c igoredm.Pitwall-1.2.1
+     New-Item -ItemType Directory -Force manifests\i\igoredm\Pitwall\1.2.1
+     Copy-Item <Pitwall>\packaging\winget\manifests\i\igoredm\Pitwall\1.2.1\* manifests\i\igoredm\Pitwall\1.2.1\
+     git add manifests\i\igoredm\Pitwall\1.2.1
+     git commit -m "New package: igoredm.Pitwall version 1.2.1"
+     git push -u origin igoredm.Pitwall-1.2.1
+     gh pr create -R microsoft/winget-pkgs --title "New package: igoredm.Pitwall version 1.2.1" --fill
      ```
      Um pacote/versão por PR; preencha o checklist do template do PR.
 4. No primeiro PR, assine o CLA da Microsoft quando o bot pedir (`Needs-CLA` bloqueia o merge). Depois os bots validam o
@@ -86,7 +86,7 @@ arquivo baixado (`AC026FF0…4A16CB`).
 
 ## Versões seguintes
 
-Depois que a 1.0.1 for aceita, as próximas versões só precisam de URL e hash novos; o `wingetcreate` reaproveita os
+Depois que a 1.2.1 for aceita, as próximas versões só precisam de URL e hash novos; o `wingetcreate` reaproveita os
 manifestos já publicados:
 
 ```powershell
