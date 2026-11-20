@@ -46,6 +46,8 @@ public sealed class GpuTuner : IDisposable
     string? _lastError;
 
     public TuningCaps Caps { get; }
+    /// <summary>1.2: versão do driver NVIDIA (catálogo › hardware.gpuDriver); null sem NVML.</summary>
+    public string? DriverVersion { get; }
 
     public GpuTuner(string? gpuName)
     {
@@ -57,6 +59,7 @@ public sealed class GpuTuner : IDisposable
                 return;
             }
             _initialized = true;
+            try { DriverVersion = Nvml.DriverVersion(); } catch { }
             Nvml.GetCount(out var count);
             for (uint i = 0; i < count; i++)
             {

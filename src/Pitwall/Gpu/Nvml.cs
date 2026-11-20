@@ -34,6 +34,15 @@ internal static partial class Nvml
     [LibraryImport(Dll, EntryPoint = "nvmlDeviceGetCurrentClocksEventReasons")] public static partial int GetClocksEventReasons(IntPtr device, out ulong reasons);
     [LibraryImport(Dll, EntryPoint = "nvmlDeviceGetCurrentClocksThrottleReasons")] public static partial int GetClocksThrottleReasons(IntPtr device, out ulong reasons);
 
+    [LibraryImport(Dll, EntryPoint = "nvmlSystemGetDriverVersion")] private static partial int GetDriverVersionRaw([Out] byte[] version, uint length);
+
+    /// <summary>1.2: versão do driver (ex.: "581.57"); null se o NVML não responder.</summary>
+    public static string? DriverVersion()
+    {
+        var buf = new byte[80];
+        return GetDriverVersionRaw(buf, (uint)buf.Length) == Success ? Encoding.ASCII.GetString(buf).TrimEnd('\0') : null;
+    }
+
     public static string Name(IntPtr device)
     {
         var buf = new byte[96];

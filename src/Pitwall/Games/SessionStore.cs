@@ -31,9 +31,40 @@ public sealed class GameSession
     /// sessão. Ausente sem NVML ou com features.clockReason desligado. Base do "Por que o clock caiu".
     /// </summary>
     public Dictionary<string, double>? ClockReasonSec { get; set; }
+    // 1.2: médias (por tick), engasgos, marcadores e hardware. Opcionais: sessões antigas não têm.
+    public double? AvgGpuTemp { get; set; }
+    public double? AvgHotspot { get; set; }
+    public double? AvgGpuPower { get; set; }
+    public double? AvgGpuClock { get; set; }
+    public double? AvgGpuLoad { get; set; }
+    public double? AvgCpuTemp { get; set; }
+    public double? AvgCpuLoad { get; set; }
+    public double? PeakCpuTemp { get; set; }
+    /// <summary>Engasgos (docs/v12-contract.md › Engasgo). null = não contado (features.stutters desligado).</summary>
+    public int? Stutters { get; set; }
+    /// <summary>Marcadores (atalho ou addMarker). Lista trocada a cada marcador (nunca alterada no lugar).</summary>
+    public List<SessionMarker>? Markers { get; set; }
+    /// <summary>Média do |erro de animação| (PresentMon 2.x), ms.</summary>
+    public double? AnimErrorMs { get; set; }
+    /// <summary>Média da latência do PC (PresentMon), ms, se a coluna existir.</summary>
+    public double? PcLatencyMs { get; set; }
+    /// <summary>GPU e CPU no início da sessão (card de compartilhar).</summary>
+    public string? Gpu { get; set; }
+    public string? Cpu { get; set; }
     /// <summary>Nome do arquivo CSV da sessão (sem a pasta).</summary>
     public string? CsvFile { get; set; }
 }
+
+/// <summary>1.2: marcador de uma sessão. <see cref="T"/> = segundos desde o início da sessão.</summary>
+public sealed class SessionMarker
+{
+    public double T { get; set; }
+    public DateTime At { get; set; }
+    public string? Note { get; set; }
+}
+
+/// <summary>1.2: marcador gravado (TelemetryHub.MarkerAdded). <paramref name="Exe"/> = jogo da sessão aberta; null fora de jogo.</summary>
+public sealed record MarkerEvent(int Index, DateTime At, string? Exe, string? Note);
 
 /// <summary>
 /// Histórico de sessões de jogo (tela Sessões), persistido em %APPDATA%\Pitwall\sessions.json, mais recente primeiro.
@@ -104,6 +135,25 @@ public sealed class SessionStore
         var filtered = string.IsNullOrEmpty(exe) ? all.ToList()
             : all.Where(s => string.Equals(s.Exe, exe, StringComparison.OrdinalIgnoreCase)).ToList();
         return (filtered.Count, filtered.Skip(offset).Take(limit).ToList());
+    }
+
+    /// <summary>1.2: sessão pelo início (tolerância de 1 s: o ISO da página pode vir sem as frações).</summary>
+    public GameSession? Find(DateTime start)
+    {
+        lock (_gate) return _sessions.FirstOrDefault(s => Math.Abs((s.Start - start).TotalSeconds) < 1);
+    }
+
+    /// <summary>1.2: acrescenta um marcador à sessão aberta e salva. Retorna o número dele (1, 2, …) ou null fora de jogo.</summary>
+    public int? AddMarker(DateTime at, string? note)
+    {
+        lock (_gate)
+        {
+            if (_open == null) return null;
+            var m = new SessionMarker { T = Math.Round(Math.Max(0, (at - _open.Start).TotalSeconds), 1), At = at, Note = note };
+            _open.Markers = [.. _open.Markers ?? [], m];
+            Save();
+            return _open.Markers.Count;
+        }
     }
 
     /// <summary>Atualiza a sessão aberta (estatísticas) e salva.</summary>

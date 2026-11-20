@@ -33,6 +33,9 @@ public sealed class PresentMonService : IDisposable
     /// <summary>Sessão ETW aberta e lendo frames agora.</summary>
     public bool Healthy => _capturing;
 
+    /// <summary>1.2: a última tentativa de abrir a sessão ETW deu "access denied" (anti-cheat do jogo aberto).</summary>
+    public bool Blocked => _blocked;
+
     /// <summary>Motivo legível quando não está capturando (null = tudo certo).</summary>
     public string? StatusText =>
         _capturing ? null

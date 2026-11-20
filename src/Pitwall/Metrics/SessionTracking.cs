@@ -119,11 +119,47 @@ public sealed class SessionStatsAccumulator
     readonly FrametimeHistogram _frames = new();
     readonly Dictionary<string, double> _warnSec = [];
     readonly Dictionary<string, double> _critSec = [];
-    double? _peakTemp, _peakHotspot, _peakDelta, _peakPower;
+    double? _peakTemp, _peakHotspot, _peakDelta, _peakPower, _peakCpuTemp;
+
+    /// <summary>1.2: métricas com média na sessão (soma + contagem por tick, sem alocar). Ordem = <see cref="ApplyTo"/>.</summary>
+    internal static readonly string[] AverageIds =
+        ["gpu.temp", "gpu.hotspot", "gpu.power", "gpu.clock", "gpu.load", "cpu.temp", "cpu.load", "fps.animError", "fps.pcLatency"];
+    readonly double[] _avgSum = new double[AverageIds.Length];
+    readonly int[] _avgCount = new int[AverageIds.Length];
+
+    // 1.2: engasgos (features.stutters); null = desligado
+    Fps.StutterDetector? _stutters;
+    bool _primed;
+
+    public SessionStatsAccumulator(bool countStutters = false) => CountStutters = countStutters;
+
+    /// <summary>Liga/desliga a contagem de engasgos (desligar descarta a contagem; religar começa do zero, com novo aquecimento).</summary>
+    public bool CountStutters
+    {
+        get => _stutters != null;
+        set
+        {
+            if (value == (_stutters != null)) return;
+            _stutters = value ? new Fps.StutterDetector() : null;
+            _primed = false;
+        }
+    }
+
+    /// <summary>Engasgos na sessão até agora; null com a contagem desligada.</summary>
+    public int? Stutters => _stutters?.Count;
 
     public void AddFrames(ReadOnlySpan<float> frametimes)
     {
         foreach (var ft in frametimes) _frames.Add(ft);
+        if (_stutters == null || frametimes.IsEmpty) return;
+        // Primeiro lote = frames que o PresentMon já tinha antes da sessão: só enchem a janela da mediana
+        if (!_primed)
+        {
+            _primed = true;
+            _stutters.Prime(frametimes);
+            return;
+        }
+        _stutters.Add(frametimes);
     }
 
     /// <param name="dtSec">Tempo desde o tick anterior (conta para "segundos acima do amarelo/vermelho").</param>
@@ -133,6 +169,13 @@ public sealed class SessionStatsAccumulator
         Peak(ref _peakHotspot, values, "gpu.hotspot");
         Peak(ref _peakDelta, values, "gpu.hotspotDelta");
         Peak(ref _peakPower, values, "gpu.power");
+        Peak(ref _peakCpuTemp, values, "cpu.temp");
+        for (int i = 0; i < AverageIds.Length; i++)
+            if (values.TryGetValue(AverageIds[i], out var av) && av is { } a && double.IsFinite(a))
+            {
+                _avgSum[i] += a;
+                _avgCount[i]++;
+            }
         if (!(dtSec > 0)) return;
         foreach (var s in settings)
         {
@@ -182,7 +225,20 @@ public sealed class SessionStatsAccumulator
         s.SecondsAboveWarn = _warnSec.Count > 0 ? _warnSec.ToDictionary(kv => kv.Key, kv => Math.Round(kv.Value)) : null;
         s.SecondsAboveCrit = _critSec.Count > 0 ? _critSec.ToDictionary(kv => kv.Key, kv => Math.Round(kv.Value)) : null;
         s.ClockReasonSec = ClockReasonSeconds();
+        s.AvgGpuTemp = Avg(0);
+        s.AvgHotspot = Avg(1);
+        s.AvgGpuPower = Avg(2);
+        s.AvgGpuClock = Avg(3) is { } clk ? Math.Round(clk) : null;
+        s.AvgGpuLoad = Avg(4);
+        s.AvgCpuTemp = Avg(5);
+        s.AvgCpuLoad = Avg(6);
+        s.PeakCpuTemp = R(_peakCpuTemp);
+        s.Stutters = Stutters;
+        s.AnimErrorMs = _avgCount[7] > 0 ? Math.Round(_avgSum[7] / _avgCount[7], 2) : null;
+        s.PcLatencyMs = Avg(8);
     }
+
+    double? Avg(int i) => _avgCount[i] > 0 ? R(_avgSum[i] / _avgCount[i]) : null;
 
     static double? R(double? v) => v is { } d && double.IsFinite(d) ? Math.Round(d, 1) : null;
 }

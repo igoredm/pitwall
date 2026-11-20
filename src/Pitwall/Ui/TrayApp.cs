@@ -15,6 +15,7 @@ public sealed class TrayApp : ApplicationContext
     readonly SynchronizationContext _ui;
     SettingsForm? _settings;
     bool _autostartState;
+    readonly HotkeyService _hotkeys;
 
     public TrayApp(ConfigStore config, TelemetryHub hub, Func<string> dumpSensors)
     {
@@ -64,6 +65,20 @@ public sealed class TrayApp : ApplicationContext
         };
 
         hub.QuitRequested += () => _ui.Post(_ => ExitThread(), null);
+
+        // 1.2: atalhos globais (RegisterHotKey, sem hook de teclado) e aviso curto de cada marcador
+        _hotkeys = new HotkeyService(
+            () => Toggle(c => c.Widget.Visible = !c.Widget.Visible),
+            () => Task.Run(() => { try { _hub.AddMarker(null); } catch { } })); // salva o sessions.json: fora da thread da interface
+        _hotkeys.StatusChanged += (toggle, marker) => _hub.SetHotkeyStatus(toggle, marker);
+        _hotkeys.Apply(config.Current.Hotkeys);
+        config.Changed += _ => _ui.Post(_ => _hotkeys.Apply(_config.Current.Hotkeys), null);
+        hub.MarkerAdded += m => _ui.Post(_ =>
+        {
+            var time = m.At.ToString("HH:mm:ss");
+            ShowBalloon(2500, "Pitwall", L.T($"Marcador {m.Index} · {time}", $"Marker {m.Index} · {time}"), ToolTipIcon.Info,
+                m.Exe != null ? "sessions" : "monitor", m.Exe != null ? "last" : null);
+        }, null);
         UpdateTray.Attach(_ui, hub.Updater, ExitThread, (timeout, title, text, icon) => ShowBalloon(timeout, title, text, icon, "app", "updates"));
 
         // Alerta de vermelho: balão da bandeja (o Windows 10/11 mostra como notificação). Sem dependência nova.
@@ -252,6 +267,7 @@ public sealed class TrayApp : ApplicationContext
 
     protected override void ExitThreadCore()
     {
+        _hotkeys.Dispose();
         _tray.Visible = false;
         _tray.Dispose();
         _widget.Dispose();
