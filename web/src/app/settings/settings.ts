@@ -119,7 +119,7 @@ export class Settings implements SettingsCtx {
 
   /** Assistente: config que nunca concluiu (firstRunDone === false). */
   protected readonly showWizard = computed(() => (this.draft() ?? this.t.config())?.firstRunDone === false);
-  protected readonly wide = computed(() => this.nav.page() === 'metrics');
+  protected readonly wide = computed(() => this.nav.page() === 'metrics' || this.nav.page() === 'monitor');
   protected readonly previewMon = computed(() => selectedMonitor(this.t.catalog(), this.draft()));
 
   protected readonly side = computed(() => {

@@ -31,6 +31,11 @@ function buildIndex(s: Dict): Entry[] {
   add('overview', undefined, '', P.overview, s.pageIntro.overview, 'overview', 'inicio home status agora now');
   add('overview', 'tour', s.firstSteps, s.tourCardTitle, s.tourCardNew, 'play', 'tutorial tour ajuda help primeiros passos getting started');
 
+  // 1.2: Monitor
+  add('monitor', undefined, '', P.monitor, s.monIntro, 'monitor', 'sensores sensors ao vivo live grafico graph minimo maximo min max temperatura hot spot sem leitura missing');
+  add('monitor', undefined, P.monitor, s.monMark, s.featV12['hotkeys'][1], 'flag', 'marcador marker marcar mark momento moment');
+  add('monitor', undefined, P.monitor, s.monCopy, '', 'copy', 'copiar copy leituras readings texto text');
+
   add('widget', 'theme', s.widgetTheme, s.widgetTheme, s.widgetThemeHint2, 'widget', 'tema theme lumen minimo neon terminal splash visual look');
   add('widget', 'variant', s.widgetTheme, s.variant, s.darkOnlyHint, 'widget', 'claro escuro light dark modo mode');
   add('widget', 'accent', s.widgetTheme, s.accent, '', 'widget', 'cor color destaque accent');
@@ -76,17 +81,23 @@ function buildIndex(s: Dict): Entry[] {
   add('devices', undefined, P.devices, s.remoteEnable, s.remoteEnableHint, 'devices', 'celular phone tv rede network wifi');
   add('devices', 'pair', s.pairSec, s.pairSec, s.pairSecHint, 'devices', 'parear pair codigo code qr');
   add('devices', 'list', s.pairedSec, s.pairedSec, s.revokeAll, 'devices', 'revogar revoke aparelhos devices');
+  add('devices', 'integrations', s.intSec, s.haSwitch, s.haHint, 'devices', 'home assistant api token integracao integration rest json');
 
   for (const k of Object.keys(s.feat)) add('features', k, P.features, s.feat[k][0], s.feat[k][1], 'features', 'recurso feature ligar desligar on off');
+  for (const k of Object.keys(s.featV12)) add('features', k, P.features, s.featV12[k][0], s.featV12[k][1], 'features', 'recurso feature ligar desligar on off engasgos stutters atalhos hotkeys');
 
   add('app', 'language', s.generalSec, s.language, s.languageHint, 'app', 'idioma language portugues english ingles');
   add('app', 'appearance', s.generalSec, s.appearanceRow, s.appearanceHint, 'app', 'claro escuro light dark tema theme');
   add('app', 'general', s.generalSec, s.startWithWindows, s.startWinHint2, 'app', 'windows iniciar startup boot');
   add('app', 'rate', s.generalSec, s.refreshRate, s.refreshHint2, 'refresh', 'taxa rate ms atualizacao');
+  add('app', 'hotkeys', s.hkSec, s.hkEnable, s.hkEnableHint, 'app', 'atalho atalhos hotkey hotkeys shortcut teclado keyboard ctrl alt');
+  add('app', 'hotkeys', s.hkSec, s.hkToggle, '', 'eye', 'atalho hotkey mostrar esconder show hide widget');
+  add('app', 'hotkeys', s.hkSec, s.hkMarker, '', 'flag', 'atalho hotkey marcador marker');
   add('app', 'updates', s.updatesTitle, s.updatesTitle, s.updAutoHint, 'download', 'atualizar update versao version beta canal channel');
   add('app', 'tour', s.helpSec, s.replayTour, s.replayTourHint, 'play', 'tutorial tour ajuda help');
   add('app', 'help', s.helpSec, s.shortcuts, `Ctrl K ${s.kbSearch}`, 'app', 'atalho shortcut teclado keyboard');
   add('app', 'help', s.helpSec, s.reportIssue, s.reportIssueHint, 'external', 'bug problema issue github');
+  add('app', 'sensors', s.helpSec, s.dumpCopy, s.dumpHint, 'copy', 'lista de sensores sensor list dump issue bug txt');
   add('app', 'about', s.aboutSec, s.aboutSec, '', 'app', 'versao version sobre about licencas licenses');
   add('app', 'reset', s.resetSec, s.resetRow, s.resetHint, 'undo', 'restaurar reset padrao defaults fabrica factory');
   return out;

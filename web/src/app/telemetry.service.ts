@@ -1,5 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 import {
+  ApiToken,
   AppConfig,
   Catalog,
   ClockReasonStats,
@@ -9,6 +10,7 @@ import {
   LogKeepDays,
   LogStats,
   LogStatus,
+  MarkerMessage,
   PairError,
   PairedDevice,
   PairingMessage,
@@ -141,6 +143,16 @@ export class TelemetryService {
   readonly snapshotClockReasons = signal<ClockReasonStats | null>(null);
   /** 1.0: última resposta a getLogStats sem valores hipotéticos (uso atual da pasta de CSV). */
   readonly logStats = signal<LogStats | null>(null);
+  /** 1.2 (Monitor): mín/máx desde que o app abriu; muda no máximo a cada 5 s. */
+  readonly extremesApp = signal<Extremes>({});
+  /** 1.2: quando o Pitwall abriu e quando o Windows ligou (ms; null = backend antigo). */
+  readonly appSince = signal<number | null>(null);
+  readonly bootTime = signal<number | null>(null);
+  /** 1.2: último marcador gravado (atalho ou Marcar momento). */
+  readonly lastMarker = signal<MarkerMessage | null>(null);
+  /** 1.2: último token de integração criado (mostrado uma vez; a página limpa ao sair). */
+  readonly apiToken = signal<ApiToken | null>(null);
+  private readonly dumpWaiters: ((text: string) => void)[] = [];
 
   /** ?batteries=demo na URL: dispositivos de exemplo para pré-visualizar o visual em dev. */
   private readonly demoBatteries = urlParam('batteries') === 'demo';
@@ -247,6 +259,14 @@ export class TelemetryService {
     return new Promise((resolve) => {
       this.sessionsWaiters.push(resolve);
       this.send({ type: 'getSessions', offset, limit: Math.min(100, limit), ...(exe ? { exe } : {}) });
+    });
+  }
+
+  /** 1.2: lista de sensores em texto (getSensorDump), para copiar ou salvar. */
+  requestSensorDump(): Promise<string> {
+    return new Promise((resolve) => {
+      this.dumpWaiters.push(resolve);
+      this.send({ type: 'getSensorDump' });
     });
   }
 
@@ -412,6 +432,21 @@ export class TelemetryService {
       case 'devices':
         this.devicesMsg.set(msg.devices);
         break;
+      // 1.2 · Monitor, atalhos, lista de sensores e Home Assistant
+      case 'extremesApp':
+        this.appSince.set(new Date(msg.since).getTime());
+        this.bootTime.set(new Date(msg.bootTime).getTime());
+        this.extremesApp.set({ ...msg.values });
+        break;
+      case 'marker':
+        this.lastMarker.set(msg);
+        break;
+      case 'sensorDump':
+        this.dumpWaiters.shift()?.(msg.text);
+        break;
+      case 'apiToken':
+        this.apiToken.set(msg);
+        break;
       case 'snapshot': {
         const now = Date.now();
         this.lastSnapshotAt.set(now);
@@ -440,6 +475,7 @@ export class TelemetryService {
         const texts = msg.texts ?? {};
         if (!sameRecord(texts, this.texts())) this.texts.set(texts);
         if (msg.extremes) this.applyExtremes(msg.extremes.epoch, msg.extremes.values, false);
+        if (msg.extremesApp) this.extremesApp.update((cur) => ({ ...cur, ...msg.extremesApp }));
         const prof = msg.profile ?? null;
         const p0 = this.profile();
         if (prof?.exe !== p0?.exe || prof?.layout !== p0?.layout || prof?.tuningPreset !== p0?.tuningPreset) this.profile.set(prof);

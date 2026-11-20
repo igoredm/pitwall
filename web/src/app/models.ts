@@ -522,6 +522,16 @@ export interface MarkerMessage {
   exe?: string;
 }
 
+/** 1.2: mín/máx desde que o app abriu (Monitor). Completo ao conectar; depois só as mudanças em snapshot.extremesApp. */
+export interface ExtremesAppMessage {
+  type: 'extremesApp';
+  /** ISO: quando o Pitwall abriu. */
+  since: string;
+  /** ISO: quando o Windows ligou (Ligado há). */
+  bootTime: string;
+  values: Extremes;
+}
+
 /** 1.2: mensagens novas do cliente (somar à ClientMessage). */
 export type ClientMessage12 =
   | { type: 'getPcReport' }
@@ -599,6 +609,8 @@ export type ServerMessage =
       /** 1.0: ausente sem dados ou com features.clockReason desligado. */
       clockReasons?: ClockReasonStats;
       presentMonError?: string | null;
+      /** 1.2: mín/máx desde que o app abriu, só o que mudou (no máximo a cada 5 s; só no socket local). */
+      extremesApp?: Extremes;
     }
   | { type: 'sessions'; sessions: GameSession[] }
   | SessionsPage
@@ -615,7 +627,8 @@ export type ServerMessage =
   | SessionSeries
   | SensorDump
   | ApiToken
-  | MarkerMessage;
+  | MarkerMessage
+  | ExtremesAppMessage;
 
 /** v0.7: resposta a startPairing (só para quem pediu). */
 export type PairingMessage =
