@@ -63,6 +63,31 @@ function demoFeatures(): FeaturesConfig {
 
 type Def = [id: string, group: MetricGroup, name: string, unit: string, on?: boolean, warn?: number, crit?: number, spark?: boolean];
 
+/** Nomes em inglês da demonstração (?lang=en; o backend real já manda o nome no idioma do Windows). */
+const DEF_EN: Record<string, string> = {
+  'fps.displayed': 'Displayed FPS',
+  'fps.avg': 'Session average FPS',
+  'fps.graph': 'Frametime graph',
+  'gpu.load': 'Load',
+  'gpu.temp': 'Core',
+  'gpu.hotspotDelta': 'Δ hot spot − core',
+  'gpu.power': 'Power',
+  'gpu.clock': 'Core clock',
+  'gpu.memclock': 'Memory clock',
+  'gpu.powerLimit': '% of power limit',
+  'gpu.vramUsed': 'VRAM used',
+  'gpu.vramLoad': 'VRAM load',
+  'gpu.voltage': 'Core voltage',
+  'gpu.perfcap': 'Clock limit reason',
+  'cpu.load': 'Total load',
+  'cpu.power': 'Package power',
+  'cpu.clockAvg': 'Average clock',
+  'ram.load': 'Load',
+  'ram.used': 'Used / total',
+  'ram.virtualLoad': 'Virtual memory (commit)',
+};
+const demoEn = () => urlParam('lang') === 'en';
+
 const DEFS: Def[] = [
   ['fps.current', 'fps', 'FPS', 'fps', true],
   ['fps.displayed', 'fps', 'FPS exibido', 'fps'],
@@ -133,7 +158,7 @@ export function startDemo(t: TelemetryService) {
   const metrics: MetricDef[] = DEFS.map(([id, group, name, unit, , warn, crit]) => ({
     id,
     group,
-    name,
+    name: demoEn() ? (DEF_EN[id] ?? name) : name,
     unit,
     isTemperature: unit === '°C',
     available: !(id === 'gpu.perfcap' && fixedCap === 'na'),
@@ -203,7 +228,7 @@ export function startDemo(t: TelemetryService) {
   const catalog: Catalog = {
     type: 'catalog',
     version: '1.0.0',
-    lang: 'pt-BR',
+    lang: demoEn() ? 'en' : 'pt-BR',
     admin: true,
     presentMon: true,
     battery: urlParam('battery') !== 'none',
