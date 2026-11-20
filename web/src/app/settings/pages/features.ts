@@ -28,6 +28,8 @@ const FEATURES: Feature[] = [
   { key: 'autoDetect', group: 'game', get: (c) => c.games.autoDetect, set: (c, v) => (c.games.autoDetect = v), page: 'games', anchor: 'detection' },
   { key: 'gameSuggestions', group: 'game', ...f('gameSuggestions'), page: 'games', anchor: 'detection' },
   { key: 'sessionPeaks', group: 'game', ...f('sessionPeaks'), page: 'metrics' },
+  // 1.2: engasgos na sessão → Relatórios de jogo
+  { key: 'stutters', group: 'game', ...f('stutters'), page: 'sessions', anchor: 'last' },
   { key: 'clockReason', group: 'game', ...f('clockReason'), page: 'gpu', anchor: 'now' },
   { key: 'crashReport', group: 'game', ...f('crashReport'), page: 'sessions', anchor: 'crash' },
   {
@@ -37,6 +39,15 @@ const FEATURES: Feature[] = [
     set: (c, v) => (c.features = { crashReport: true, gameSuggestions: true, sessionPeaks: true, clockReason: true, ...c.features, openSummaryOnGameEnd: v }),
     page: 'sessions',
     anchor: 'last',
+  },
+  // 1.2: atalhos globais (RegisterHotKey) → App › Atalhos
+  {
+    key: 'hotkeys',
+    group: 'game',
+    get: (c) => c.hotkeys?.enabled ?? true,
+    set: (c, v) => (c.hotkeys = { toggleWidget: 'Ctrl+Alt+P', marker: 'Ctrl+Alt+M', ...c.hotkeys, enabled: v }),
+    page: 'app',
+    anchor: 'hotkeys',
   },
   { key: 'log', group: 'record', get: (c) => c.log.enabled, set: (c, v) => (c.log.enabled = v), page: 'sessions', anchor: 'csv' },
   { key: 'gpuTuning', group: 'record', get: (c) => c.gpuTuning.enabled, set: (c, v) => (c.gpuTuning.enabled = v), page: 'gpu', anchor: 'tuning' },
@@ -127,7 +138,7 @@ export class FeaturesPage {
     return GROUPS.map((id) => ({
       id,
       rows: FEATURES.filter((x) => x.group === id).map((x) => {
-        const [name, line, link] = s.feat[x.key];
+        const [name, line, link] = s.feat[x.key] ?? s.featV12[x.key];
         const on = x.get(d);
         // Sem suporte: switch desligado e travado, com o motivo numa pílula amarela
         const unsupported = (x.key === 'gpuTuning' || x.key === 'clockReason') && !nvidia ? s.needsNvidia : x.key === 'battery' && !reader ? s.readerNotFound : null;

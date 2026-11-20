@@ -46,6 +46,7 @@ import {
   WirelessDevice,
 } from './models';
 import { TelemetryService, urlParam } from './telemetry.service';
+import { demo12Monitor } from './demo-12-monitor';
 
 /** 1.0: ?features=a,b liga só a e b; sem o parâmetro, tudo ligado (padrão do backend). */
 function demoFeatures(): FeaturesConfig {
@@ -209,6 +210,8 @@ export function startDemo(t: TelemetryService) {
     about: { app: '1.0.0', dotnet: '10.0.1', webView2: '142.0.3595.53', presentMon: '2.3.1', pawnIO: '2.0.1' },
   };
   if (amd) for (const m of metrics) if (m.id === 'gpu.perfcap') m.available = false;
+  // 1.2: Monitor, sensores sem leitura, atalhos, lista de sensores e Home Assistant (demo-12-monitor.ts)
+  const v12 = demo12Monitor(catalog, metrics, now, empty, !idle);
 
   // ------------------------------------------------------------------ config
   const settings: MetricSetting[] = DEFS.map(([id, , , unit, on, warn, crit, spark], i) => ({
@@ -271,6 +274,7 @@ export function startDemo(t: TelemetryService) {
     features: demoFeatures(),
     metrics: settings,
   };
+  v12.config(config);
   // Recurso desligado: o backend não manda o relatório de queda
   if (!config.features?.crashReport) catalog.crashReport = undefined;
 
@@ -478,6 +482,8 @@ export function startDemo(t: TelemetryService) {
       case 'getUpdate':
         send({ type: 'update', update });
         break;
+      default:
+        v12.handle(msg, send, config);
     }
   });
 
@@ -494,6 +500,7 @@ export function startDemo(t: TelemetryService) {
     send({ type: 'config', config: structuredClone(config) });
     if (!t.remoteMode) send({ type: 'sessions', sessions });
     if (config.features?.sessionPeaks !== false) send({ type: 'extremes', epoch, values: {} });
+    if (!t.remoteMode) v12.start(send);
     tick();
     setInterval(tick, 1000);
   };
@@ -555,6 +562,7 @@ export function startDemo(t: TelemetryService) {
       'ram.virtualLoad': 46,
     };
     for (const key of Object.keys(v)) v[key] = v[key] == null ? null : Math.round(v[key]! * 100) / 100;
+    v12.values(v, g, k);
 
     // perfcap: alterna motivos (com durações curtas de propósito, para ver o anti-tremido funcionar)
     let cap: string | null;
@@ -602,7 +610,7 @@ export function startDemo(t: TelemetryService) {
       }
     }
 
-    send({
+    send(v12.snapshot({
       type: 'snapshot',
       t: Date.now(),
       game: g ? { exe, mode: 'fullscreen' } : null,
@@ -616,7 +624,7 @@ export function startDemo(t: TelemetryService) {
       tuning: g && config.gpuTuning.enabled ? { active: true, powerLimitW: 260, clockMaxMhz: 1700 } : { active: false },
       log: { file: 'pitwall_2026-11-18_21-48-00_FC25.csv', size: 1_482_331 + k * 420 },
       fpsStatus: null,
-    });
+    }));
   };
   if (autoFeed) startFeed();
 

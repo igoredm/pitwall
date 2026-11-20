@@ -47,6 +47,7 @@ function hostOf(url: string): string {
 }
 
 const VALID_SEC = 120;
+const HA_DOCS = 'https://github.com/igoredm/pitwall/blob/main/docs/home-assistant.md';
 
 /** Pitwall › Celular e TV: ativar, aviso de rede local, parear (endereço + código de 6 dígitos + QR) e aparelhos. */
 @Component({
@@ -169,7 +170,7 @@ const VALID_SEC = 120;
         <section class="sec" data-anchor="list">
           <div class="sh">
             <h2>{{ sx.pairedSec }}</h2>
-            @if (t.devices().length > 1) {
+            @if (devices().length > 1) {
               <button type="button" class="btn sm qt dg" (click)="revokeAll()">{{ sx.revokeAll }}</button>
             }
           </div>
@@ -194,6 +195,74 @@ const VALID_SEC = 120;
           </div>
         </section>
       }
+
+      <!-- 1.2: Integrações (Home Assistant): token de leitura, mostrado uma vez -->
+      <section class="sec" data-anchor="integrations">
+        <div class="sh">
+          <div>
+            <h2>{{ sx.intSec }}</h2>
+            <div class="ht">{{ sx.intSecHint }}</div>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="row">
+            <div class="rl" [class.dimmed]="!enabled()">
+              <div class="lb" id="l-ha">{{ sx.haSwitch }}</div>
+              <div class="ht">{{ sx.haHint }}</div>
+            </div>
+            <button type="button" class="sw" role="switch" aria-labelledby="l-ha" [attr.aria-checked]="apiOn()" [disabled]="!enabled()" (click)="toggleApi()"></button>
+          </div>
+          @if (apiOn()) {
+            <div class="row">
+              <div class="rl">
+                <div class="lb">{{ sx.haAddress }}</div>
+                <div class="ht"><span class="mono">{{ apiUrl() }}</span></div>
+              </div>
+              <button type="button" class="btn sm" (click)="copyApi(apiUrl())"><pw-icon [name]="apiCopied() === 'url' ? 'check' : 'copy'" [size]="14" />{{ apiCopied() === 'url' ? sx.copied : sx.copy }}</button>
+            </div>
+          }
+          @if (token(); as tk) {
+            <div class="row col tok" role="status">
+              <div class="rl">
+                <div class="lb">{{ sx.haCreated(tk.device.name) }}</div>
+                <div class="ht">{{ sx.haCreatedHint }}</div>
+              </div>
+              <div class="tokrow">
+                <input class="in mono grow" readonly [attr.aria-label]="sx.haTokenAria" [value]="tk.token" (focus)="$any($event.target).select()" />
+                <button type="button" class="btn sm pri" (click)="copyApi(tk.token, 'token')"><pw-icon [name]="apiCopied() === 'token' ? 'check' : 'copy'" [size]="14" />{{ apiCopied() === 'token' ? sx.copied : sx.copy }}</button>
+              </div>
+              <button type="button" class="lnk docs" (click)="copyDocs()">{{ sx.haDocs }}<pw-icon name="copy" [size]="13" /></button>
+            </div>
+          }
+          @for (dev of integrations(); track dev.id) {
+            <div class="row">
+              <span class="ico t2"><pw-icon name="key" [size]="18" /></span>
+              <div class="rl">
+                <div class="lb ell">{{ dev.name }}</div>
+                <div class="ht">{{ dev.line }}</div>
+              </div>
+              <button type="button" class="btn sm dg" [attr.aria-label]="sx.revoke + ' · ' + dev.name" (click)="revoke(dev.id)">{{ sx.revoke }}</button>
+            </div>
+          }
+          @if (apiOn()) {
+            <div class="row">
+              <div class="rl">
+                <div class="lb">{{ sx.haNewToken }}</div>
+                @if (!integrations().length && !token()) {
+                  <div class="ht">{{ sx.haNone }}</div>
+                }
+              </div>
+              <input class="in tname" [placeholder]="sx.haNamePh" [attr.aria-label]="sx.haNewToken" maxlength="40" [value]="tokenName()" (input)="tokenName.set($any($event.target).value)" (keydown.enter)="createToken()" />
+              <button type="button" class="btn sm" (click)="createToken()">{{ sx.haCreate }}</button>
+            </div>
+            @if (!token()) {
+              <div class="row tight docsrow">
+                <button type="button" class="lnk" (click)="copyDocs()">{{ sx.haDocs }}<pw-icon name="copy" [size]="13" /></button>
+              </div>
+            }
+          }
+        </div>
+      </section>
     }
   `,
   styles: `
@@ -302,6 +371,27 @@ const VALID_SEC = 120;
     .qrcap {
       text-align: center;
     }
+    .tok {
+      gap: 10px;
+    }
+    .tokrow {
+      display: flex;
+      gap: 8px;
+      .in {
+        font-size: 12.5px;
+        letter-spacing: 0.02em;
+      }
+    }
+    .docs {
+      align-self: flex-start;
+    }
+    .tname {
+      width: 220px;
+    }
+    .docsrow {
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
     .dname {
       display: flex;
       align-items: center;
@@ -370,6 +460,7 @@ export class DevicesPage {
     const now = this.now();
     const date = (iso: string) => new Date(iso).toLocaleDateString(s.locale, { day: '2-digit', month: '2-digit' });
     return [...this.t.devices()]
+      .filter((d) => d.kind !== 'integration')
       .sort((a, b) => Number(!!b.online) - Number(!!a.online) || (b.lastSeen ?? b.created).localeCompare(a.lastSeen ?? a.created))
       .map((d: PairedDevice) => {
         const fresh = now - new Date(d.created).getTime() < 2 * 86_400_000;
@@ -382,8 +473,62 @@ export class DevicesPage {
       });
   });
 
+  // ------------------------------------------------------------------ 1.2 · Integrações (Home Assistant)
+  protected readonly apiOn = computed(() => this.enabled() && !!this.ctx.draft()?.remote?.apiEnabled);
+  protected readonly tokenName = signal('');
+  protected readonly apiCopied = signal<'url' | 'token' | null>(null);
+  private apiCopiedTimer?: ReturnType<typeof setTimeout>;
+  /** O token só aparece aqui, uma vez; sair da página tira ele da tela. */
+  protected readonly token = computed(() => this.t.apiToken());
+  protected readonly apiUrl = computed(() => {
+    const p = this.t.pairing();
+    const host = p?.ok ? hostOf(p.typeUrl ?? p.url) : `${this.s().haAddrUnknown}:${this.port()}`;
+    return `http://${host}/api/v1/state`;
+  });
+  protected readonly integrations = computed(() => {
+    const s = this.s();
+    const now = this.now();
+    return this.t
+      .devices()
+      .filter((d) => d.kind === 'integration')
+      .map((d) => ({
+        id: d.id,
+        name: d.name,
+        line: [s.haKind, s.haCreatedWhen(dayTime(d.created, s)), d.lastSeen ? s.haUsedAgo(s.ago(now - new Date(d.lastSeen).getTime())) : s.haNeverUsed].join(' · '),
+      }));
+  });
+
+  protected toggleApi() {
+    if (!this.enabled()) return;
+    const on = !this.apiOn();
+    this.ctx.update((c) => {
+      c.remote = { enabled: true, port: 48124, pairedDevices: [], ...c.remote, apiEnabled: on };
+    });
+  }
+
+  protected createToken() {
+    const name = this.tokenName().trim() || this.s().haNameDefault;
+    this.t.send({ type: 'createApiToken', name });
+    this.tokenName.set('');
+  }
+
+  protected copyApi(text: string, what: 'url' | 'token' = 'url') {
+    copyText(text).then((ok) => {
+      if (!ok) return;
+      this.apiCopied.set(what);
+      clearTimeout(this.apiCopiedTimer);
+      this.apiCopiedTimer = setTimeout(() => this.apiCopied.set(null), 2000);
+    });
+  }
+
+  /** Copia em vez de abrir: um link aberto daqui rodaria o navegador como administrador. */
+  protected copyDocs() {
+    copyText(HA_DOCS).then((ok) => ok && this.ctx.toast({ title: this.s().linkCopied, duration: 3000 }));
+  }
+
   constructor() {
     this.t.send({ type: 'listDevices' });
+    this.t.apiToken.set(null);
     // Abre a seção já com um código, assim que o servidor da rede estiver de pé
     effect(() => {
       const on = this.enabled() && this.running();
@@ -409,7 +554,11 @@ export class DevicesPage {
       const p = this.portBusy();
       if (p) untracked(() => this.newPort.set(String(Number(p) + 1)));
     });
-    inject(DestroyRef).onDestroy(() => clearInterval(this.timer));
+    inject(DestroyRef).onDestroy(() => {
+      clearInterval(this.timer);
+      clearTimeout(this.apiCopiedTimer);
+      this.t.apiToken.set(null);
+    });
   }
 
   protected toggle() {
@@ -448,6 +597,6 @@ export class DevicesPage {
   protected async revokeAll() {
     const s = this.s();
     const ok = await this.ctx.confirm({ title: s.revokeAllTitle, body: s.revokeAllBody, confirm: s.revokeAll, danger: true });
-    if (ok) for (const d of this.t.devices()) this.revoke(d.id);
+    if (ok) for (const d of this.t.devices()) if (d.kind !== 'integration') this.revoke(d.id);
   }
 }

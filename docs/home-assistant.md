@@ -127,7 +127,7 @@ automation:
 - **Token por integração**: 256 bits aleatórios, guardado só como hash. Token errado conta no mesmo limite do pareamento
   (5 erros em 1 min bloqueiam o IP por 5 min). O token do Home Assistant **não** abre a tela do PC no navegador, e o token do
   celular **não** vale na API.
-- **Revogar**: em Celular e TV, o token aparece na lista de aparelhos com o ícone de integração → **Remover**. Para de
+- **Revogar**: em Celular e TV › Integrações, o token aparece com o ícone de chave → **Revogar**. Para de
   funcionar na hora.
 - A resposta não tem nome do PC, usuário, pastas nem nada do que está no seu disco: só as leituras e o nome do executável do
   jogo aberto.
@@ -167,5 +167,5 @@ Use the same `rest:` block as above (one resource, several sensors via `value_te
 - **Per-integration token**: 256 random bits, stored only as a hash; wrong tokens share the pairing rate limit (5 failures
   per minute block the IP for 5 minutes). Integration tokens **cannot** open the LAN view (WebSocket) and phone tokens
   **cannot** be used on the API.
-- **Revoke** it in Phone & TV (device list, integration icon → Remove); it stops working immediately.
+- **Revoke** it in Phone & TV › Integrations (key icon → Revoke); it stops working immediately.
 - No machine name, user name or file paths in the response: only readings and the running game's executable name.

@@ -5,11 +5,17 @@ import { TelemetryService } from '../../telemetry.service';
 import { Icon } from '../../ui/icon';
 import { WidgetThumb } from '../../ui/widget-thumb';
 import { isDarkTheme } from '../../widget/metric-views';
-import { capitalize, dayTime, fmtBytes, fmtDuration, fmtMs } from '../format';
+import { capitalize, clock, dayTime, fmtBytes, fmtDuration, fmtMs } from '../format';
 import { autoLayout, layoutName, presetName, selectedMonitor } from '../helpers';
 import { PageHead } from '../page-head';
 import { SettingsCtx } from '../settings-ctx';
 import { TOUR_STEPS } from '../tour';
+
+/** "O anti-cheat…" → "o anti-cheat…" (só a primeira letra: "PresentMon" continua igual). */
+function lowerFirst(text: string) {
+  const w = text.split(' ')[0];
+  return w.slice(1) === w.slice(1).toLowerCase() ? text.charAt(0).toLowerCase() + text.slice(1) : text;
+}
 
 interface NowRow {
   key: string;
@@ -32,7 +38,18 @@ interface NowRow {
     @let d = ctx.draft();
     <pw-page-head page="overview" />
 
-    @if (crash(); as c) {
+    @if (pc(); as p) {
+      <!-- 1.2: incidente do PC ainda não visto (catalog.pcPending) → Relatório do PC -->
+      <div class="note n-r mid crash" role="status">
+        <span class="ico"><pw-icon name="power" [size]="18" [stroke]="2" /></span>
+        <div class="rl">
+          <div class="b">{{ p.title }}</div>
+          <div class="ht m0">{{ p.sub }}</div>
+        </div>
+        <a class="btn sm" href="#/settings/health/latest" (click)="go($event, 'health', 'latest')">{{ sx.ovPcView }}</a>
+        <button type="button" class="btn qt sm" (click)="t.send({ type: 'dismissPcIncident', id: p.id })">{{ sx.ovPcDismiss }}</button>
+      </div>
+    } @else if (crash(); as c) {
       <div class="note n-r mid crash" role="status">
         <span class="ico"><pw-icon name="power" [size]="18" [stroke]="2" /></span>
         <div class="rl">
@@ -221,6 +238,20 @@ export class OverviewPage {
     return cr ? { exe: cr.session.exe, when: capitalize(dayTime(cr.time, this.s())) } : null;
   });
 
+  /** 1.2: banner do incidente do PC não visto (substitui o de queda do jogo, que agora sai dele). */
+  protected readonly pc = computed(() => {
+    const p = this.t.catalog()?.pcPending;
+    if (!p) return null;
+    const s = this.s();
+    const time = clock(new Date(p.time), s);
+    const sub = [
+      capitalize(dayTime(p.time, s)),
+      p.uptimeSec != null ? s.ovPcUp(fmtDuration(p.uptimeSec)) : '',
+      p.exe ? s.ovPcPlaying(p.exe) : s.ovPcNoGame,
+    ].filter(Boolean);
+    return { id: p.id, title: p.kind === 'bugcheck' ? s.ovPcTitleBsod(time) : s.ovPcTitle(time), sub: sub.join(' · ') };
+  });
+
   protected readonly rows = computed<NowRow[]>(() => {
     const s = this.s();
     const d = this.ctx.draft();
@@ -232,6 +263,8 @@ export class OverviewPage {
     const g = this.t.game();
     const live = this.t.sessions()[0];
     const fps = this.t.values()['fps.current'];
+    // 1.2: sem FPS com jogo aberto → o motivo (anti-cheat, administrador…)
+    const why = fps == null ? this.t.texts()['fps.reason'] : null;
     if (g) {
       const dur = live && !live.end && live.exe === g.exe ? fmtDuration((Date.now() - new Date(live.start).getTime()) / 1000) : '';
       rows.push({
@@ -240,7 +273,7 @@ export class OverviewPage {
         label: s.ovGame,
         page: 'games',
         exe: g.exe,
-        text: ' · ' + [s.gameModes[g.mode] ?? g.mode, dur, fps != null ? `${Math.round(fps)} FPS` : ''].filter(Boolean).join(' · '),
+        text: ' · ' + [s.gameModes[g.mode] ?? g.mode, dur, fps != null ? `${Math.round(fps)} FPS` : why && why !== 'noGame' ? `FPS: ${lowerFirst(s.fpsReason[why] ?? why)}` : ''].filter(Boolean).join(' · '),
         pill: s.inGame,
       });
     } else rows.push({ key: 'game', icon: 'games', label: s.ovGame, page: 'games', text: s.ovNoGame });
@@ -269,7 +302,7 @@ export class OverviewPage {
     rows.push({ key: 'alerts', icon: 'alerts', label: s.pages.alerts, page: 'alerts', text: d.alerts?.enabled ? s.ovAlertsOn(reds) : s.ovAlertsOff(reds) });
 
     // Celular e TV
-    const devs = this.t.devices();
+    const devs = this.t.devices().filter((x) => x.kind !== 'integration');
     const watching = devs.find((x) => x.online);
     rows.push({
       key: 'devices',

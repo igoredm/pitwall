@@ -681,3 +681,18 @@ Só no socket local.
 
 **Catálogo › `hardware`**: além de `cpu`, `gpu`, `gpu2`: `ramGb` (total em GB inteiros), `os` ("Windows 11 24H2": build ≥ 22000
 = 11, mais o `DisplayVersion` do registro) e `gpuDriver` (NVML `nvmlSystemGetDriverVersion`, só NVIDIA). Lidos uma vez.
+
+### 10.4 Monitor: mín/máx desde que o app abriu
+O Monitor mostra o mínimo e o máximo de cada sensor **desde que o Pitwall abriu** (não zera com jogo novo nem com "Zerar",
+ao contrário de `extremes`, que é da sessão). Vale para todas as métricas numéricas, com ou sem `features.sessionPeaks`.
+Só no socket local (o celular não recebe).
+- Ao conectar: `{ "type": "extremesApp", "since": "<ISO, quando o app abriu>", "bootTime": "<ISO, quando o Windows ligou>",
+  "values": { "<id>": [mín, máx] } }` (`bootTime` = agora − `Environment.TickCount64`; é o "Ligado há" da faixa de estado).
+- Depois: `snapshot.extremesApp = { "<id>": [mín, máx] }` só com o que mudou, **no máximo a cada 5 s**; o cliente sobrescreve
+  as chaves recebidas. Valores com 2 casas, como `extremes`.
+- Custo: um dicionário a mais atualizado no tick (o mesmo `MetricExtremes` dos picos da sessão), sem leitura extra de sensor.
+
+O resto do Monitor é só do front: anel de 900 pontos (15 min a 1 Hz) por sensor, amostrado e redesenhado no máximo 1×/s
+**só com a página aberta e visível** (`document.visibilityState`); os segundos com a página oculta ficam vazios no gráfico.
+O período (1/5/15 min) fica no `localStorage` (`pitwall.monitorRange`), não no config. [Copiar leituras] usa `getSensorDump`;
+[Marcar momento] manda `addMarker` e mostra "Marcador N · hh:mm:ss" quando chega o broadcast `marker`.

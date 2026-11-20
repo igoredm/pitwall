@@ -51,6 +51,10 @@ const ICONS: Record<string, Prim[]> = {
   tv: [{ r: [2.5, 5, 19, 12, 1.5] }, { d: 'M8 20h8' }],
   desktop: [{ r: [3, 4.5, 18, 12, 1.5] }, { d: 'M9 20h6' }, { d: 'M12 16.5V20' }],
   power: [{ d: 'M12 3.5V12' }, { d: 'M6.6 7a7.5 7.5 0 1 0 10.8 0' }],
+  // 1.2: marcar momento (bandeira), token de integração (chave) e integração (tomada)
+  flag: [{ d: 'M6 21V4' }, { d: 'M6 4.5h11l-2.5 4 2.5 4H6' }],
+  key: [{ c: [8, 15, 4] }, { d: 'M11 12l8.5-8.5' }, { d: 'M16 7l2.5 2.5' }, { d: 'M14 9l2 2' }],
+  plug: [{ d: 'M9 3.5V8M15 3.5V8' }, { d: 'M6.5 8h11v3a5.5 5.5 0 0 1-11 0z' }, { d: 'M12 16.5v4' }],
   external: [{ d: 'M14 5h5v5' }, { d: 'M19 5l-8 8' }, { d: 'M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4' }],
   dpad: [{ d: 'M9.5 3h5v6.5H21v5h-6.5V21h-5v-6.5H3v-5h6.5z' }],
   undo: [{ d: 'M9 7L4.5 11.5 9 16' }, { d: 'M5 11.5h9.5a5 5 0 0 1 0 10H12' }],

@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { I18n, LANGUAGES } from '../../i18n';
-import { AppConfig, UpdateChannel } from '../../models';
+import { AppConfig, HotkeysConfig, UpdateChannel } from '../../models';
 import { TelemetryService } from '../../telemetry.service';
 import { Icon } from '../../ui/icon';
 import { fmtBytes, fmtMs, markdownToBlocks } from '../format';
 import { copyText } from '../helpers';
 import { PageHead } from '../page-head';
 import { SettingsCtx } from '../settings-ctx';
+import { HotkeyRow } from '../hotkey-row';
 import { UpdateNotice } from '../update-notice';
 
 const REPO = 'https://github.com/igoredm/pitwall';
@@ -15,7 +16,7 @@ const RATES = [250, 500, 1000, 2000];
 /** Pitwall › App e atualizações: geral, atualizações, ajuda (rever tutorial), sobre e restaurar padrão. */
 @Component({
   selector: 'pw-page-app',
-  imports: [PageHead, Icon],
+  imports: [PageHead, Icon, HotkeyRow],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let sx = s();
@@ -67,6 +68,21 @@ const RATES = [250, 500, 1000, 2000];
               }
             </span>
           </div>
+        </div>
+      </section>
+
+      <section class="sec" data-anchor="hotkeys">
+        <div class="sh"><h2>{{ sx.hkSec }}</h2></div>
+        <div class="grp">
+          <div class="row">
+            <div class="rl">
+              <div class="lb" id="l-hk">{{ sx.hkEnable }}</div>
+              <div class="ht">{{ sx.hkEnableHint }}</div>
+            </div>
+            <button type="button" class="sw" role="switch" aria-labelledby="l-hk" [attr.aria-checked]="hk().enabled" (click)="setHotkey('enabled', !hk().enabled)"></button>
+          </div>
+          <pw-hotkey-row id="hk-toggle" [label]="sx.hkToggle" [value]="hk().toggleWidget" [other]="hk().marker" [status]="t.catalog()?.hotkeys?.toggleWidget" [disabled]="!hk().enabled" (changed)="setHotkey('toggleWidget', $event)" />
+          <pw-hotkey-row id="hk-marker" [label]="sx.hkMarker" [value]="hk().marker" [other]="hk().toggleWidget" [status]="t.catalog()?.hotkeys?.marker" [disabled]="!hk().enabled" (changed)="setHotkey('marker', $event)" />
         </div>
       </section>
 
@@ -205,6 +221,16 @@ const RATES = [250, 500, 1000, 2000];
             </div>
             <button type="button" class="btn sm" (click)="copyLink(issueUrl())"><pw-icon name="copy" [size]="14" />{{ sx.copyLink }}</button>
           </div>
+          <div class="row" data-anchor="sensors">
+            <div class="rl">
+              <div class="lb">{{ sx.dumpRow }}</div>
+              <div class="ht">{{ sx.dumpHint }}</div>
+            </div>
+            <button type="button" class="btn sm" aria-live="polite" (click)="copyDump()">
+              <pw-icon [name]="dumpCopied() ? 'check' : 'copy'" [size]="14" />{{ dumpCopied() ? sx.copied : sx.dumpCopy }}
+            </button>
+            <button type="button" class="btn sm qt" (click)="saveDump()"><pw-icon name="download" [size]="14" />{{ sx.dumpSave }}</button>
+          </div>
         </div>
       </section>
 
@@ -311,6 +337,11 @@ export class AppPage {
   protected readonly notesOpen = signal(false);
   protected readonly now = signal(Date.now());
 
+  protected readonly dumpCopied = signal(false);
+  private dumpTimer?: ReturnType<typeof setTimeout>;
+  /** 1.2: atalhos (padrão do backend quando a config ainda não tem). */
+  protected readonly hk = computed<HotkeysConfig>(() => ({ enabled: true, toggleWidget: 'Ctrl+Alt+P', marker: 'Ctrl+Alt+M', ...this.ctx.draft()?.hotkeys }));
+
   protected readonly notes = computed(() => markdownToBlocks(this.t.update()?.notes ?? ''));
   protected readonly channel = computed(() => this.t.update()?.channel ?? this.ctx.draft()?.update?.channel ?? 'stable');
   protected readonly version = computed(() => this.t.catalog()?.about?.app ?? this.t.catalog()?.version ?? '—');
@@ -345,6 +376,36 @@ export class AppPage {
       .join('\n');
     return `${REPO}/issues/new?body=${encodeURIComponent(body)}`;
   });
+
+  protected setHotkey<K extends keyof HotkeysConfig>(key: K, v: HotkeysConfig[K]) {
+    const cur = this.hk();
+    this.ctx.update((c) => (c.hotkeys = { ...cur, ...c.hotkeys, [key]: v }));
+  }
+
+  /** 1.2: lista de sensores (getSensorDump) para colar numa issue. */
+  protected copyDump() {
+    this.t.requestSensorDump().then((text) =>
+      copyText(text).then((ok) => {
+        if (!ok) return;
+        this.dumpCopied.set(true);
+        clearTimeout(this.dumpTimer);
+        this.dumpTimer = setTimeout(() => this.dumpCopied.set(false), 2000);
+      }),
+    );
+  }
+
+  /** Salvar .txt: download de um Blob (o WebView2 mostra o próprio diálogo de download). */
+  protected saveDump() {
+    const name = this.s().dumpFile;
+    this.t.requestSensorDump().then((text) => {
+      const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+  }
 
   protected ms(v: number) {
     return fmtMs(v, this.s());

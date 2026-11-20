@@ -45,6 +45,9 @@ public sealed class TelemetryHub : IDisposable
     long _statsCursor;
     long _lastTickMs;
     long _extremesSentAt;
+    // 1.2 (Monitor): mín/máx desde que o app abriu. Nunca zera; só no socket local, mudanças no máximo a cada 5 s
+    readonly MetricExtremes _extremesApp = new();
+    long _extremesAppSentAt;
     long _sessionSavedAt;
 
     // Relatório do PC (1.2): buffer de 120 s em disco, com ou sem jogo; o relatório de crash do jogo sai dele
@@ -116,8 +119,8 @@ public sealed class TelemetryHub : IDisposable
         {
             // Mín/máx desligado (features.sessionPeaks): nem a mensagem completa vai
             OnConnect = () => _config.Current.Features.SessionPeaks
-                ? [CatalogMessage(), ConfigMessage(), SessionsMessage(), ExtremesMessage()]
-                : [CatalogMessage(), ConfigMessage(), SessionsMessage()],
+                ? [CatalogMessage(), ConfigMessage(), SessionsMessage(), ExtremesMessage(), ExtremesAppMessage()]
+                : [CatalogMessage(), ConfigMessage(), SessionsMessage(), ExtremesAppMessage()],
             OnMessage = HandleMessage,
         };
         // Celular na rede local: servidor separado, somente leitura, com dados sanitizados
@@ -465,6 +468,7 @@ public sealed class TelemetryHub : IDisposable
             if (_peaksOn) _ws.Broadcast(ExtremesMessage());
         }
         if (_peaksOn) _extremes.Add(_values);
+        _extremesApp.Add(_values);
         if (_stats != null)
         {
             if (stats != null) _stats.AddFrames(stats.FramesSince(ref _statsCursor, 16_384));
@@ -532,6 +536,13 @@ public sealed class TelemetryHub : IDisposable
             };
         }
 
+        // 1.2: mín/máx desde que o app abriu (Monitor): só o que mudou, no máximo a cada 5 s
+        if (now - _extremesAppSentAt >= 5_000 && _extremesApp.TakeChanges() is { } appChanged)
+        {
+            _extremesAppSentAt = now;
+            msg["extremesApp"] = JsonSerializer.SerializeToNode(appChanged.Values);
+        }
+
         // Gráfico de frametime: frametimes reais de cada frame desde o último snapshot
         if (stats != null && cfg.Metrics.Any(m => m.Id == "fps.graph" && m.Enabled))
         {
@@ -553,6 +564,7 @@ public sealed class TelemetryHub : IDisposable
             msg.Remove("log");
             msg.Remove("tuning");
             msg.Remove("gameSuggestion");
+            msg.Remove("extremesApp");
             (msg["profile"] as JsonObject)?.Remove("tuningPreset");
             _remote.Broadcast(msg.ToJsonString());
         }
@@ -831,6 +843,13 @@ public sealed class TelemetryHub : IDisposable
     {
         var (epoch, values) = _extremes.Snapshot();
         return JsonSerializer.Serialize(new { type = "extremes", epoch, values });
+    }
+
+    /// <summary>1.2: mín/máx desde que o app abriu, completos (cliente local recém-conectado), com a hora de abertura e do boot.</summary>
+    string ExtremesAppMessage()
+    {
+        var (_, values) = _extremesApp.Snapshot();
+        return JsonSerializer.Serialize(new { type = "extremesApp", since = new DateTimeOffset(_health.AppStart), bootTime = new DateTimeOffset(_health.BootTime), values });
     }
 
     void CheckAlerts(AppConfig cfg, long now)

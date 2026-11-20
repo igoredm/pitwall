@@ -97,9 +97,12 @@ interface Row {
                   </button>
                   <button type="button" class="sw" role="switch" [attr.aria-label]="sx.showFor(nm)" [attr.aria-checked]="r.s.enabled && r.def.available" [disabled]="!r.def.available" (click)="setMetric(r.s.id, { enabled: !r.s.enabled })"></button>
                   <input class="in sm" [attr.aria-label]="sx.colName + ' · ' + r.def.name" [value]="r.s.label ?? ''" [placeholder]="r.def.name" [disabled]="!r.def.available" (change)="setMetric(r.s.id, { label: $any($event.target).value || undefined })" />
-                  <span class="c-sensor sensor ell" [title]="r.def.source ?? ''">
+                  <span class="c-sensor sensor ell" [title]="r.def.available ? (r.def.source ?? '') : (r.def.missingText ?? '')">
                     @if (r.def.available) {
                       {{ r.def.source ?? r.def.name }}
+                    } @else if (r.def.missingText) {
+                      <!-- 1.2: o motivo de não haver leitura, no lugar do genérico "não disponível" -->
+                      <span class="miss">{{ r.def.missingText }}</span>
                     } @else {
                       <span class="pill p-n">{{ sx.notAvailable }}</span>
                     }
@@ -250,6 +253,10 @@ interface Row {
     }
     .na {
       opacity: 0.55;
+    }
+    .miss {
+      font-size: 12px;
+      color: var(--tx2);
     }
     .handle {
       display: flex;
