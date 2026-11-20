@@ -9,7 +9,8 @@ import { Sparkline } from './sparkline';
 import { SplashBlobs } from './splash-blobs';
 import { FitScale } from './fit-scale';
 import { FitTiles } from './fit-tiles';
-import { LIMITS, LayoutSize, NOT_COUNTED, buildViews, groupLabel, hasChipPeak, isDarkTheme } from './metric-views';
+import { LIMITS, LayoutSize, NOT_COUNTED, buildViews, groupLabel, hasChipPeak, isDarkTheme, peakText } from './metric-views';
+import { autoLayout } from './auto-layout';
 
 interface Block {
   key: MetricGroup;
@@ -25,7 +26,12 @@ const HEAD: Partial<Record<MetricGroup, string>> = { gpu: 'gpu.load', cpu: 'cpu.
 /** Aparecem embutidas em outro lugar (subtítulo da RAM / centro do FPS). */
 const EMBEDDED = new Set(['ram.used', 'ram.total', 'fps.current', 'fps.graph']);
 /** Nome curto dos layouts, para as classes CSS. */
-const MODE_CLASS: Record<LayoutSize, string> = { full: '', mid: ' c', compact: ' c tiny' };
+const MODE_CLASS: Record<LayoutSize, string> = { full: '', mid: ' c', compact: ' c tiny', strip: ' st', mini: ' mn' };
+/** 1.2: célula da telinha (mini). */
+interface ScreenCell extends MetricView {
+  group: MetricGroup;
+  peakFull: string;
+}
 
 /** Rótulos curtos para os chips do layout compacto (quando o usuário não definiu um label). Os que mudam com o idioma ficam em i18n.ts. */
 const SHORT: Record<string, string> = {
@@ -71,27 +77,29 @@ export class Widget {
   private readonly size = signal({ w: window.innerWidth, h: window.innerHeight });
   protected readonly vertical = computed(() => this.previewVertical() ?? this.size().h > this.size().w);
   /**
-   * Layout efetivo: forçado na config, ou automático pelo tamanho da janela
-   * (compacto = retângulo pequenininho, médio = ~300 px, completo = o resto).
+   * Layout efetivo: forçado na config, ou automático pelo tamanho da janela (regra em auto-layout.ts:
+   * compacto, faixa ≥ 3:1, telinha até 1024×600, médio ~300 px, completo = o resto).
    */
   protected readonly mode = computed<LayoutSize>(() => {
     // Perfil do jogo atual (v0.7) vale no lugar do layout da config enquanto o jogo roda
     const pref = this.previewLayout() ?? this.urlLayout ?? this.t.profile()?.layout ?? this.config()?.widget.layout ?? 'auto';
-    if (pref === 'compact' || pref === 'mid' || pref === 'full') return pref;
+    if (pref !== 'auto' && pref in MODE_CLASS) return pref as LayoutSize;
     const { w, h } = this.size();
-    if (w < 340 && h < 260) return 'compact';
-    if (w < 640 && h < 640) return 'mid';
-    return 'full';
+    return autoLayout(w, h);
   });
+  /** Faixa larga (2560×720): ganha a 5ª coluna (relógio, data, bateria, outros). */
+  protected readonly stripWide = computed(() => this.mode() === 'strip' && this.size().w >= 2200 && this.size().h >= 560);
+  /** Telinha pequena (480×320): FPS numa linha em cima, grade 3×2 sem picos. */
+  protected readonly miniSmall = computed(() => this.mode() === 'mini' && (this.size().w < 640 || this.size().h < 400));
   protected readonly compactWide = computed(() => {
-    if (this.previewLayout() || this.mode() === 'full') return false;
+    if (this.previewLayout() || (this.mode() !== 'mid' && this.mode() !== 'compact')) return false;
     const { w, h } = this.size();
     return w / h > (this.mode() === 'compact' ? 1.8 : 1.5);
   });
   protected readonly modeClass = computed(() =>
     this.mode() === 'full'
       ? this.vertical() ? ' v' : ' h'
-      : MODE_CLASS[this.mode()] + (this.compactWide() ? ' cw' : ''),
+      : MODE_CLASS[this.mode()] + (this.compactWide() ? ' cw' : '') + (this.stripWide() ? ' st-wide' : '') + (this.miniSmall() ? ' mn-s' : ''),
   );
   protected readonly now = signal(new Date());
   private readonly systemDark = signal(matchMedia('(prefers-color-scheme: dark)').matches);
@@ -122,6 +130,19 @@ export class Widget {
       b.sub = `${v['ram.used']!.toFixed(1)} / ${Math.round(v['ram.total']!)} GB`;
     else b.sub = null;
     return b;
+  });
+  /** Faixa: a RAM ganha os tiles "Usada" e "Livre" (em GB), como no design. */
+  protected readonly stripRam = computed(() => {
+    const b = this.ram();
+    const v = this.t.values();
+    const used = v['ram.used'];
+    const total = v['ram.total'];
+    if (!b.sub || used == null || total == null) return b;
+    const s = this.s();
+    const tile = (id: string, label: string, value: number): MetricView => ({
+      id, label, value, text: value.toFixed(1), unit: 'GB', level: 'ok', sparkline: false, isTemperature: false, peak: null,
+    });
+    return { ...b, tiles: [tile('ram.used', s.ramUsedTile, used), tile('ram.free', s.ramFreeTile, Math.max(0, total - used)), ...b.tiles] };
   });
   protected readonly other = computed(() => this.block('other', this.s().groupOther, groupLabel(this.config(), 'other', this.t.catalog(), this.s())));
 
@@ -259,6 +280,38 @@ export class Widget {
     return [cells(this.gpu()), [...cells(this.cpu()), ...cells(this.ram())]].filter((r) => r.length);
   });
 
+  /**
+   * Telinha (mini): 6 células na prioridade de Métricas (GPU uso, núcleo, hot spot, …, CPU, RAM). O uso vira a célula
+   * com o nome do grupo; MHz vira GHz para caber.
+   */
+  protected readonly screenCells = computed<ScreenCell[]>(() => {
+    const s = this.s();
+    const out: ScreenCell[] = [];
+    for (const b of [this.gpu(), this.cpu(), this.ram()]) {
+      if (b.head) {
+        const label = b.key === 'gpu' && b.tiles.length && !this.miniSmall() ? s.miniGpuLoad : b.kind;
+        out.push({ ...b.head, label, unit: '%', group: b.key, peakFull: '' });
+      }
+      for (const m of b.tiles) {
+        const ghz = m.unit === 'MHz' && m.value != null;
+        out.push({
+          ...m,
+          label: this.short(m),
+          text: ghz ? (m.value! / 1000).toFixed(2) : m.text,
+          unit: ghz ? 'GHz' : m.unit,
+          group: b.key,
+          peakFull: peakText(m),
+        });
+      }
+    }
+    return out;
+  });
+
+  protected readonly screenCols = computed(() => (this.miniSmall() ? 3 : 2));
+
+  /** "máx 101 °C" (pico com unidade). */
+  protected peak = peakText;
+
   /** CPU e RAM dividem a mesma linha no compacto e no médio. */
   protected readonly splitBlocks = computed(() => [this.cpu(), this.ram()].filter((b) => b.head || b.tiles.length || b.sub));
 
@@ -325,7 +378,7 @@ export class Widget {
       const cur = views.find((m) => m.id === 'fps.current');
       if (cur) out.splice(limit - 1, 1, cur);
     }
-    return mode === 'compact' ? out.filter((m) => m.id !== 'fps.graph') : out;
+    return mode === 'compact' || mode === 'mini' ? out.filter((m) => m.id !== 'fps.graph') : out;
   }
 
   private views(group: MetricGroup): MetricView[] {

@@ -94,6 +94,135 @@
         }
       </div>
     </div>
+  } @else if (mode() === 'mini') {
+    <!-- 1.2 telinha (800×480, 1024×600, 480×320): FPS à esquerda (ou em cima), grade de 6 células -->
+    <div class="scr">
+      <section class="scr-fps" [class.idle]="!t.game()" [pwFitScale]="miniSmall() ? '' : 'self'">
+        @if (!t.connected()) {
+          <div class="status-pill">{{ s().connectingPitwall }}</div>
+        } @else if (t.game(); as game) {
+          @if (miniSmall()) {
+            <span class="fps">{{ fps().current?.text ?? '—' }}</span>
+            <span class="scr-id">
+              <span class="kind">FPS</span>
+              <span class="scr-game" [title]="game.exe"><i></i><span class="gc-name">{{ game.exe }}</span></span>
+            </span>
+            @if (fps().extras.length) {
+              <span class="scr-x">
+                @for (m of fps().extras; track m.id) {
+                  <span><b>{{ m.text }}</b> {{ m.unit || label(m) }}</span>
+                }
+              </span>
+            }
+          } @else {
+            <span class="scr-game" [title]="game.exe"><i></i><span class="gc-name">{{ theme() === 'terminal' ? '> ' + game.exe : game.exe }}</span></span>
+            <span class="fps">{{ fps().current?.text ?? '—' }}</span>
+            <span class="kind scr-fl">FPS</span>
+            @if (fpsBlocked()) {
+              <span class="fps-note" [title]="t.fpsStatus()">{{ s().fpsBlocked }}</span>
+            }
+            @if (fps().extras.length) {
+              <span class="scr-pills">
+                @for (m of fps().extras; track m.id) {
+                  <span class="pill"><span class="k">{{ label(m) }}</span><span class="n">{{ m.text }}</span>@if (m.unit) {<span class="u">{{ m.unit }}</span>}</span>
+                }
+              </span>
+            }
+            @if (limit(); as l) {
+              <span [class]="'lim ' + l.tone" [title]="l.title">{{ theme() === 'terminal' ? 'lim=' + l.reason : theme() === 'lumen' ? l.label : theme() === 'splash' ? l.word : l.dotted }}</span>
+            }
+            @if (battery().show) {
+              <pw-battery-row class="batt" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" [max]="4" />
+            }
+          }
+        } @else {
+          <span class="clock">{{ clock() }}</span>
+          @if (!miniSmall()) {
+            <span class="date">{{ date() }}</span>
+            <span class="status-pill">{{ theme() === 'terminal' ? s().noGameDetectedTerm : s().noGameDetected }}</span>
+            @if (battery().show) {
+              <pw-battery-row class="batt" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" [max]="4" />
+            }
+          }
+        }
+      </section>
+      <div class="scr-grid" [style.grid-template-columns]="'repeat(' + screenCols() + ', minmax(0, 1fr))'">
+        @for (c of screenCells(); track c.id) {
+          <div [class]="'cell grp-' + c.group + ' ' + c.level" [title]="c.label">
+            <span class="v">{{ c.text }}<small>{{ c.unit }}</small></span>
+            <span class="k">
+              <span class="kn">{{ theme() === 'terminal' ? label(c) : c.label }}</span>
+              @if (tagFor(c); as tag) {
+                <span class="tag">{{ tag }}</span>
+              }
+            </span>
+            @if (!miniSmall() && c.peak && c.level !== 'ok') {
+              <span [class]="'pk ' + c.peak.level"><span class="w">{{ theme() === 'terminal' ? 'max=' : s().peakMax + ' ' }}</span><b>{{ c.peakFull }}</b></span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  } @else if (mode() === 'strip') {
+    <!-- 1.2 faixa (≥ 3:1): FPS | GPU (3×2) | CPU | RAM, e na faixa larga uma 5ª coluna -->
+    <div class="layout strip">
+      <section class="center s-fps" [class.idle]="!t.game()" pwFitScale="self">
+        @if (!t.connected()) {
+          <div class="status-pill">{{ s().connectingPitwall }}</div>
+        } @else if (t.game(); as game) {
+          <div class="game-chip" [title]="game.exe"><i></i><span class="gc-name">{{ theme() === 'terminal' ? '> ' + game.exe : game.exe }}</span></div>
+          <div class="s-fpsrow">
+            <span class="fps">{{ fps().current?.text ?? '—' }}</span>
+            <span class="fps-label">FPS</span>
+          </div>
+          @if (fpsBlocked()) {
+            <div class="fps-note" [title]="t.fpsStatus()">{{ s().fpsBlockedLong }}</div>
+          }
+          @if (fps().extras.length) {
+            <div class="fps-extras">
+              @for (m of fps().extras; track m.id) {
+                <span class="pill">
+                  <span class="k">{{ label(m) }}</span>
+                  <span class="n">{{ m.text }}</span>@if (m.unit) {<span class="u">{{ m.unit }}</span>}
+                </span>
+              }
+            </div>
+          }
+          @if (fps().graph) {
+            <pw-frame-graph class="frame-graph" [frames]="t.frames" [tick]="t.historyTick()" />
+          }
+        } @else {
+          <div class="clock">{{ clock() }}</div>
+          <div class="date">{{ date() }}</div>
+          <div class="status-pill">{{ theme() === 'terminal' ? s().noGameDetectedTerm : s().noGameDetected }}</div>
+        }
+        @if (battery().show && !stripWide()) {
+          <pw-battery-row class="batt" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" />
+        }
+        <ng-container *ngTemplateOutlet="peaks" />
+      </section>
+      <ng-container *ngTemplateOutlet="card; context: { $implicit: gpu() }" />
+      <ng-container *ngTemplateOutlet="card; context: { $implicit: cpu() }" />
+      <ng-container *ngTemplateOutlet="card; context: { $implicit: stripRam() }" />
+      @if (stripWide()) {
+        <section class="s-aside">
+          @if (t.game()) {
+            <div>
+              <div class="s-clock">{{ clock() }}</div>
+              <div class="s-date">{{ date() }}</div>
+            </div>
+          }
+          <div class="s-list">
+            @if (battery().show) {
+              <pw-battery-row class="s-batt" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" [max]="4" />
+            }
+            @for (m of other().tiles; track m.id) {
+              <span [class]="'s-row ' + m.level"><span class="k">{{ label(m) }}</span><span class="n">{{ m.text }}{{ m.unit ? ' ' + m.unit : '' }}</span></span>
+            }
+          </div>
+        </section>
+      }
+    </div>
   } @else {
     <div class="layout">
       <ng-container *ngTemplateOutlet="card; context: { $implicit: gpu() }" />
@@ -137,21 +266,7 @@
         @if (battery().show) {
           <pw-battery-row class="batt" [devices]="battery().devices" [hidden]="battery().hidden" [low]="battery().low" />
         }
-        @if (t.game() && !locked()) {
-          <!-- Faixa fora da região de arrasto: no WebView2 a área de arrasto não recebe hover -->
-          <div class="peaks-zone" [class.done]="resetDone()">
-            @if (resetDone()) {
-              <span class="rst ok" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>{{ s().peaksReset }}</span>
-            } @else {
-              <span class="rst">
-                {{ peaksSince() }}
-                <button type="button" (click)="resetPeaks()">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" /><path d="M3.5 4v5h5" /></svg>{{ s().resetPeaks }}
-                </button>
-              </span>
-            }
-          </div>
-        }
+        <ng-container *ngTemplateOutlet="peaks" />
       </section>
 
       <div class="side">
@@ -164,7 +279,7 @@
     </div>
   }
 
-  @if (theme() === 'terminal' && mode() === 'full') {
+  @if (theme() === 'terminal' && (mode() === 'full' || mode() === 'strip')) {
     <footer class="statusbar">
       <span class="prompt">pitwall&#64;localhost:~$</span>
       <span>watch -n {{ (config()?.refreshMs ?? 500) / 1000 }} sensors</span>
@@ -227,7 +342,7 @@
                 <span class="tag">{{ tag }}</span>
               }
               @if (m.peak; as pk) {
-                <span [class]="'pk ' + pk.level"><span class="w">{{ theme() === 'terminal' ? 'max=' : s().peakMax + ' ' }}</span><b>{{ pk.text }}</b></span>
+                <span [class]="'pk ' + pk.level"><span class="w">{{ theme() === 'terminal' ? 'max=' : s().peakMax + ' ' }}</span><b>{{ peak(m) }}</b></span>
               }
             </div>
             <div class="t-row">
@@ -269,11 +384,29 @@
             <span class="c-k">{{ short(m) }}</span>
             <span class="c-v">{{ m.text }}<small>{{ shortUnit(m) }}</small></span>
             @if (chipPeak(m)) {
-              <i [class]="'pk ' + m.peak!.level">▴{{ m.peak!.text }}</i>
+              <i [class]="'pk ' + m.peak!.level">▴{{ peak(m) }}</i>
             }
           </span>
         }
       </div>
     }
   </section>
+</ng-template>
+
+<!-- "Picos desde 21:02 · Zerar" (completo e faixa). Fora da região de arrasto: no WebView2 a área de arrasto não recebe hover -->
+<ng-template #peaks>
+  @if (t.game() && !locked()) {
+    <div class="peaks-zone" [class.done]="resetDone()">
+      @if (resetDone()) {
+        <span class="rst ok" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>{{ s().peaksReset }}</span>
+      } @else {
+        <span class="rst">
+          {{ peaksSince() }}
+          <button type="button" (click)="resetPeaks()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" /><path d="M3.5 4v5h5" /></svg>{{ s().resetPeaks }}
+          </button>
+        </span>
+      }
+    </div>
+  }
 </ng-template>

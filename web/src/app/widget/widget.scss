@@ -470,9 +470,6 @@ header {
   b { font-family: var(--font-num); font-weight: inherit; letter-spacing: 0; }
   &.warn { color: var(--yellow); }
   &.crit { color: var(--red); }
-  // Grade de 3 colunas (muitos tiles): "▴101" no lugar de "máx 101", para o nome do tile continuar visível
-  .many & .w { display: none; }
-  .many &::before { content: '▴'; margin-right: 0.15em; font-size: 0.85em; }
 }
 .t-neon .tiles.many .tag { letter-spacing: 0.04em; padding: u(1) u(4); }
 // Grade de 3 colunas do card da GPU: nome numa linha, tag + pico na de baixo. Com a tag de alerta e o pico na
@@ -491,6 +488,11 @@ header {
 // Vertical com 3 colunas: tiles altos e estreitos — o pico desce para a linha de baixo do nome
 .v .tiles.many .t-label { flex-wrap: wrap; row-gap: 0; }
 .v .tiles.many .pk { margin-left: 0; flex-basis: 100%; }
+// 1.2: "máx 101 °C" fica embaixo do nome do tile (nunca disputa largura com ele), no completo e na faixa
+.pw:not(.t-terminal) .tile {
+  .t-label { flex-wrap: wrap; row-gap: u(2); }
+  .pk { margin-left: 0; flex-basis: 100%; }
+}
 // Chip "Limite: …" ao lado do nome da GPU. Sem vermelho: limite não é alarme.
 .lim {
   flex: 0 0 auto;
@@ -1319,6 +1321,270 @@ header {
   .c-sub { color: var(--text2); }
   &.light .card { border-width: 2px; box-shadow: 3px 3px 0 #150a28; }
   &.dark .card { box-shadow: 0 u(8) u(18) var(--glow); }
+}
+
+// =========================================================================
+// 1.2 — faixa (strip, ≥ 3:1) e telinha (mini). Mesmos tokens, cards, tiles, .lim e picos; nada de animação nova.
+// =========================================================================
+// Faixa: 1920×480 = escala 1; 2560×720 = 1,45 (limitada pela largura de referência de 1760)
+.pw.st {
+  --u: min(calc(100cqh / 480), calc(100cqw / 1760));
+  --u0: min(calc(100cqh / 480), calc(100cqw / 1760));
+}
+.layout.strip {
+  flex-direction: row;
+  gap: u(22);
+  padding: u(32);
+  > .s-fps {
+    flex: 0 0 calc(380 * var(--u0));
+    --u: calc(var(--u0) * var(--fit, 1));
+    align-items: flex-start;
+    justify-content: safe center;
+    text-align: left;
+    padding: 0 u(8);
+    box-sizing: border-box;
+  }
+  > .card-gpu { flex: 2.1 1 0; min-width: 0; }
+  // CPU e RAM nunca ficam estreitos a ponto de cortar o nome ("Me…") na faixa larga; quem cede é a GPU
+  > .card-cpu { flex: 0.9 1 0; min-width: u(250); }
+  > .card-ram { flex: 0.7 1 0; min-width: u(230); }
+  > .card { gap: u(12); padding: u(18) u(20); }
+  // linhas fixas: um tile só não estica até o pé do card (GPU 3×2; CPU e RAM em 1 coluna de 3)
+  .tiles { gap: u(10); grid-template-rows: repeat(3, minmax(0, 1fr)); }
+  .card-gpu .tiles.many { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+  .tile { padding: u(12) u(14); }
+  .card-cpu .tiles:not(.many) { grid-template-columns: 1fr; }
+  .card > header, .card > .term-head, .card > .bar, .card > .ascii, .card > .sub { flex-shrink: 0; }
+}
+.s-fps {
+  .game-chip { margin-bottom: u(2); }
+  .fps { font-size: f(calc(var(--fps-size) * 0.87)); line-height: 0.86; }
+  .fps-label { margin: 0; letter-spacing: 0.14em; font-size: f(14); }
+  .fps-extras { justify-content: flex-start; margin-top: u(14); }
+  .pill { font-size: f(13); padding: u(4) u(10); }
+  .frame-graph { width: 100%; height: u(40); margin-top: u(14); }
+  .fps-note { text-align: left; max-width: 100%; }
+  .batt { margin-top: u(12); justify-content: flex-start; }
+  .clock { font-size: f(110); }
+  &.idle .status-pill { margin-top: u(14); }
+  .peaks-zone { justify-content: flex-start; }
+}
+// nome do componente no tamanho do design da faixa (18); no Splash (Baloo, larga) um pouco maior
+.layout.strip .card { --name-size: 18; }
+.t-splash .layout.strip .card { --name-size: 20; }
+.st-wide .layout.strip > .s-fps { flex-basis: calc(340 * var(--u0)); }
+.st-wide .s-aside { flex-basis: u(190); }
+.s-fpsrow {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: u(10);
+}
+// 5ª coluna da faixa larga: relógio + data em cima, bateria e "outros" embaixo
+.s-aside {
+  position: relative;
+  flex: 0 0 u(230);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: u(12);
+  padding: u(6) 0;
+}
+.s-clock {
+  font-family: var(--font-num);
+  font-size: f(46);
+  font-weight: var(--fps-weight);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.s-date {
+  margin-top: u(4);
+  font-size: f(13);
+  font-weight: 700;
+  color: var(--text3);
+  &::first-letter { text-transform: uppercase; }
+}
+.s-list {
+  display: flex;
+  flex-direction: column;
+  gap: u(8);
+  min-width: 0;
+  font-size: f(13);
+  font-weight: 700;
+  color: var(--text2);
+}
+.s-batt { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: u(8); }
+.s-row {
+  display: flex;
+  justify-content: space-between;
+  gap: u(8);
+  min-width: 0;
+  .k { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .n { font-family: var(--font-num); color: var(--text); white-space: nowrap; }
+  &.warn .n { color: var(--yellow); }
+  &.crit .n { color: var(--red); }
+}
+.t-minimo .layout.strip {
+  > .card, > .s-aside { border-left: 1px solid var(--hair); padding-left: u(22); }
+}
+.t-neon .s-clock { letter-spacing: 0; font-size: f(36); }
+.t-terminal .s-clock { color: var(--accent); letter-spacing: 0; font-size: f(38); }
+
+// Telinha 800×480 (e 1024×600): FPS à esquerda (300 × s), grade 2×3 à direita
+.pw.mn {
+  --u: min(calc(100cqw / 800), calc(100cqh / 480));
+  --u0: min(calc(100cqw / 800), calc(100cqh / 480));
+  --scr-v: 40;
+}
+// 480×320: FPS numa linha em cima, grade 3×2 embaixo, sem picos
+.pw.mn-s {
+  --u: min(calc(100cqw / 480), calc(100cqh / 320));
+  --u0: min(calc(100cqw / 480), calc(100cqh / 320));
+  --scr-v: 30;
+}
+.t-neon.mn, .t-terminal.mn { --scr-v: 34; }
+.t-neon.mn-s, .t-terminal.mn-s { --scr-v: 25; }
+.scr {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: u(22);
+  padding: u(22);
+  box-sizing: border-box;
+}
+.scr-fps {
+  position: relative;
+  flex: 0 0 calc(300 * var(--u0));
+  --u: calc(var(--u0) * var(--fit, 1));
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: safe center;
+  gap: u(10);
+  overflow: hidden;
+  .fps { font-size: f(calc(var(--fps-size) * 0.87)); line-height: 0.86; }
+  .kind { font-size: f(14); }
+  .clock { font-size: f(104); }
+  .date { margin: 0; text-align: left; }
+  .fps-note { margin: 0; text-align: left; max-width: 100%; }
+  .lim { align-self: flex-start; }
+  .batt { margin: 0; justify-content: flex-start; font-size: f(13); }
+  .status-pill { font-size: f(13); font-weight: 600; color: var(--text2); }
+}
+.t-splash .scr-fps.idle .status-pill { color: #150a28; }
+.t-splash.light .scr-fps.idle .status-pill { color: #fff; }
+.scr-game {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  max-width: 100%;
+  font-size: f(15);
+  font-weight: 700;
+  color: var(--text2);
+  white-space: nowrap;
+  .gc-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  i { flex: 0 0 auto; width: 0.55em; height: 0.55em; border-radius: 50%; background: var(--ok); }
+  .t-splash & i { background: #9be22e; }
+  .t-terminal & i { display: none; }
+}
+.scr-pills {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: u(6);
+  .pill { font-size: f(14); padding: u(4) u(10); }
+}
+.scr-grid {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: u(10);
+  .cell {
+    align-items: flex-start;
+    justify-content: center;
+    padding: u(10) u(14);
+    border-radius: calc(var(--r-tile) * var(--u) * 0.9);
+    overflow: hidden;
+    .v { font-size: u(var(--scr-v)); line-height: 1; font-weight: var(--val-weight); small { font-size: 0.5em; margin-left: 0.12em; font-weight: 600; } }
+    .k {
+      display: flex;
+      align-items: center;
+      gap: u(6);
+      margin-top: u(6);
+      font-size: u(12.5);
+      color: var(--text3);
+      text-transform: var(--label-transform);
+      letter-spacing: var(--label-tracking);
+    }
+    .kn { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .tag { font-size: u(9.5); }
+    .pk { margin: u(4) 0 0; font-size: u(12); }
+    &.warn .k, &.crit .k { color: inherit; }
+    &.warn { color: var(--yellow); background: var(--warn-tint); }
+    &.crit { color: var(--red); background: var(--crit-tint); }
+  }
+}
+// Lumen: o tint já marca o alerta (sem ponto nem tag na célula)
+.t-lumen .scr-grid .tag { display: none; }
+.t-minimo .scr-grid .cell { padding-left: 0; padding-right: 0; }
+.t-minimo .scr-grid .cell .k { letter-spacing: 0.14em; text-transform: uppercase; }
+.t-minimo .scr-fps + .scr-grid { border-left: 1px solid var(--hair); padding-left: u(22); }
+.t-neon .scr-grid .cell.warn .v { text-shadow: 0 0 u(14) var(--yellow); }
+.t-neon .scr-grid .cell.crit .v { text-shadow: 0 0 u(14) var(--red); }
+.t-terminal .scr-grid .cell .k { text-transform: none; letter-spacing: 0; }
+.t-splash .scr-grid .cell {
+  .k { color: inherit; }
+  .pk { color: inherit; opacity: 0.85; }
+  &.warn { background: #ffd400; color: #1a1200; }
+  &.crit { background: #12051f; color: #ff6b76; .k { color: #fff; } }
+}
+.mn-s {
+  .scr { flex-direction: column; gap: u(8); padding: u(10) u(12) u(12); }
+  .scr-fps {
+    flex: 0 0 auto;
+    --u: var(--u0);
+    flex-direction: row;
+    align-items: center;
+    gap: u(12);
+    overflow: visible;
+    .fps { font-size: f(calc(var(--fps-size) * 0.535)); }
+    .clock { font-size: f(80); }
+  }
+  .scr-grid {
+    gap: u(6);
+    .cell { padding: u(6) u(10); .k { margin-top: u(3); font-size: u(11); } }
+  }
+  .t-minimo & .scr-fps + .scr-grid { border-left: 0; padding-left: 0; }
+}
+.t-minimo.mn-s .scr-fps + .scr-grid { border-left: 0; padding-left: 0; }
+.scr-id {
+  display: flex;
+  flex-direction: column;
+  gap: u(4);
+  min-width: 0;
+  .kind { font-size: u(12); }
+  .scr-game { font-size: u(12); }
+}
+.scr-x {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: u(3);
+  font-size: u(13);
+  font-weight: 700;
+  color: var(--text2);
+  white-space: nowrap;
+  b { font-family: var(--font-num); color: var(--text); }
 }
 
 @media (prefers-reduced-motion: reduce) {

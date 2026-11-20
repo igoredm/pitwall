@@ -1,4 +1,5 @@
 import type { Dict } from '../i18n';
+import type { LayoutSize } from './auto-layout';
 import { AppConfig, Catalog, Extremes, Level, MetricDef, MetricGroup, MetricView, ThemeName } from '../models';
 
 /**
@@ -113,7 +114,7 @@ export function shortCpu(name?: string) {
   return m ? m[0] : name;
 }
 
-export type LayoutSize = 'full' | 'mid' | 'compact';
+export type { LayoutSize } from './auto-layout';
 
 /**
  * Quantas métricas cada layout mostra por grupo, na ordem de prioridade (a ordem de arrastar da configuração).
@@ -122,7 +123,17 @@ export type LayoutSize = 'full' | 'mid' | 'compact';
 export const LIMITS: Record<Exclude<LayoutSize, 'full'>, Record<MetricGroup, number>> = {
   compact: { gpu: 4, cpu: 3, ram: 1, other: 0, fps: 2 },
   mid: { gpu: 6, cpu: 4, ram: 2, other: 0, fps: 3 },
+  // 1.2 faixa: GPU = uso + grade 3×2; CPU = uso + 3 tiles; RAM = uso + usada; FPS + 1% + 0,1% + frametime + gráfico.
+  // "Outros" só na 5ª coluna da faixa larga (2560×720).
+  strip: { gpu: 7, cpu: 4, ram: 2, other: 2, fps: 5 },
+  // 1.2 telinha: 6 células (GPU uso, núcleo, hot spot, …, CPU, RAM) e FPS + 1% low + frametime
+  mini: { gpu: 4, cpu: 1, ram: 1, other: 0, fps: 3 },
 };
+
+/** "máx 101 °C": pico com a unidade (temperatura com espaço, como nas tabelas). */
+export function peakText(m: MetricView): string {
+  return m.peak ? (m.unit ? `${m.peak.text} ${m.unit}` : m.peak.text) : '';
+}
 
 /** ram.total é mostrado junto com ram.used ("18.4 / 32 GB"), não conta como item separado. */
 export const NOT_COUNTED = new Set(['ram.total']);
