@@ -38,11 +38,14 @@ This will compile your project and store the build artifacts in the `dist/` dire
 
 ## Running unit tests
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Unit tests cover pure logic only (no DOM/TestBed) and run with [Vitest](https://vitest.dev/) in Node
+(`src/**/*.spec.ts`, config in `vitest.config.mts`). Type-check the specs and run them once:
 
 ```bash
-ng test
+npm test
 ```
+
+`npx vitest` keeps watching.
 
 ## Running end-to-end tests
 
