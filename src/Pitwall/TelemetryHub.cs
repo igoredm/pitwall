@@ -70,8 +70,10 @@ public sealed class TelemetryHub : IDisposable
     public event Action<GameSession>? SessionEnded;
     /// <summary>Métrica no vermelho por 5 s ou mais (título, texto). Disparado na thread de telemetria.</summary>
     public event Action<string, string>? AlertRaised;
-    /// <summary>"Compacto no canto superior direito" (tela de configurações).</summary>
-    public event Action<string>? PlaceTopRightRequested;
+    /// <summary>"Compacto no canto superior direito" (tela de configurações). 1.2: (layout, canto tl|tr|bl|br).</summary>
+    public event Action<string, string>? PlaceTopRightRequested;
+    /// <summary>1.2: o widget ocupa o monitor inteiro (telinhas e faixas dedicadas).</summary>
+    public event Action? FillMonitorRequested;
     /// <summary>Só em Debug: permite reiniciar o app a partir do dev tooling (o processo é elevado).</summary>
 #pragma warning disable CS0067 // disparado só em Debug
     public event Action? QuitRequested;
@@ -889,7 +891,11 @@ public sealed class TelemetryHub : IDisposable
                     }
                     return null;
                 case "placeTopRight":
-                    PlaceTopRightRequested?.Invoke(node["layout"]?.GetValue<string>() == "mid" ? "mid" : "compact");
+                    PlaceTopRightRequested?.Invoke(node["layout"]?.GetValue<string>() == "mid" ? "mid" : "compact",
+                        node["corner"]?.GetValue<string>() is "tl" or "bl" or "br" ? node["corner"]!.GetValue<string>() : "tr");
+                    return null;
+                case "fillMonitor":
+                    FillMonitorRequested?.Invoke();
                     return null;
                 case "refreshBatteries":
                     _battery.RefreshNow();

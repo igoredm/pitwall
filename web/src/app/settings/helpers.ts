@@ -16,7 +16,17 @@ export function autoLayout(w: number, h: number): Exclude<WidgetLayout, 'auto'> 
 }
 
 export function layoutName(s: Dict, l: WidgetLayout): string {
-  return l === 'full' ? s.layoutFullBtn : l === 'mid' ? s.layoutMidBtn : l === 'compact' ? s.layoutCompactBtn : s.layoutAutoBtn;
+  return l === 'full'
+    ? s.layoutFullBtn
+    : l === 'mid'
+      ? s.layoutMidBtn
+      : l === 'compact'
+        ? s.layoutCompactBtn
+        : l === 'strip'
+          ? s.layoutStripBtn
+          : l === 'mini'
+            ? s.layoutMiniBtn
+            : s.layoutAutoBtn;
 }
 
 export function presetName(s: Dict, p: string | undefined): string {

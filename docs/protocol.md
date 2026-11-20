@@ -188,7 +188,8 @@ quando um celular pareia (`paired` = id dele), é revogado, **[1.0]** conecta (a
 | `type` | Campos | Efeito | Resposta |
 |---|---|---|---|
 | `setConfig` | `config: AppConfig` | substitui a config (posição da janela, pasta de log inválida e `remote.pairedDevices` são preservados pelo backend) | broadcast `config` |
-| `placeTopRight` | `layout: "compact" \| "mid"` | | |
+| `placeTopRight` | `layout: "compact" \| "mid"`, `corner?: "tl" \| "tr" \| "bl" \| "br"` **[1.2]** (padrão `tr`) | widget no canto do monitor escolhido | |
+| `fillMonitor` **[1.2]** | | widget ocupa o monitor inteiro (telinha, faixa); layout volta ao Automático | broadcast `config` |
 | `refreshBatteries` | | | |
 | `restoreDefaults` | | config de fábrica (mantém a janela; desliga o celular e esquece os pareados) | broadcast `config` |
 | `getState` | | | `catalog` |

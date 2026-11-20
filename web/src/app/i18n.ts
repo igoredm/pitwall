@@ -1,6 +1,7 @@
 import { Injectable, computed, effect, inject } from '@angular/core';
 import { Level, SettingsPage, ThemeName } from './models';
 import { TelemetryService, urlParam } from './telemetry.service';
+import { widgetEn, widgetPt } from './i18n-12-widget';
 
 export type Lang = 'pt-BR' | 'en';
 export type LanguagePref = 'auto' | Lang;
@@ -697,6 +698,7 @@ const ptBR = {
 
   preview: 'Pré-visualização',
   close: 'Fechar',
+  ...widgetPt,
 };
 
 export type Dict = typeof ptBR;
@@ -1371,6 +1373,7 @@ const en: Dict = {
 
   preview: 'Preview',
   close: 'Close',
+  ...widgetEn,
 };
 
 const DICTS: Record<Lang, Dict> = { 'pt-BR': ptBR, en };

@@ -637,7 +637,10 @@ export type PairingMessage =
 /** v0.7: mensagens da página local para o backend. */
 export type ClientMessage =
   | { type: 'setConfig'; config: AppConfig }
-  | { type: 'placeTopRight'; layout: 'compact' | 'mid' }
+  /** corner (1.2, opcional): tl | tr | bl | br; padrão tr. */
+  | { type: 'placeTopRight'; layout: 'compact' | 'mid'; corner?: 'tl' | 'tr' | 'bl' | 'br' }
+  /** 1.2: o widget ocupa o monitor inteiro (telinhas e faixas dedicadas). */
+  | { type: 'fillMonitor' }
   | { type: 'refreshBatteries' }
   | { type: 'restoreDefaults' }
   | { type: 'getState' }

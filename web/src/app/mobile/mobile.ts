@@ -4,7 +4,7 @@ import { I18n } from '../i18n';
 import { AppConfig, MetricGroup, MetricView, ThemeName } from '../models';
 import { fmtDuration } from '../settings/format';
 import { TelemetryService } from '../telemetry.service';
-import { buildViews, groupLabel, isDarkTheme } from '../widget/metric-views';
+import { buildViews, groupLabel, isDarkTheme, peakText } from '../widget/metric-views';
 import { Pair } from './pair';
 
 const HEAD: Partial<Record<MetricGroup, string>> = { gpu: 'gpu.load', cpu: 'cpu.load', ram: 'ram.load' };
@@ -88,7 +88,7 @@ const SKIP = new Set(['ram.used', 'ram.total', 'fps.current', 'fps.graph', 'fps.
                             <span class="tl">
                               <span class="tn">{{ m.label }}</span>
                               @if (m.peak; as pk) {
-                                <i [class]="pk.level">{{ sx.peakMax }} {{ pk.text }}</i>
+                                <i [class]="pk.level">{{ sx.peakMax }} {{ peak(m) }}</i>
                               }
                             </span>
                             <span class="v">{{ m.text }}<small>{{ m.unit ? ' ' + m.unit : '' }}</small></span>
@@ -256,6 +256,9 @@ export class Mobile {
   );
   protected readonly clock = computed(() => this.now().toLocaleTimeString(this.s().locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }));
   protected readonly date = computed(() => this.now().toLocaleDateString(this.s().locale, { weekday: 'long', day: 'numeric', month: 'long' }));
+
+  /** "máx 101 °C" (pico com unidade). */
+  protected peak = peakText;
 
   protected bar(m: MetricView) {
     return Math.max(0, Math.min(100, m.value ?? 0)) / 100;

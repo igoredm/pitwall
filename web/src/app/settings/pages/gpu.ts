@@ -39,9 +39,43 @@ const LIVE: [string, string][] = [
     @if (d) {
       @if (caps(); as c) {
         @if (!c.supported) {
-          <div class="note n-y na">
-            <span class="ico"><pw-icon name="warn" [size]="16" [stroke]="2" /></span>
-            <span>{{ sx.gpuUnavailable(c.error || sx.gpuNeedsNvidia) }}</span>
+          @if (nvidiaGpu()) {
+            <!-- NVIDIA, mas o driver/NVML falhou: o motivo vem do backend -->
+            <div class="note n-y na">
+              <span class="ico"><pw-icon name="warn" [size]="16" [stroke]="2" /></span>
+              <span>{{ sx.gpuUnavailable(c.error || sx.gpuNeedsNvidia) }}</span>
+            </div>
+          } @else {
+            <!-- 1.2: sem NVIDIA (V12-Pecas): explica, e o ajuste fica esmaecido, sem como ligar -->
+            <div class="note n-y na mid">
+              <span class="ico"><pw-icon name="warn" [size]="16" [stroke]="2" /></span>
+              <div class="rl">
+                <div class="nt">{{ sx.gpuNvTitle }}</div>
+                <div class="ht">{{ gpuName() ? sx.gpuNvBody(gpuName()!) : sx.gpuNvBodyNoName }}</div>
+              </div>
+            </div>
+          }
+          <div class="grp dimmed nv-off" aria-disabled="true">
+            <div class="row">
+              <div class="rl">
+                <div class="lb" id="l-gpu">{{ sx.gpuEnable2 }}</div>
+                <div class="ht">{{ sx.gpuNvSwitchHint }}</div>
+              </div>
+              @if (!nvidiaGpu()) {
+                <span class="pill p-y">{{ sx.needsNvidia }}</span>
+              }
+              <button type="button" class="sw" role="switch" aria-labelledby="l-gpu" aria-checked="false" disabled></button>
+            </div>
+            <div class="row">
+              <div class="rl">
+                <div class="lb">{{ sx.gpuProfile }}</div>
+              </div>
+              <span class="seg" role="group" [attr.aria-label]="sx.gpuProfile">
+                <button type="button" disabled>{{ sx.gpuCool }}</button>
+                <button type="button" disabled>{{ sx.gpuBalanced }}</button>
+                <button type="button" disabled>{{ sx.gpuCustom }}</button>
+              </span>
+            </div>
           </div>
         } @else {
           <section class="sec" data-anchor="tuning">
@@ -189,6 +223,13 @@ const LIVE: [string, string][] = [
     .loading {
       margin-top: 22px;
     }
+    .nt {
+      font-weight: 700;
+    }
+    .nv-off {
+      margin-top: 12px;
+      pointer-events: none;
+    }
     .soft {
       .rl {
         opacity: 0.7;
@@ -265,6 +306,10 @@ export class GpuPage {
 
   protected readonly flip = (c: { gpuTuning: { enabled: boolean } }) => (c.gpuTuning.enabled = !c.gpuTuning.enabled);
   protected readonly caps = computed(() => this.t.catalog()?.tuning ?? null);
+  /** Nome da GPU do catálogo ("AMD Radeon RX 7800 XT"), para a nota sem NVIDIA. */
+  protected readonly gpuName = computed(() => this.t.catalog()?.hardware.gpu ?? null);
+  /** Sem suporte numa NVIDIA = falha do driver/NVML (mostra o erro), não "precisa de NVIDIA". */
+  protected readonly nvidiaGpu = computed(() => /nvidia|geforce|rtx|gtx|quadro/i.test(this.gpuName() ?? ''));
   protected readonly presets = computed(() => this.t.catalog()?.tuningPresets ?? {});
   protected readonly perfcapSupported = computed(() => this.t.defs().get('gpu.perfcap')?.available ?? false);
 

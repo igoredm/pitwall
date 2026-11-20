@@ -16,6 +16,9 @@
  *   tour=<0–8>       1.0: passo do tour já visto (Visão geral mostra "Primeiros passos" com o progresso)
  *   appearance=light|dark|system   1.0: visual das configurações
  *   gpu=amd          1.0: sem NVIDIA (ajuste da GPU e motivo do clock sem suporte)
+ *   monitors=1       1.2: um monitor só (assistente: "Ver no celular ou na TV" / "Deixar no canto"); com scene=firstrun
+ *   layout=strip|mini|…  força o layout do widget (sem o parâmetro, o Automático escolhe pelo tamanho da janela:
+ *                    2560×720 e 1920×480 = faixa; 800×480, 1024×600 e 480×320 = telinha)
  *   battery=none     1.0: leitor de bateria não encontrado
  *   remote=busy      1.0: porta do celular ocupada
  *   logs=empty       1.0: pasta de CSV vazia
@@ -194,7 +197,7 @@ export function startDemo(t: TelemetryService) {
     monitors: [
       { device: '\\\\.\\DISPLAY1', index: 1, x: 0, y: 0, width: 2560, height: 1440, primary: true },
       { device: '\\\\.\\DISPLAY2', index: 2, x: 2560, y: 180, width: 1920, height: 1080, primary: false },
-    ],
+    ].slice(0, urlParam('monitors') === '1' ? 1 : 2),
     metrics,
     tuning: amd
       ? { supported: false, powerMinW: 0, powerMaxW: 0, powerDefaultW: 0, powerStartW: 0, maxClockMhz: 0, error: 'Precisa de uma GPU NVIDIA.' }
@@ -249,7 +252,7 @@ export function startDemo(t: TelemetryService) {
     groupLabels: {},
     widget: { visible: true, monitor: '\\\\.\\DISPLAY2', x: 40, y: 40, width: 1280, height: 400, alwaysOnTop: false, locked: false, layout: 'auto' },
     log: { enabled: true, folder: 'C:\\Users\\demo\\AppData\\Local\\Pitwall\\logs', intervalMs: 1000, keepDays: 30, maxTotalMb: 2048 },
-    gpuTuning: { enabled: true, preset: 'balanced', powerLimitW: 280, maxClockMhz: 1800, onlyInGames: true },
+    gpuTuning: { enabled: false, preset: 'balanced', powerLimitW: 280, maxClockMhz: 1800, onlyInGames: true },
     battery: { enabled: true, hidden: [], lowPercent: 15 },
     games: {
       autoDetect: true,
@@ -610,7 +613,7 @@ export function startDemo(t: TelemetryService) {
       profile: g && config.games.profiles?.[exe] ? { exe, ...config.games.profiles[exe] } : null,
       gameSuggestion: config.features?.gameSuggestions === false ? null : suggestion,
       batteries: BATTERIES,
-      tuning: g ? { active: true, powerLimitW: 260, clockMaxMhz: 1700 } : { active: false },
+      tuning: g && config.gpuTuning.enabled ? { active: true, powerLimitW: 260, clockMaxMhz: 1700 } : { active: false },
       log: { file: 'pitwall_2026-11-18_21-48-00_FC25.csv', size: 1_482_331 + k * 420 },
       fpsStatus: null,
     });
