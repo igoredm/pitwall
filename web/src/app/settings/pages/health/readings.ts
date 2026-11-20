@@ -97,9 +97,9 @@ import { incidentText, readingColumns } from './pc-view';
     }
     .k {
       color: var(--tx2);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      /* quebra em vez de cortar ("Engasgos na par…" a 960) */
+      overflow-wrap: anywhere;
+      line-height: 1.35;
     }
     .v {
       text-align: right;

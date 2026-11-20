@@ -104,7 +104,7 @@ import { crashed, durationSec, sameStart } from './session-util';
       container-type: inline-size;
     }
     .hcols {
-      grid-template-columns: 28px minmax(0, 1.3fr) 112px 64px 70px 60px 70px 76px 28px;
+      grid-template-columns: 28px minmax(0, 1.3fr) 128px 64px 70px 60px 70px 76px 28px;
     }
     .hrow {
       font-size: 13.5px;
@@ -191,7 +191,7 @@ import { crashed, durationSec, sameStart } from './session-util';
     }
     @container (max-width: 700px) {
       .hcols {
-        grid-template-columns: 24px minmax(0, 1.3fr) 104px 56px 52px 64px 28px;
+        grid-template-columns: 24px minmax(0, 1.3fr) 120px 56px 52px 64px 28px;
         gap: 8px;
       }
       .c-low,

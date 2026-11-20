@@ -40,6 +40,16 @@
   padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 .grow { flex: 1 1 auto; }
+// TV e telas grandes (1920×1080): a coluna do celular esticada deixava texto de 12 px numa tela de 3 m de distância;
+// centraliza e amplia (o desenho continua o do celular)
+@media (min-width: 1200px) and (min-height: 700px) {
+  .page {
+    zoom: 1.4;
+    max-width: 760px;
+    margin-inline: auto;
+    min-height: calc(100dvh / 1.4);
+  }
+}
 
 // ---------------------------------------------------------------- topo
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -199,7 +209,9 @@
 .tl {
   display: flex;
   justify-content: space-between;
-  gap: 6px;
+  // celular estreito: o pico desce para baixo do nome em vez de cortar o nome ("Memory …", "Δ hot sp…")
+  flex-wrap: wrap;
+  gap: 0 6px;
   font-size: 12px;
   font-weight: 600;
   color: var(--text2);
