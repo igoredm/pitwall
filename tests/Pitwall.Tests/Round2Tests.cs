@@ -263,7 +263,7 @@ public class TourAndAppearanceTests
     public void TourMigratesFromTutorialDone(bool done)
     {
         var c = ConfigStore.Parse($$"""{ "version": 6, "tutorialDone": {{(done ? "true" : "false")}} }""");
-        Assert.Equal(7, c.Version);
+        Assert.Equal(ConfigStore.CurrentVersion, c.Version);
         Assert.Equal(done, c.Tour.Done);
         Assert.Equal(0, c.Tour.Step);
         Assert.False(c.Tour.Dismissed);
@@ -381,7 +381,7 @@ public class DeepLinkAndAboutTests
     [Fact]
     public void PagesMatchTheContract() =>
         // Ids do contrato + os nomes de página do frontend (widget = appearance, devices = phone)
-        Assert.Equal(["overview", "widget", "appearance", "metrics", "alerts", "games", "sessions", "gpu", "devices", "phone", "features", "app"], SettingsForm.Pages);
+        Assert.Equal(["overview", "monitor", "health", "widget", "appearance", "metrics", "alerts", "games", "sessions", "gpu", "devices", "phone", "features", "app"], SettingsForm.Pages);
 
     [Theory]
     [InlineData("2.3.0.0", "2.3.0.0")]

@@ -11,7 +11,14 @@ export interface MetricDef {
   source?: string;
   defaultWarn?: number;
   defaultCrit?: number;
+  /** 1.2: por que não há leitura (só com available = false). */
+  missing?: MissingReason;
+  /** 1.2: explicação pronta (idioma do backend), ex.: "A NVIDIA tirou o hot spot das RTX 50". */
+  missingText?: string;
 }
+
+/** 1.2: motivo de um sensor sem leitura. */
+export type MissingReason = 'notExposed' | 'needsNvidia' | 'needsPawnIO' | 'needsAdmin' | 'noDevice' | 'needsPresentMon' | 'off';
 
 export interface MetricSetting {
   id: string;
@@ -87,6 +94,8 @@ export interface AppConfig {
   update?: UpdateConfig;
   /** 1.0 (o backend sempre manda): recursos desligáveis. Ver docs/protocol.md, "Recursos / feature switches". */
   features?: FeaturesConfig;
+  /** 1.2: atalhos globais. */
+  hotkeys?: HotkeysConfig;
   metrics: MetricSetting[];
 }
 
@@ -116,6 +125,15 @@ export interface FeaturesConfig {
   clockReason: boolean;
   /** Ao terminar um jogo, abre as configurações no resumo da sessão (padrão: desligado). */
   openSummaryOnGameEnd?: boolean;
+  /** 1.2: conta engasgos na sessão (padrão true). */
+  stutters?: boolean;
+}
+
+/** 1.2: "Ctrl+Alt+Shift+Win+Tecla" (A–Z, 0–9, F1–F24); vazio = desligado. */
+export interface HotkeysConfig {
+  enabled: boolean;
+  toggleWidget: string;
+  marker: string;
 }
 
 /** v0.7: aviso do Windows quando uma métrica fica >= vermelho por 5 s. */
@@ -133,6 +151,8 @@ export interface RemoteConfig {
   port: number;
   /** Só leitura para a página: muda por startPairing/revokeDevice. Vem sem o hash do token. */
   pairedDevices: PairedDevice[];
+  /** 1.2: GET /api/v1/state com token (Home Assistant). Precisa de enabled. */
+  apiEnabled?: boolean;
 }
 
 export interface PairedDevice {
@@ -148,7 +168,7 @@ export interface PairedDevice {
   kind?: DeviceKind;
 }
 
-export type DeviceKind = 'phone' | 'tv' | 'desktop' | 'unknown';
+export type DeviceKind = 'phone' | 'tv' | 'desktop' | 'integration' | 'unknown';
 
 export type TuningPreset = 'off' | 'balanced' | 'cool' | 'custom';
 
@@ -214,7 +234,7 @@ export interface Catalog {
   admin?: boolean;
   presentMon?: boolean;
   battery?: boolean;
-  hardware: { cpu?: string; gpu?: string; gpu2?: string };
+  hardware: { cpu?: string; gpu?: string; gpu2?: string; ramGb?: number; os?: string; gpuDriver?: string };
   monitors: MonitorInfo[];
   metrics: MetricDef[];
   tuning?: TuningCaps;
@@ -226,6 +246,10 @@ export interface Catalog {
   remote?: { running: boolean; port?: number; error?: string };
   /** 1.0: versões dos componentes, para App › Sobre. Ausente = backend antigo. */
   about?: AboutInfo;
+  /** 1.2: incidente do PC ainda não visto (balão / banner). */
+  pcPending?: PcIncidentSummary;
+  /** 1.2: estado de registro dos atalhos. */
+  hotkeys?: HotkeyStatus;
 }
 
 /** 1.0: versões mostradas em App › Sobre (texto livre vindo do backend; ausente/null = não encontrado). */
@@ -260,7 +284,7 @@ export interface SessionsPage {
 export type PairError = 'invalidCode' | 'expired' | 'noPending' | 'blocked';
 
 /** 1.0: páginas das configurações (ids estáveis, usados nos deep links #/settings/<page>/<anchor>). */
-export type SettingsPage = 'overview' | 'widget' | 'metrics' | 'alerts' | 'games' | 'sessions' | 'gpu' | 'devices' | 'features' | 'app';
+export type SettingsPage = 'overview' | 'monitor' | 'health' | 'widget' | 'metrics' | 'alerts' | 'games' | 'sessions' | 'gpu' | 'devices' | 'features' | 'app';
 
 /** Mensagens do host nativo (WebView2) para a página. */
 export type HostMessage =
@@ -351,7 +375,163 @@ export interface GameSession {
   /** 1.0: segundos por motivo do limite de clock na sessão (soma = tempo com leitura do NVML). */
   clockReasonSec?: Partial<Record<PerfCapReason, number>>;
   csvFile?: string;
+  // 1.2: médias, engasgos e marcadores (opcionais: sessões antigas não têm)
+  avgGpuTemp?: number;
+  avgHotspot?: number;
+  avgGpuPower?: number;
+  avgGpuClock?: number;
+  avgGpuLoad?: number;
+  avgCpuTemp?: number;
+  avgCpuLoad?: number;
+  peakCpuTemp?: number;
+  /** Engasgos na sessão (docs/v12-contract.md › Engasgo). Ausente = não contado (features.stutters off ou sessão antiga). */
+  stutters?: number;
+  markers?: SessionMarker[];
+  /** Média do |MsAnimationError| (PresentMon 2.x). */
+  animErrorMs?: number;
+  /** Média do MsPCLatency (PresentMon 2.x), se existir. */
+  pcLatencyMs?: number;
+  /** A sessão terminou numa queda do PC (incidente com este id). */
+  endedByCrash?: boolean;
+  incidentId?: string;
+  /** Hardware no momento da sessão (card de compartilhar). */
+  gpu?: string;
+  cpu?: string;
 }
+
+/** 1.2: marcador (atalho ou botão "Marcar momento"). t = segundos desde o início da sessão. */
+export interface SessionMarker {
+  t: number;
+  /** ISO 8601. */
+  at: string;
+  note?: string;
+}
+
+/** 1.2: séries do buffer do PC (pc-ring.json). */
+export type PcSeriesId =
+  | 'gpu.temp' | 'gpu.hotspot' | 'gpu.memjunction' | 'gpu.power' | 'gpu.clock' | 'gpu.load' | 'gpu.fan'
+  | 'cpu.temp' | 'cpu.power' | 'cpu.load' | 'ram.load' | 'fps.current';
+
+/** 1.2: tipo de incidente do PC. */
+export type PcIncidentKind = 'abruptShutdown' | 'bugcheck';
+
+/** 1.2: evento do Windows (log System), só dados, sem diagnóstico. */
+export interface PcEvent {
+  /** ISO 8601. */
+  time: string;
+  kind: 'kernelPower41' | 'unexpectedShutdown' | 'bugcheck' | 'whea' | 'gpuReset';
+  /** Provedor + id, ex.: "Microsoft-Windows-WHEA-Logger 17". */
+  source: string;
+  eventId: number;
+  /** WHEA erro/crítico. */
+  fatal?: boolean;
+  /** BugCheck: "0x00000124"; WHEA: componente ("PCI Express Root Port", "Processor Core"). */
+  code?: string;
+  /** Texto do evento (primeira linha, sem dados pessoais). */
+  message?: string;
+}
+
+export interface PcIncidentSummary {
+  id: string;
+  kind: PcIncidentKind;
+  /** Hora estimada (última gravação do buffer). ISO 8601. */
+  time: string;
+  /** Hora em que o PC voltou (boot). */
+  bootTime?: string;
+  /** Jogo aberto na hora, se havia. */
+  exe?: string;
+  sessionStart?: string;
+  /** Ligado há N s quando caiu. */
+  uptimeSec?: number;
+  /** Eventos do Windows a ±10 min. */
+  events: PcEvent[];
+  seen: boolean;
+}
+
+/** 1.2: uma leitura de "últimas medições". */
+export interface PcReading {
+  id: string;
+  name: string;
+  group: MetricGroup;
+  value: number | null;
+  unit: string;
+}
+
+export interface PcIncident extends PcIncidentSummary {
+  intervalMs: number;
+  /** Últimos 120 s, do mais antigo para o mais novo; null = sem leitura. */
+  series: Partial<Record<PcSeriesId, (number | null)[]>>;
+  /** Todas as métricas na última gravação antes da queda. */
+  last: PcReading[];
+  csvFile?: string;
+}
+
+export interface PcReport {
+  type: 'pcReport';
+  /** ISO 8601. */
+  bootTime: string;
+  uptimeSec: number;
+  /** Última saída normal do Pitwall (ISO), se conhecida. */
+  lastCleanExit?: string;
+  incidents: PcIncidentSummary[];
+  /** Eventos dos últimos 30 dias, mais novos primeiro (≤ 200). */
+  events: PcEvent[];
+  /** features.crashReport desligado = buffer parado. */
+  ringActive: boolean;
+}
+
+/** 1.2: motivo de não haver FPS (snapshot.texts['fps.reason']). */
+export type FpsReason = 'noGame' | 'starting' | 'antiCheat' | 'noPresentMon' | 'otherCapture' | 'noFrames' | 'notAdmin';
+
+/** 1.2: estado dos atalhos. */
+export type HotkeyState = 'ok' | 'inUse' | 'invalid' | 'off';
+export interface HotkeyStatus {
+  toggleWidget: HotkeyState;
+  marker: HotkeyState;
+}
+
+/** 1.2: resposta a getSessionSeries (do CSV da sessão, reamostrado). */
+export interface SessionSeries {
+  type: 'sessionSeries';
+  start: string;
+  /** Segundos entre pontos. */
+  stepSec: number;
+  series: Partial<Record<'fps.current' | 'fps.low1' | 'gpu.temp' | 'gpu.hotspot' | 'gpu.power' | 'gpu.clock' | 'cpu.temp' | 'cpu.load', (number | null)[]>>;
+  /** false = sem CSV da sessão (apagado pela retenção ou gravação desligada). */
+  available: boolean;
+}
+
+/** 1.2: resposta a getSensorDump (texto pronto para colar numa issue). */
+export interface SensorDump {
+  type: 'sensorDump';
+  text: string;
+}
+
+/** 1.2: resposta a createApiToken. O token só aparece aqui, uma vez. */
+export interface ApiToken {
+  type: 'apiToken';
+  token: string;
+  device: PairedDevice;
+}
+
+/** 1.2: broadcast quando um marcador é gravado. */
+export interface MarkerMessage {
+  type: 'marker';
+  index: number;
+  at: string;
+  exe?: string;
+}
+
+/** 1.2: mensagens novas do cliente (somar à ClientMessage). */
+export type ClientMessage12 =
+  | { type: 'getPcReport' }
+  | { type: 'getPcIncident'; id: string }
+  | { type: 'dismissPcIncident'; id: string }
+  | { type: 'getSessionSeries'; start: string; points?: number }
+  | { type: 'addMarker'; note?: string }
+  | { type: 'getSensorDump' }
+  | { type: 'createApiToken'; name: string };
+
 
 /** v0.7: valor de gpu.perfcap (snapshot.texts). */
 export type PerfCapReason = 'thermal' | 'power' | 'voltage' | 'idle' | 'sync' | 'none';
@@ -377,7 +557,7 @@ export interface LogStatus {
   size: number;
 }
 
-export type WidgetLayout = 'auto' | 'full' | 'mid' | 'compact';
+export type WidgetLayout = 'auto' | 'full' | 'mid' | 'compact' | 'strip' | 'mini';
 
 export type ThemeName = 'lumen' | 'minimo' | 'neon' | 'terminal' | 'splash';
 
@@ -428,7 +608,14 @@ export type ServerMessage =
   // v0.7
   | ({ type: 'extremes' } & ExtremesDelta)
   | PairingMessage
-  | { type: 'devices'; devices: PairedDevice[]; /** id do que acabou de parear */ paired?: string };
+  | { type: 'devices'; devices: PairedDevice[]; /** id do que acabou de parear */ paired?: string }
+  // 1.2
+  | PcReport
+  | ({ type: 'pcIncident' } & PcIncident)
+  | SessionSeries
+  | SensorDump
+  | ApiToken
+  | MarkerMessage;
 
 /** v0.7: resposta a startPairing (só para quem pediu). */
 export type PairingMessage =
@@ -473,7 +660,8 @@ export type ClientMessage =
   | { type: 'installUpdate'; when: 'now' | 'exit' }
   | { type: 'skipUpdate' }
   | { type: 'setUpdateChannel'; channel: 'stable' | 'beta' }
-  | { type: 'getUpdate' };
+  | { type: 'getUpdate' }
+  | ClientMessage12;
 
 /** v0.7: config sanitizada que o celular recebe (socket da rede). */
 export interface RemoteViewConfig {

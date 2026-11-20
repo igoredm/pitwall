@@ -18,6 +18,9 @@ const ICONS: Record<string, Prim[]> = {
     { d: 'M7 12h3' },
   ],
   sessions: [{ c: [12, 12, 8.5] }, { d: 'M12 7.5V12l3 2' }],
+  // 1.2: monitor (linha de pulso numa tela) e relatório do PC (torre com ponto de estado)
+  monitor: [{ r: [3, 4.5, 18, 12.5, 2] }, { d: 'M6.5 11h2.5l1.5-3 3 6 1.5-3h2.5' }, { d: 'M9 20.5h6' }],
+  health: [{ r: [6.5, 3, 11, 18, 2] }, { d: 'M9.5 7h5' }, { d: 'M9.5 10.5h5' }, { c: [12, 16.5, 1.3], fill: 'solid' }],
   gpu: [{ r: [6, 6, 12, 12, 2] }, { d: 'M10 3v3M14 3v3M10 18v3M14 18v3M3 10h3M3 14h3M18 10h3M18 14h3' }],
   devices: [{ r: [2.5, 5, 13, 10, 1.5] }, { d: 'M6.5 19h5' }, { r: [17, 9, 5, 10, 1.2] }],
   features: [{ d: 'M4 8h16M4 16h16' }, { c: [9, 8, 2.4], fill: 'knock' }, { c: [15, 16, 2.4], fill: 'knock' }],

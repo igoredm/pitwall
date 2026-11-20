@@ -286,14 +286,16 @@ const ptBR = {
   },
 
   // ---------------------------------------------------------------- 1.0 · moldura das configurações
-  navGroups: { widget: 'Widget', game: 'Jogo', pitwall: 'Pitwall' },
+  navGroups: { pc: 'PC', widget: 'Widget', game: 'Jogo', pitwall: 'Pitwall' },
   pages: {
     overview: 'Visão geral',
+    monitor: 'Monitor',
+    health: 'Relatório do PC',
     widget: 'Aparência e posição',
     metrics: 'Métricas',
     alerts: 'Alertas',
     games: 'Jogos',
-    sessions: 'Sessões',
+    sessions: 'Relatórios de jogo',
     gpu: 'Ajuste da GPU',
     devices: 'Celular e TV',
     features: 'Recursos',
@@ -301,6 +303,8 @@ const ptBR = {
   } as Record<SettingsPage, string>,
   pageIntro: {
     overview: 'O que o Pitwall está fazendo agora. Cada linha leva ao ajuste dela.',
+    monitor: 'Todos os sensores ao vivo, com o histórico dos últimos minutos.',
+    health: 'O que aconteceu quando o PC desligou ou travou: as últimas medições e os eventos do Windows.',
     widget: 'Como o widget parece e onde ele fica. Tudo aparece no widget na hora.',
     metrics: 'Ligue, renomeie e ordene. A ordem é a prioridade: quem vem primeiro aparece primeiro nos layouts menores.',
     alerts: 'O widget sempre muda de cor no amarelo e no vermelho. Aqui você escolhe se o Windows também avisa.',
@@ -957,14 +961,16 @@ const en: Dict = {
   },
 
   // ---------------------------------------------------------------- 1.0 · settings frame
-  navGroups: { widget: 'Widget', game: 'Game', pitwall: 'Pitwall' },
+  navGroups: { pc: 'PC', widget: 'Widget', game: 'Game', pitwall: 'Pitwall' },
   pages: {
     overview: 'Overview',
+    monitor: 'Monitor',
+    health: 'PC report',
     widget: 'Appearance & position',
     metrics: 'Metrics',
     alerts: 'Alerts',
     games: 'Games',
-    sessions: 'Sessions',
+    sessions: 'Game reports',
     gpu: 'GPU tuning',
     devices: 'Phone & TV',
     features: 'Features',
@@ -972,6 +978,8 @@ const en: Dict = {
   },
   pageIntro: {
     overview: 'What Pitwall is doing right now. Each row takes you to its setting.',
+    monitor: 'Every sensor live, with the last few minutes of history.',
+    health: 'What happened when the PC shut down or froze: the last readings and the Windows events.',
     widget: 'How the widget looks and where it sits. Changes show on the widget right away.',
     metrics: 'Turn on, rename and reorder. Order is priority: what comes first shows first in the smaller layouts.',
     alerts: 'The widget always changes color at yellow and red. Here you choose whether Windows notifies you too.',

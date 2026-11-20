@@ -80,7 +80,7 @@ public sealed class ConfigStore
     }
 
     /// <summary>Versão atual do formato do config.json.</summary>
-    public const int CurrentVersion = 7;
+    public const int CurrentVersion = 8;
 
     static AppConfig Load()
     {
@@ -156,6 +156,11 @@ public sealed class ConfigStore
             config.Appearance = Appearances.Contains(config.ThemeMode) ? config.ThemeMode : "system";
             config.Version = 7;
         }
+        if (config.Version < 8)
+        {
+            // 1.2: atalhos, engasgos e API de leitura nascem com o padrão das classes (nada a converter)
+            config.Version = 8;
+        }
         // tutorialDone é apelido de tour.done
         config.TutorialDone = config.Tour.Done;
     }
@@ -223,7 +228,7 @@ public sealed class ConfigStore
             if (!Server.DeviceKind.IsValid(d.Kind)) d.Kind = Server.DeviceKind.Unknown;
 
         string[] presets = ["off", "balanced", "cool", "custom"];
-        string[] layouts = ["auto", "full", "mid", "compact"];
+        string[] layouts = ["auto", "full", "mid", "compact", "strip", "mini"];
         foreach (var key in c.Games.Profiles.Where(p => p.Value == null).Select(p => p.Key).ToList()) c.Games.Profiles.Remove(key);
         foreach (var p in c.Games.Profiles.Values)
         {

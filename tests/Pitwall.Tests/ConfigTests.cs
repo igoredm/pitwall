@@ -25,9 +25,9 @@ public class ConfigMigrationTests
     [Fact]
     public void FirstRun_OnlyForNewInstalls()
     {
-        Assert.False(ConfigStore.Parse(null).FirstRunDone);                 // instalação nova: mostra o assistente
-        Assert.True(ConfigStore.Parse("""{ "version": 4 }""").FirstRunDone); // config existente: não mostra
-        Assert.True(ConfigStore.Parse("{ not json").FirstRunDone);           // config quebrada também não
+        Assert.False(ConfigStore.Parse(null).FirstRunDone);                 // instalaÃ§Ã£o nova: mostra o assistente
+        Assert.True(ConfigStore.Parse("""{ "version": 4 }""").FirstRunDone); // config existente: nÃ£o mostra
+        Assert.True(ConfigStore.Parse("{ not json").FirstRunDone);           // config quebrada tambÃ©m nÃ£o
         Assert.False(ConfigStore.Parse("""{ "version": 5, "firstRunDone": false }""").FirstRunDone);
     }
 
@@ -58,11 +58,11 @@ public class ConfigMigrationTests
             { "version": 3, "accent": "#4C8DFF", "widget": { "layout": "compact" },
               "games": { "include": ["fc25.exe"] }, "log": { "folder": "D:\\Logs", "intervalMs": 2000 } }
             """);
-        Assert.Equal("#4C8DFF", c.Accent);       // migração v2 não roda de novo
+        Assert.Equal("#4C8DFF", c.Accent);       // migraÃ§Ã£o v2 nÃ£o roda de novo
         Assert.Equal("compact", c.Widget.Layout); // nem a v3
         Assert.Equal(["fc25.exe"], c.Games.Include);
         Assert.Equal(@"D:\Logs", c.Log.Folder);
-        Assert.Equal(30, c.Log.KeepDays);           // campos novos com padrão
+        Assert.Equal(30, c.Log.KeepDays);           // campos novos com padrÃ£o
         Assert.NotNull(c.Alerts);
         Assert.NotNull(c.Remote);
         Assert.Equal(ConfigStore.CurrentVersion, c.Version);
@@ -77,7 +77,7 @@ public class ConfigMigrationTests
               "metrics": null, "groupLabels": null, "accent": null }
             """);
         Assert.NotNull(c.Alerts);
-        Assert.Equal(48124, c.Remote.Port); // não pode colidir com o socket local
+        Assert.Equal(48124, c.Remote.Port); // nÃ£o pode colidir com o socket local
         Assert.NotNull(c.Remote.PairedDevices);
         Assert.Equal(0, c.Log.KeepDays);
         Assert.Equal(0, c.Log.MaxTotalMb);
@@ -95,7 +95,7 @@ public class ConfigMigrationTests
               "FC25.exe": { "tuningPreset": "cool", "layout": "compact" },
               "x.exe": { "tuningPreset": "turbo", "layout": "huge" } } } }
             """);
-        var fc = c.Games.ProfileFor("fc25.exe")!; // sem diferenciar maiúsculas
+        var fc = c.Games.ProfileFor("fc25.exe")!; // sem diferenciar maiÃºsculas
         Assert.Equal("cool", fc.TuningPreset);
         Assert.Equal("compact", fc.Layout);
         var x = c.Games.ProfileFor("x.exe")!;
@@ -128,7 +128,7 @@ public class ConfigV6Tests
     public void NewInstall_TutorialPendingAndFeaturesOn()
     {
         var c = ConfigStore.Parse(null);
-        Assert.Equal(7, ConfigStore.CurrentVersion); // v7: tour e appearance (rodada 2)
+        Assert.Equal(8, ConfigStore.CurrentVersion); // v8: atalhos, engasgos, API (1.2)
         Assert.False(c.TutorialDone);
         Assert.False(c.FirstRunDone);
         Assert.True(c.Features.CrashReport);
@@ -141,9 +141,9 @@ public class ConfigV6Tests
     public void V5_MigratesTutorialDoneAndKeepsFirstRun()
     {
         var c = ConfigStore.Parse("""{ "version": 5, "firstRunDone": false, "log": { "keepDays": 7 } }""");
-        Assert.True(c.TutorialDone);       // quem já usa não vê o tutorial sozinho
-        Assert.False(c.FirstRunDone);      // semântica do assistente não muda
-        Assert.Equal(15, c.Log.KeepDays);  // 7 não é mais opção: sobe para 15
+        Assert.True(c.TutorialDone);       // quem jÃ¡ usa nÃ£o vÃª o tutorial sozinho
+        Assert.False(c.FirstRunDone);      // semÃ¢ntica do assistente nÃ£o muda
+        Assert.Equal(15, c.Log.KeepDays);  // 7 nÃ£o Ã© mais opÃ§Ã£o: sobe para 15
         Assert.True(c.Features.CrashReport);
         Assert.Equal(ConfigStore.CurrentVersion, c.Version);
 
@@ -181,7 +181,7 @@ public class ConfigV6Tests
     [InlineData(30, 30)]
     [InlineData(90, 90)]
     [InlineData(0, 0)]       // para sempre
-    [InlineData(2, 5)]       // fora da lista: sobe para a próxima opção (nunca apaga antes)
+    [InlineData(2, 5)]       // fora da lista: sobe para a prÃ³xima opÃ§Ã£o (nunca apaga antes)
     [InlineData(7, 15)]
     [InlineData(31, 90)]
     [InlineData(60, 90)]
@@ -229,7 +229,7 @@ public class LogFolderAllowedTests
         Assert.False(TelemetryHub.LogFolderAllowed(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32")));
         Assert.False(TelemetryHub.LogFolderAllowed(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Pitwall")));
         Assert.False(TelemetryHub.LogFolderAllowed(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "x")));
-        // ".." não escapa da verificação
+        // ".." nÃ£o escapa da verificaÃ§Ã£o
         Assert.False(TelemetryHub.LogFolderAllowed(Path.Combine(Local, "..", "..", "..", "..", "Windows", "Temp")));
     }
 
@@ -238,7 +238,7 @@ public class LogFolderAllowedTests
     {
         Assert.True(TelemetryHub.LogFolderAllowed(Path.Combine(Local, "Pitwall", "logs")));
         Assert.True(TelemetryHub.LogFolderAllowed(@"D:\Pitwall logs"));
-        // Prefixo parecido não é a pasta do sistema
+        // Prefixo parecido nÃ£o Ã© a pasta do sistema
         var win = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
         Assert.True(TelemetryHub.LogFolderAllowed(win + "Logs"));
     }

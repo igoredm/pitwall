@@ -56,6 +56,8 @@ public sealed class AppConfig
     public AlertsConfig Alerts { get; set; } = new();
     public RemoteConfig Remote { get; set; } = new();
     public FeaturesConfig Features { get; set; } = new();
+    /// <summary>1.2 (config v8): atalhos globais (RegisterHotKey).</summary>
+    public HotkeysConfig Hotkeys { get; set; } = new();
     public List<MetricSetting> Metrics { get; set; } = [];
 }
 
@@ -96,6 +98,18 @@ public sealed class FeaturesConfig
     public bool ClockReason { get; set; } = true;
     /// <summary>Ao terminar um jogo, abre as configurações direto no resumo da sessão.</summary>
     public bool OpenSummaryOnGameEnd { get; set; }
+    /// <summary>1.2: conta engasgos (frames muito acima da mediana) na sessão.</summary>
+    public bool Stutters { get; set; } = true;
+}
+
+/// <summary>1.2: atalhos globais. Formato "Ctrl+Alt+Shift+Win+Tecla" (A–Z, 0–9, F1–F24); vazio = desligado.</summary>
+public sealed class HotkeysConfig
+{
+    public bool Enabled { get; set; } = true;
+    /// <summary>Mostra/esconde o widget.</summary>
+    public string ToggleWidget { get; set; } = "Ctrl+Alt+P";
+    /// <summary>Grava um marcador no CSV e na sessão ("travou aqui").</summary>
+    public string Marker { get; set; } = "Ctrl+Alt+M";
 }
 
 /// <summary>Visualização no celular pela rede local (somente leitura). Desligada por padrão.</summary>
@@ -105,6 +119,8 @@ public sealed class RemoteConfig
     public int Port { get; set; } = 48124;
     /// <summary>Celulares pareados. Só o hash SHA-256 do token fica salvo; o token em si fica no celular.</summary>
     public List<PairedDevice> PairedDevices { get; set; } = [];
+    /// <summary>1.2: endpoint de leitura GET /api/v1/state (Home Assistant), com token. Precisa de Enabled.</summary>
+    public bool ApiEnabled { get; set; }
 }
 
 public sealed class PairedDevice
@@ -116,7 +132,7 @@ public sealed class PairedDevice
     public DateTime Created { get; set; }
     /// <summary>Última vez que o dispositivo autenticou ou esteve conectado (atualizado no máximo 1x/min). null = nunca.</summary>
     public DateTime? LastSeen { get; set; }
-    /// <summary>phone | tv | desktop | unknown — deduzido do user agent ao parear. Pareados antes da 1.0 = unknown.</summary>
+    /// <summary>phone | tv | desktop | integration (1.2, token de API) | unknown — deduzido do user agent ao parear. Pareados antes da 1.0 = unknown.</summary>
     public string Kind { get; set; } = "unknown";
 }
 
@@ -125,7 +141,7 @@ public sealed class GameProfile
 {
     /// <summary>off | balanced | cool | custom. null = usa a config geral.</summary>
     public string? TuningPreset { get; set; }
-    /// <summary>auto | full | mid | compact. null = usa a config geral.</summary>
+    /// <summary>auto | full | mid | compact | strip | mini. null = usa a config geral.</summary>
     public string? Layout { get; set; }
 }
 
@@ -142,7 +158,7 @@ public sealed class WidgetWindowConfig
     public bool AlwaysOnTop { get; set; }
     /// <summary>Travar posição: sem arrastar/redimensionar.</summary>
     public bool Locked { get; set; }
-    /// <summary>auto | full | mid | compact. Automático = escolhe pelo tamanho da janela.</summary>
+    /// <summary>auto | full | mid | compact | strip | mini (1.2). Automático = escolhe pelo tamanho da janela.</summary>
     public string Layout { get; set; } = "auto";
 }
 

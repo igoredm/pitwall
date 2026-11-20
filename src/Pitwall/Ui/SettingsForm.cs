@@ -59,7 +59,7 @@ public sealed partial class SettingsForm : Form
     string? _pendingPage, _pendingAnchor;
 
     /// <summary>Páginas das configurações que aceitam deep link (ids estáveis do frontend).</summary>
-    public static readonly string[] Pages = ["overview", "widget", "appearance", "metrics", "alerts", "games", "sessions", "gpu", "devices", "phone", "features", "app"];
+    public static readonly string[] Pages = ["overview", "monitor", "health", "widget", "appearance", "metrics", "alerts", "games", "sessions", "gpu", "devices", "phone", "features", "app"];
 
     /// <summary>
     /// Leva a página das configurações para <paramref name="page"/> (e rola até <paramref name="anchor"/>). Janela recém-criada:

@@ -2,8 +2,9 @@ import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { SettingsPage } from '../models';
 
 /** Ordem e grupos da navegação (design-notes › v1.0 › IA). */
-export const NAV: { group: 'widget' | 'game' | 'pitwall' | null; pages: SettingsPage[] }[] = [
+export const NAV: { group: 'pc' | 'widget' | 'game' | 'pitwall' | null; pages: SettingsPage[] }[] = [
   { group: null, pages: ['overview'] },
+  { group: 'pc', pages: ['monitor', 'health'] },
   { group: 'widget', pages: ['widget', 'metrics', 'alerts'] },
   { group: 'game', pages: ['games', 'sessions', 'gpu'] },
   { group: 'pitwall', pages: ['devices', 'features', 'app'] },
@@ -26,6 +27,8 @@ export const LEGACY: Record<string, [SettingsPage, string?]> = {
   // nomes usados pelo backend nos links diretos
   appearance: ['widget'],
   phone: ['devices'],
+  // 1.2: o relatório de queda saiu de Sessões
+  crash: ['health', 'latest'],
 };
 
 interface Target {

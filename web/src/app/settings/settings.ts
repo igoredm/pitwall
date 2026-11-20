@@ -29,6 +29,8 @@ import { DevicesPage } from './pages/devices';
 import { FeaturesPage } from './pages/features';
 import { GamesPage } from './pages/games';
 import { GpuPage } from './pages/gpu';
+import { HealthPage } from './pages/health';
+import { MonitorPage } from './pages/monitor';
 import { MetricsPage } from './pages/metrics';
 import { OverviewPage } from './pages/overview';
 import { SessionsPage } from './pages/sessions';
@@ -40,6 +42,8 @@ import { UpdateNotice } from './update-notice';
 /** Ícone de cada página na navegação. */
 const ICON: Record<SettingsPage, string> = {
   overview: 'overview',
+  monitor: 'monitor',
+  health: 'health',
   widget: 'widget',
   metrics: 'metrics',
   alerts: 'alerts',
@@ -73,6 +77,8 @@ const INVITED_KEY = 'pitwall.tourInvited';
     GamesPage,
     SessionsPage,
     GpuPage,
+    MonitorPage,
+    HealthPage,
     DevicesPage,
     FeaturesPage,
     AppPage,
