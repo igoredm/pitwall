@@ -78,6 +78,8 @@ public sealed class TelemetryHub : IDisposable
 #pragma warning disable CS0067 // disparado só em Debug
     public event Action? QuitRequested;
 #pragma warning restore CS0067
+    /// <summary>A GPU aceita o ajuste (NVIDIA com NVML). O menu da bandeja desabilita o item sem isso.</summary>
+    public bool TuningSupported => _tuner.Caps.Supported;
     public GameInfo? CurrentGame { get; private set; }
     public string? LogPath => _log.CurrentPath;
 

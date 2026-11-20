@@ -183,6 +183,13 @@ public sealed class TrayApp : ApplicationContext
         menu.Items.Add(Check(
             c.GpuTuning.OnlyInGames ? L.T("Ajuste da GPU (undervolt) · só em jogos", "GPU tuning (undervolt) · games only") : L.T("Ajuste da GPU (undervolt) · sempre", "GPU tuning (undervolt) · always"),
             c.GpuTuning.Enabled, () => Toggle(x => x.GpuTuning.Enabled = !x.GpuTuning.Enabled)));
+        if (!_hub.TuningSupported)
+        {
+            // Sem NVIDIA/NVML não há o que ajustar: o item fica visível, mas desabilitado e explicado
+            var tuning = menu.Items[^1];
+            tuning.Enabled = false;
+            tuning.Text = L.T("Ajuste da GPU (precisa de NVIDIA)", "GPU tuning (needs NVIDIA)");
+        }
         menu.Items.Add(Check(L.T("Abrir widget ao detectar jogo", "Open widget when a game is detected"), c.AutoOpenWidgetOnGame, () => Toggle(x => x.AutoOpenWidgetOnGame = !x.AutoOpenWidgetOnGame)));
         menu.Items.Add(Check(L.T("Iniciar com o Windows", "Start with Windows"), c.StartWithWindows, ToggleAutostart));
 
