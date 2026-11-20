@@ -30,6 +30,8 @@ export function demo12Monitor(catalog: Catalog, metrics: MetricDef[], now: numbe
   const rtx50 = urlParam('demo') === 'v07' || urlParam('gpu') === 'rtx50';
   const amd = urlParam('gpu') === 'amd';
   const noAdmin = urlParam('admin') === '0';
+  /** ?fps=anticheat: só o bloqueio do FPS, sem trocar a GPU (cenário do site). */
+  const antiCheat = rtx50 || urlParam('fps') === 'anticheat';
   const min = 60_000;
 
   // ------------------------------------------------------------------ catálogo
@@ -155,7 +157,7 @@ export function demo12Monitor(catalog: Catalog, metrics: MetricDef[], now: numbe
         v['cpu.temp'] = Math.round((88 + rnd(-1.5, 1.5)) * 10) / 10;
       } else v['cpu.power'] = null;
       // Sem FPS: anti-cheat (variante RTX 50) ou sem administrador; o motivo vai em texts['fps.reason']
-      fpsReason = !g ? 'noGame' : noAdmin ? 'notAdmin' : rtx50 ? 'antiCheat' : null;
+      fpsReason = !g ? 'noGame' : noAdmin ? 'notAdmin' : antiCheat ? 'antiCheat' : null;
       if (fpsReason) for (const id of ['fps.current', 'fps.low1', 'fps.low01', 'fps.frametime', 'fps.avg', 'fps.displayed', 'fps.animError', 'fps.stutters']) v[id] = null;
       if (noAdmin && !g) fpsReason = 'notAdmin';
       for (const [id, val] of Object.entries(v)) {

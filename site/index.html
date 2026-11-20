@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pitwall · FPS e temperaturas no segundo monitor, sem overlay</title>
+<meta name="description" content="Monitor de hardware grátis e de código aberto para Windows. Um widget no segundo monitor com FPS, 1% low, hot spot da GPU, clocks, consumo, RAM e bateria sem fio. Sem overlay e sem nada injetado no jogo.">
+<meta name="theme-color" content="#080B11">
+<meta name="color-scheme" content="dark">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- SITE_URL: o domínio ainda não existe. Quando existir, troque "./" por https://SEU-DOMINIO/ no canonical e no
+     og:url, e use https://SEU-DOMINIO/assets/img/og.png no og:image e no twitter:image (precisam de URL absoluta). -->
+<link rel="canonical" href="./">
+<meta property="og:url" content="./">
+<link rel="alternate" hreflang="pt-BR" href="./?lang=pt">
+<link rel="alternate" hreflang="en" href="./?lang=en">
+<link rel="alternate" hreflang="x-default" href="./">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Pitwall">
+<meta property="og:title" content="Pitwall · FPS e temperaturas no segundo monitor">
+<meta property="og:description" content="Widget de hardware para Windows, sem overlay e sem nada injetado no jogo. Grátis e código aberto.">
+<meta property="og:image" content="assets/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="O widget do Pitwall com FPS 143, GPU RTX 3080, CPU e RAM">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Pitwall · FPS e temperaturas no segundo monitor">
+<meta name="twitter:description" content="Widget de hardware para Windows, sem overlay e sem nada injetado no jogo. Grátis e código aberto.">
+<meta name="twitter:image" content="assets/img/og.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="preload" href="assets/fonts/manrope-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/manrope-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/img/widget-full.webp" as="image" fetchpriority="high">
+<link rel="stylesheet" href="assets/css/site.css">
+<script>
+  // Idioma antes do primeiro quadro: ?lang=, escolha salva, ou o idioma do navegador (PT é o padrão)
+  (function () {
+    var q = new URLSearchParams(location.search).get('lang'), s = null;
+    try { s = localStorage.getItem('pitwall-site-lang'); } catch (e) {}
+    var l = q || s || (/^pt/i.test(navigator.language || 'pt') ? 'pt' : 'en');
+    l = /^en/i.test(l) ? 'en' : 'pt';
+    document.documentElement.lang = l === 'en' ? 'en' : 'pt-BR';
+    document.documentElement.className = 'js';
+  })();
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Pitwall","operatingSystem":"Windows 10, Windows 11","applicationCategory":"UtilitiesApplication","softwareVersion":"1.2.1","license":"https://opensource.org/licenses/MIT","offers":{"@type":"Offer","price":"0","priceCurrency":"BRL"},"downloadUrl":"https://github.com/igoredm/pitwall/releases/latest","codeRepository":"https://github.com/igoredm/pitwall"}
+</script>
+</head>
+<body>
+<a class="skip" href="#main" data-i18n="skip">Pular para o conteúdo</a>
+
+<header class="nav" id="top">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="Pitwall">
+      <img src="assets/img/logo-64.png" width="32" height="32" alt="">
+      <span>Pitwall</span>
+    </a>
+    <nav class="nav-links" aria-label="Seções" data-i18n-attr="aria-label:navLabel">
+      <a href="#teste" data-i18n="navDemo">Modo teste</a>
+      <a href="#recursos" data-i18n="navFeatures">Recursos</a>
+      <a href="#seguro" data-i18n="navSafe">É seguro?</a>
+      <a href="#faq" data-i18n="navFaq">Perguntas</a>
+    </nav>
+    <div class="nav-end">
+      <div class="lang" role="group" aria-label="Idioma" data-i18n-attr="aria-label:langLabel">
+        <button type="button" data-lang="pt" aria-pressed="true">PT</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <a class="btn btn-sm btn-pri" href="#baixar" data-i18n="navDownload">Baixar</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ================================================================ HERO -->
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap">
+    <div class="hero-top">
+      <h1 id="hero-title" class="hero-title"><span class="ln" data-i18n="heroL1">FPS e temperaturas</span> <span class="ln" data-i18n="heroL2">no segundo monitor.</span></h1>
+      <svg class="gauge" viewBox="0 0 600 600" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="arc" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stop-color="#4C8DFF"/>
+            <stop offset="1" stop-color="#8B7CFF"/>
+          </linearGradient>
+        </defs>
+        <path d="M 127 473 A 245 245 0 1 1 473 473" fill="none" stroke="url(#arc)" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+        <g class="ticks" stroke="#2A3346" stroke-width="2">
+          <line x1="300" y1="70" x2="300" y2="92"/><line x1="137" y1="137" x2="153" y2="153"/><line x1="463" y1="137" x2="447" y2="153"/>
+          <line x1="70" y1="300" x2="92" y2="300"/><line x1="530" y1="300" x2="508" y2="300"/>
+        </g>
+        <g class="needle"><line x1="300" y1="300" x2="300" y2="128" stroke="#EDF0F5" stroke-width="4" stroke-linecap="round"/><circle cx="300" cy="300" r="14" fill="#EDF0F5"/></g>
+      </svg>
+    </div>
+    <div class="hero-row">
+      <p class="lead" data-i18n="heroLead">O Pitwall é um widget para Windows que fica fora do jogo: sem overlay, sem DLL injetada, nada para o anti-cheat estranhar. FPS e 1% low pelo PresentMon, hot spot da GPU, clocks, consumo, RAM e a bateria do mouse e do headset.</p>
+      <div class="hero-cta">
+        <div class="actions">
+          <a class="btn btn-pri" href="https://github.com/igoredm/pitwall/releases/latest" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>
+            <span data-i18n="ctaDownload">Baixar para Windows</span>
+          </a>
+          <a class="btn btn-sec" href="#teste" data-i18n="ctaTry">Testar no navegador</a>
+        </div>
+        <p class="fine" data-i18n="heroFine">Grátis e código aberto (MIT) · v1.2.1 · Windows 10 e 11</p>
+      </div>
+    </div>
+  </div>
+  <div class="wrap">
+    <figure class="monitor" aria-label="O widget do Pitwall ao vivo, com dados de exemplo" data-i18n-attr="aria-label:heroFigure">
+      <div class="monitor-bezel">
+        <div class="monitor-screen" data-frame="hero">
+          <img class="poster" src="assets/img/widget-full.webp" width="1280" height="400" alt="Widget do Pitwall: GPU RTX 3080 a 97% com hot spot de 99 °C, 143 FPS no centro, CPU a 42% e RAM a 58%" data-i18n-attr="alt:heroAlt" fetchpriority="high">
+        </div>
+      </div>
+      <div class="monitor-stand" aria-hidden="true"></div>
+      <figcaption class="monitor-tag"><span class="live-dot" aria-hidden="true"></span><span data-i18n="heroTag">Ao vivo, com dados de exemplo</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ================================================================ COMO FUNCIONA -->
+<section class="sec" id="como" aria-labelledby="como-title">
+  <div class="wrap">
+    <div class="split">
+      <h2 id="como-title" class="h2" data-reveal data-i18n="howTitle">Nada roda dentro do jogo.</h2>
+      <p class="body" data-reveal data-i18n="howBody">O Windows já registra cada quadro que o jogo apresenta, com eventos ETW. O PresentMon, da Intel, lê esses eventos de fora do processo, e o Pitwall só desenha os números num monitor que o jogo nem sabe que existe. Sem gancho no DirectX, sem ler a memória do jogo.</p>
+    </div>
+    <ol class="pipe" data-reveal data-pipe>
+      <li><span class="k" data-i18n="pipe1k">Seu jogo</span><b class="mono">FC25.exe</b><span class="d" data-i18n="pipe1d">sem nada injetado</span></li>
+      <li><span class="k">Windows</span><b data-i18n="pipe2b">eventos ETW</b><span class="d" data-i18n="pipe2d">os mesmos de sempre</span></li>
+      <li><span class="k" data-i18n="pipe3k">Leitura</span><b>PresentMon + sensores</b><span class="d" data-i18n="pipe3d">fora do processo do jogo</span></li>
+      <li class="end"><span class="k" data-i18n="pipe4k">Monitor 2</span><b>Pitwall</b><span class="d" data-i18n="pipe4d">atualiza a cada 1 s</span></li>
+      <span class="pulse" aria-hidden="true"></span>
+    </ol>
+    <dl class="sheet">
+      <div data-reveal>
+        <dt data-i18n="f1k">Overlay no jogo</dt>
+        <dd class="v" data-i18n="f1v">nenhum</dd>
+        <dd class="d" data-i18n="f1d">O widget é uma janela comum em outro monitor. O jogo continua em tela cheia, e nada do Pitwall aparece na captura do jogo.</dd>
+      </div>
+      <div data-reveal>
+        <dt>Anti-cheat</dt>
+        <dd class="v" data-i18n="f2v">nada para detectar</dd>
+        <dd class="d" data-i18n="f2d">Testado todo dia com o EA FC e o EA Javelin. Se um anti-cheat bloquear o ETW, o widget mostra “FPS —” com o motivo e continua com as temperaturas.</dd>
+      </div>
+      <div data-reveal>
+        <dt data-i18n="f3k">Peso</dt>
+        <dd class="v" data-i18n="f3v">~0,3% de CPU</dd>
+        <dd class="d" data-i18n="f3d">Mais ~1,3% do WebView2 que desenha o widget, e 50 a 80 MB de memória. Sem telemetria, sem conta.</dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<!-- ================================================================ MODO TESTE -->
+<section class="sec demo" id="teste" aria-labelledby="teste-title">
+  <div class="wrap">
+    <div class="split">
+      <h2 id="teste-title" class="h2" data-reveal data-i18n="demoTitle">Mexa no widget antes de instalar.</h2>
+      <p class="body" data-reveal data-i18n="demoBody">É o widget de verdade, o mesmo código do app, rodando aqui com dados de exemplo. Troque o tema, o tamanho da tela e a situação, e veja o que muda.</p>
+    </div>
+    <div class="lab" data-reveal>
+      <form class="controls" id="demo-controls" onsubmit="return false">
+        <fieldset class="ctl">
+          <legend data-i18n="cTheme">Tema</legend>
+          <div class="seg seg-wrap" data-seg="theme">
+            <label><input type="radio" name="theme" value="lumen" checked><span>Lumen</span></label>
+            <label><input type="radio" name="theme" value="minimo"><span data-i18n="tMinimo">Mínimo</span></label>
+            <label><input type="radio" name="theme" value="neon"><span>Neon</span></label>
+            <label><input type="radio" name="theme" value="terminal"><span>Terminal</span></label>
+            <label><input type="radio" name="theme" value="splash"><span>Splash</span></label>
+          </div>
+        </fieldset>
+        <fieldset class="ctl">
+          <legend data-i18n="cMode">Visual</legend>
+          <div class="seg" data-seg="mode">
+            <label><input type="radio" name="mode" value="dark" checked><span data-i18n="mDark">Escuro</span></label>
+            <label><input type="radio" name="mode" value="light"><span data-i18n="mLight">Claro</span></label>
+          </div>
+          <p class="hint" id="mode-hint" hidden data-i18n="mHint">Neon e Terminal só existem no escuro.</p>
+        </fieldset>
+        <fieldset class="ctl">
+          <legend data-i18n="cSize">Tamanho da tela</legend>
+          <div class="seg seg-wrap" data-seg="size">
+            <label><input type="radio" name="size" value="full" checked><span data-i18n="sFull">Completo</span></label>
+            <label><input type="radio" name="size" value="mid"><span data-i18n="sMid">Médio</span></label>
+            <label><input type="radio" name="size" value="compact"><span data-i18n="sCompact">Compacto</span></label>
+            <label><input type="radio" name="size" value="strip"><span data-i18n="sStrip">Faixa</span></label>
+            <label><input type="radio" name="size" value="mini"><span>Mini</span></label>
+          </div>
+        </fieldset>
+        <fieldset class="ctl">
+          <legend data-i18n="cScene">Situação</legend>
+          <div class="scenes" data-seg="scene">
+            <label><input type="radio" name="scene" value="idle"><span data-i18n="scIdle">Na área de trabalho</span></label>
+            <label><input type="radio" name="scene" value="game" checked><span data-i18n="scGame">Em jogo</span></label>
+            <label><input type="radio" name="scene" value="warm"><span data-i18n="scWarm">GPU esquentando</span></label>
+            <label><input type="radio" name="scene" value="hot"><span data-i18n="scHot">GPU no vermelho</span></label>
+            <label><input type="radio" name="scene" value="anticheat"><span data-i18n="scAc">Anti-cheat bloqueia o FPS</span></label>
+            <label><input type="radio" name="scene" value="stutter"><span data-i18n="scStutter">Engasgos</span></label>
+            <label><input type="radio" name="scene" value="battery"><span data-i18n="scBattery">Bateria acabando</span></label>
+          </div>
+        </fieldset>
+        <fieldset class="ctl">
+          <legend data-i18n="cLang">Idioma do widget</legend>
+          <div class="seg" data-seg="wlang">
+            <label><input type="radio" name="wlang" value="pt" checked><span>Português</span></label>
+            <label><input type="radio" name="wlang" value="en"><span>English</span></label>
+          </div>
+        </fieldset>
+      </form>
+      <div class="stage-col">
+        <div class="stage" id="stage" data-frame="demo">
+          <div class="stage-box" id="stage-box"></div>
+        </div>
+        <div class="stage-meta">
+          <span class="mono" id="stage-size">1280 × 400</span>
+          <p id="stage-note" aria-live="polite" data-i18n="noteGame">FC25 rodando: FPS, 1% low e frametime pelo PresentMon, e ao lado da GPU o motivo de o clock estar limitado.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ APP: MONITOR / RELATÓRIOS -->
+<section class="sec" id="app" aria-labelledby="app-title">
+  <div class="wrap">
+    <div class="split">
+      <h2 id="app-title" class="h2" data-reveal data-i18n="appTitle">Quando algo dá errado, os números ficam guardados.</h2>
+      <p class="body" data-reveal data-i18n="appBody">As configurações também são o lugar de entender o PC: tudo ao vivo, o que aconteceu antes de uma queda e cada partida em detalhe. Clique à vontade, é a tela do app com dados de exemplo.</p>
+    </div>
+    <div class="appwin-wrap" data-reveal>
+      <div class="tabs" role="tablist" aria-label="Telas do app" data-i18n-attr="aria-label:tabsLabel">
+        <button role="tab" id="tab-monitor" aria-controls="panel-app" aria-selected="true" data-page="monitor" data-i18n="tabMonitor">Monitor</button>
+        <button role="tab" id="tab-health" aria-controls="panel-app" aria-selected="false" tabindex="-1" data-page="health" data-i18n="tabHealth">Relatório do PC</button>
+        <button role="tab" id="tab-sessions" aria-controls="panel-app" aria-selected="false" tabindex="-1" data-page="sessions" data-i18n="tabSessions">Relatórios de jogo</button>
+      </div>
+      <p class="tab-note" id="tab-note" data-i18n="noteMonitor">Para a hora em que algo parece estranho: cada sensor com gráfico, mínimo e máximo, e o motivo quando um deles não tem leitura (falta o PawnIO, o disco não informa, a placa não expõe).</p>
+      <div class="appwin" id="panel-app" role="tabpanel" aria-labelledby="tab-monitor">
+        <div class="appwin-bar" aria-hidden="true">
+          <img src="assets/img/logo-64.png" width="16" height="16" alt="">
+          <span data-i18n="winTitle">Pitwall · Configurações</span>
+          <i></i><i></i><i></i>
+        </div>
+        <div class="appwin-screen" data-frame="app">
+          <img class="poster" src="assets/img/settings-monitor.webp" width="1600" height="1000" alt="" loading="lazy">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ RECURSOS -->
+<section class="sec" id="recursos" aria-labelledby="rec-title">
+  <div class="wrap">
+    <h2 id="rec-title" class="h2 narrow" data-reveal data-i18n="featTitle">E o que você vai usar no dia a dia.</h2>
+    <div class="feat">
+      <article class="feat-row wide" data-reveal>
+        <div class="feat-txt">
+          <h3 data-i18n="lTitle">Um layout para cada tela</h3>
+          <p data-i18n="lBody">Completo, médio e compacto, mais a faixa para telas em barra como o Corsair Xeneon Edge e o mini para telinhas de 5 a 8 polegadas. No automático, o widget escolhe pelo tamanho da janela.</p>
+        </div>
+        <div class="feat-media layouts">
+          <img src="assets/img/widget-strip.webp" width="1440" height="360" alt="Layout faixa, numa tela de 1920 × 480" data-i18n-attr="alt:altStrip" loading="lazy">
+          <img src="assets/img/widget-mini.webp" width="800" height="480" alt="Layout mini, numa telinha de 800 × 480" data-i18n-attr="alt:altMini" loading="lazy">
+        </div>
+      </article>
+      <article class="feat-row" data-reveal>
+        <div class="feat-txt">
+          <h3 data-i18n="sTitle">Um card para mandar no grupo</h3>
+          <p data-i18n="sBody">Qualquer partida vira um PNG de 1200 × 630 com FPS médio, 1% e 0,1% low, engasgos, picos de temperatura e o tempo acima do limite crítico.</p>
+        </div>
+        <div class="feat-media"><img src="assets/img/share-card.webp" width="1200" height="630" alt="Card de uma partida de FC25: 138 FPS médio, 104 de 1% low, 9 engasgos, hot spot de 104 °C" data-i18n-attr="alt:altShare" loading="lazy"></div>
+      </article>
+      <ul class="feat-list">
+        <li data-reveal><h3 data-i18n="aTitle">Alertas</h3><p data-i18n="aBody">Limite amarelo e vermelho por métrica. Se o valor ficar no vermelho por 10 segundos, vem um aviso do Windows, com intervalo mínimo entre um e outro.</p></li>
+        <li data-reveal><h3 data-i18n="gTitle">Ajuste da GPU (NVIDIA)</h3><p data-i18n="gBody">Power limit e clock máximo pela API oficial da NVIDIA, só enquanto o jogo roda, com perfil por jogo. Vem desligado, e nada é gravado na placa.</p></li>
+        <li data-reveal><h3 data-i18n="bTitle">Bateria sem fio</h3><p data-i18n="bBody">Mouse, headset e controle no rodapé do widget, com aviso quando a bateria fica baixa.</p></li>
+        <li data-reveal><h3 data-i18n="hTitle">Atalhos</h3><p data-i18n="hBody">Um atalho mostra e esconde o widget; outro marca o momento da partida para você achar depois no relatório.</p></li>
+        <li data-reveal><h3>Home Assistant</h3><p data-i18n="haBody">Uma API local, só leitura e com token, para levar FPS e temperaturas ao seu painel.</p></li>
+        <li data-reveal><h3 data-i18n="cTitle">Log em CSV</h3><p data-i18n="cBody">Cada sessão de jogo grava um CSV com todas as métricas. Os antigos saem sozinhos depois de 30 dias ou 500 MB, ou do limite que você escolher.</p></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ CELULAR E TV -->
+<section class="sec" id="celular" aria-labelledby="cel-title">
+  <div class="wrap phone-grid">
+    <div class="phone-txt">
+      <h2 id="cel-title" class="h2" data-reveal data-i18n="phoneTitle">Sem segundo monitor? Use o celular ou a TV.</h2>
+      <p class="body" data-reveal data-i18n="phoneBody">Ligue a visualização na rede local, abra o endereço no celular ou na TV e digite o código de 6 dígitos. Fica na sua rede, é só leitura e vem desligada. Sem nenhum dos dois, o widget também pode ficar num canto da tela principal.</p>
+    </div>
+    <div class="phone" data-reveal>
+      <div class="phone-screen" data-frame="phone">
+        <img class="poster" src="assets/img/phone.webp" width="600" height="1298" alt="O Pitwall no navegador de um celular, com FPS, GPU e CPU" data-i18n-attr="alt:altPhone" loading="lazy">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ É SEGURO? -->
+<section class="sec" id="seguro" aria-labelledby="seg-title">
+  <div class="wrap">
+    <div class="split">
+      <h2 id="seg-title" class="h2" data-reveal data-i18n="safeTitle"><span class="ln">É seguro?</span> <span class="ln">O Pitwall só lê.</span></h2>
+      <p class="body" data-reveal data-i18n="safeBody">Ele nunca toca no jogo, e tudo o que roda é código aberto, compilado num CI público do GitHub. O que pode parecer estranho tem explicação:</p>
+    </div>
+    <div class="qa">
+      <div data-reveal><h3 data-i18n="q1">Por que pede administrador</h3><p data-i18n="a1">Os sensores de CPU e placa-mãe (pelo driver assinado PawnIO), a sessão ETW do FPS e o power limit opcional da NVIDIA exigem isso. O início com o Windows usa uma tarefa do Agendador, então o UAC não aparece a cada boot.</p></div>
+      <div data-reveal><h3 data-i18n="q2">Por que o SmartScreen avisa</h3><p data-i18n="a2">O instalador ainda não tem assinatura digital. Na primeira vez, clique em <em>Mais informações → Executar assim mesmo</em>. Cada release traz o SHA-256 em <code>SHA256SUMS.txt</code>, e o atualizador confere esse hash antes de instalar.</p></div>
+      <div data-reveal><h3 data-i18n="q3">E o anti-cheat?</h3><p data-i18n="a3">Sem overlay, sem DLL e sem ler a memória do jogo. Nenhum anti-cheat certifica programas de terceiros, mas não há nada no processo do jogo para ele encontrar.</p></div>
+      <div data-reveal><h3 data-i18n="q4">O ajuste da GPU estraga a placa?</h3><p data-i18n="a4">Vem desligado e usa só a API oficial da NVIDIA (NVML). Nada é gravado na placa: os limites voltam ao normal quando o jogo ou o Pitwall fecha, e depois de uma queda, quando o Pitwall abre de novo.</p></div>
+      <div data-reveal><h3 data-i18n="q5">O que vai para a internet</h3><p data-i18n="a5">Só a busca por atualização no GitHub, que dá para desligar. Sem telemetria e sem conta. Celular, TV e Home Assistant funcionam só na rede local e vêm desligados.</p></div>
+      <div data-reveal><h3 data-i18n="q6">Achou um problema?</h3><p data-i18n="a6">O relato privado de vulnerabilidade está ativo no GitHub. Veja o <a href="https://github.com/igoredm/pitwall/blob/main/SECURITY.md" rel="noopener">SECURITY.md</a>.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ BAIXAR -->
+<section class="sec" id="baixar" aria-labelledby="dl-title">
+  <div class="wrap">
+    <div class="dl" data-reveal>
+      <div class="dl-main">
+        <img src="assets/img/logo-128.png" width="64" height="64" alt="" class="dl-logo">
+        <h2 id="dl-title" class="h2" data-i18n="dlTitle">Baixe o Pitwall.</h2>
+        <p class="body" data-i18n="dlBody">Um instalador só. O PresentMon vem junto; o PawnIO e o WebView2 Runtime são instalados se faltarem. Na primeira vez, um assistente ajuda a escolher o monitor e o tema.</p>
+        <div class="actions">
+          <a class="btn btn-pri" href="https://github.com/igoredm/pitwall/releases/latest" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>
+            <span data-i18n="dlBtn">Baixar a v1.2.1</span>
+          </a>
+          <a class="btn btn-sec" href="https://github.com/igoredm/pitwall/releases" rel="noopener" data-i18n="dlNotes">Notas das versões</a>
+        </div>
+        <p class="fine" data-i18n="dlFine">Ainda sem assinatura digital: o SmartScreen pode avisar na primeira vez.</p>
+      </div>
+      <dl class="req">
+        <div><dt data-i18n="r1k">Sistema</dt><dd data-i18n="r1v">Windows 10 (1809+) ou 11, 64 bits</dd></div>
+        <div><dt data-i18n="r2k">Permissão</dt><dd data-i18n="r2v">administrador (o UAC aparece ao instalar)</dd></div>
+        <div><dt>FPS</dt><dd data-i18n="r3v">PresentMon 2.3, incluso</dd></div>
+        <div><dt data-i18n="r4k">Sensores</dt><dd data-i18n="r4v">LibreHardwareMonitor + PawnIO, instalado se faltar</dd></div>
+        <div><dt data-i18n="r5k">Interface</dt><dd data-i18n="r5v">WebView2 Runtime, instalado se faltar</dd></div>
+        <div><dt>GPU</dt><dd data-i18n="r6v">qualquer uma para monitorar; ajuste só NVIDIA</dd></div>
+        <div><dt data-i18n="r7k">Idiomas</dt><dd data-i18n="r7v">português e inglês</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ FAQ -->
+<section class="sec" id="faq" aria-labelledby="faq-title">
+  <div class="wrap faq-grid">
+    <div>
+      <h2 id="faq-title" class="h2" data-reveal data-i18n="faqTitle">Perguntas</h2>
+      <p class="body" data-reveal data-i18n="faqBody">Não achou a sua? Abra uma issue no GitHub.</p>
+    </div>
+    <div class="faq">
+      <details data-reveal><summary data-i18n="fq1">É grátis mesmo?</summary><p data-i18n="fa1">Sim. O código é MIT e está no GitHub. Não tem versão paga, conta nem anúncio.</p></details>
+      <details data-reveal><summary data-i18n="fq2">Substitui o MSI Afterburner e o RTSS?</summary><p data-i18n="fa2">Para monitorar, sim, e sem overlay. Para overclock com curva de voltagem, não: o Pitwall só ajusta o power limit e o clock máximo das placas NVIDIA.</p></details>
+      <details data-reveal><summary data-i18n="fq3">Funciona com GPU AMD ou Intel?</summary><p data-i18n="fa3">O monitoramento funciona com o que o LibreHardwareMonitor lê da placa. O ajuste de power limit e clock usa a API da NVIDIA, então só aparece em placas NVIDIA.</p></details>
+      <details data-reveal><summary data-i18n="fq4">Por que o hot spot some na minha RTX 50?</summary><p data-i18n="fa4">A NVIDIA tirou essa leitura das RTX 50. No lugar do número, o Pitwall mostra o motivo.</p></details>
+      <details data-reveal><summary data-i18n="fq5">Preciso de um segundo monitor?</summary><p data-i18n="fa5">Ajuda, mas não é obrigatório. Dá para usar o celular, a TV ou deixar o widget num canto da tela principal.</p></details>
+      <details data-reveal><summary data-i18n="fq6">Em quais jogos foi testado?</summary><p data-i18n="fa6">Ele é usado todo dia com o EA FC. Como o FPS vem do Windows e não do jogo, funciona do mesmo jeito em DirectX, Vulkan e OpenGL. Se um jogo bloquear a leitura, o widget avisa.</p></details>
+      <details data-reveal><summary data-i18n="fq7">Como ajudar?</summary><p data-i18n="fa7">Issues, traduções e pull requests no GitHub. O CONTRIBUTING.md explica como compilar.</p></details>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div class="brand"><img src="assets/img/logo-64.png" width="28" height="28" alt=""><span>Pitwall</span></div>
+    <nav class="foot-links" aria-label="Links" data-i18n-attr="aria-label:footLabel">
+      <a href="https://github.com/igoredm/pitwall" rel="noopener">GitHub</a>
+      <a href="https://github.com/igoredm/pitwall/releases" rel="noopener" data-i18n="footReleases">Versões</a>
+      <a href="https://github.com/igoredm/pitwall/blob/main/SECURITY.md" rel="noopener" data-i18n="footSecurity">Segurança</a>
+      <a href="https://github.com/igoredm/pitwall/blob/main/LICENSE" rel="noopener" data-i18n="footLicense">Licença MIT</a>
+    </nav>
+    <p class="foot-fine" data-i18n="footFine">Este site não usa cookies nem rastreadores. Pitwall não é afiliado à NVIDIA, Intel, Microsoft ou EA; os nomes são de seus donos.</p>
+  </div>
+</footer>
+
+<script src="assets/js/i18n.js" defer></script>
+<script src="assets/js/site.js" defer></script>
+</body>
+</html>

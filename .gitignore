@@ -5,6 +5,7 @@ artifacts/
 web/dist/
 web/.angular/
 web/node_modules/
+site/.demo-build/
 *.user
 .vs/
 

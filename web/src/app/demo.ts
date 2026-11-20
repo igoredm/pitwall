@@ -28,6 +28,11 @@
  *   game=<exe>       nome do jogo (ex.: RocketLeague.exe usa o perfil com layout compacto)
  *   update=checking|downloading|ready|error|idle   estado do atualizador
  *   perfcap=thermal|power|voltage|sync|idle|none|na  motivo fixo (na = sem suporte)
+ * Cenários do site (modo teste da página de divulgação):
+ *   heat=warm|hot    GPU esquentando: hot spot/núcleo no amarelo (warm) ou no vermelho (hot)
+ *   fps=anticheat    FPS bloqueado pelo anti-cheat (fpsStatus + fps.reason), temperaturas seguem
+ *   stutter=1        engasgos: picos de frametime a cada ~5 s (liga o gráfico de frametime)
+ *   battery=low      mouse e headset sem fio com bateria baixa
  */
 import {
   AppConfig,
@@ -89,6 +94,13 @@ const DEFS: Def[] = [
   ['ram.used', 'ram', 'Usada / total', 'GB', true],
   ['ram.total', 'ram', 'Total', 'GB'],
   ['ram.virtualLoad', 'other', 'Memória virtual (commit)', '%'],
+];
+
+/** ?battery=low: mouse e headset abaixo do limite de bateria baixa. */
+const LOW_BATTERIES: WirelessDevice[] = [
+  { key: 'x', name: 'Xbox Wireless Controller', via: 'Bluetooth', kind: 'gamepad', percent: 64, levelText: null, charging: false, asleep: false, connected: true },
+  { key: 'h', name: 'HyperX Cloud III Wireless', via: '2.4 GHz', kind: 'headset', percent: 9, levelText: null, charging: false, asleep: false, connected: true },
+  { key: 'm', name: 'Logitech G Pro X Superlight', via: 'Lightspeed', kind: 'mouse', percent: 4, levelText: null, charging: false, asleep: false, connected: true },
 ];
 
 const BATTERIES: WirelessDevice[] = [
@@ -215,9 +227,10 @@ export function startDemo(t: TelemetryService) {
   const v12 = demo12Monitor(catalog, metrics, now, empty, !idle);
 
   // ------------------------------------------------------------------ config
+  const stutterScene = urlParam('stutter') === '1';
   const settings: MetricSetting[] = DEFS.map(([id, , , unit, on, warn, crit, spark], i) => ({
     id,
-    enabled: !!on,
+    enabled: !!on || (stutterScene && id === 'fps.graph'),
     order: i,
     unit: unit === '°C' ? 'C' : undefined,
     warn,
@@ -528,18 +541,24 @@ export function startDemo(t: TelemetryService) {
   let capIdx = 0;
   let capLeft = 0;
   let k = 0;
+  let spikes = 0;
   const tick = () => {
     if (stopped) return;
     k++;
     const g = !idle;
     const wave = Math.sin(k / 9);
-    const hot = g ? 96 + wave * 4 + rnd(-0.6, 0.6) : 52 + rnd(-1, 1);
-    const core = g ? 74 + wave * 2 + rnd(-0.4, 0.4) : 41 + rnd(-1, 1);
-    const fps = g ? 144 + rnd(-6, 4) : null;
+    // heat=warm|hot: base mais quente (amarelo: hot spot ~97 / núcleo ~83; vermelho: ~103 / ~89)
+    const heat = urlParam('heat');
+    const hotBase = heat === 'hot' ? 103 : heat === 'warm' ? 97 : null;
+    const hot = g ? (hotBase != null ? hotBase + wave * 1.2 : 96 + wave * 4) + rnd(-0.6, 0.6) : 52 + rnd(-1, 1);
+    const core = g ? (heat === 'hot' ? 89 : heat === 'warm' ? 83 : 74) + wave * (hotBase != null ? 0.8 : 2) + rnd(-0.4, 0.4) : 41 + rnd(-1, 1);
+    // stutter=1: a cada 5 s um engasgo (o FPS do segundo cai e o frametime dá um pico)
+    const spike = g && stutterScene && k % 5 === 0;
+    const fps = g ? (spike ? 96 + rnd(-6, 6) : 144 + rnd(-6, 4)) : null;
     const v: Record<string, number | null> = {
       'fps.current': fps,
       'fps.displayed': fps != null ? fps * 2 - rnd(0, 3) : null,
-      'fps.low1': g ? 118 + rnd(-3, 3) : null,
+      'fps.low1': g ? (stutterScene ? 74 + rnd(-3, 3) : 118 + rnd(-3, 3)) : null,
       'fps.low01': g ? 92 + rnd(-4, 4) : null,
       'fps.frametime': fps ? 1000 / fps : null,
       'fps.avg': g ? 141 : null,
@@ -558,7 +577,7 @@ export function startDemo(t: TelemetryService) {
       'gpu.fanRpm': g ? 2140 : 0,
       'gpu.voltage': g ? 0.95 : 0.73,
       'cpu.load': g ? 41 + rnd(-6, 6) : 4 + rnd(0, 3),
-      'cpu.temp': g ? 71 + rnd(-2, 2) : 44 + rnd(-1, 1),
+      'cpu.temp': g ? (heat === 'hot' ? 86 : 71) + rnd(-2, 2) : 44 + rnd(-1, 1),
       'cpu.power': g ? 88 + rnd(-5, 5) : 12,
       'cpu.clockAvg': 4700,
       'ram.load': 58 + rnd(-0.5, 0.5),
@@ -568,6 +587,15 @@ export function startDemo(t: TelemetryService) {
     };
     for (const key of Object.keys(v)) v[key] = v[key] == null ? null : Math.round(v[key]! * 100) / 100;
     v12.values(v, g, k);
+    if (spike) spikes++;
+    if (stutterScene && v['fps.stutters'] != null) v['fps.stutters'] += spikes;
+
+    // frametime por frame (~60 por snapshot) para o gráfico; o engasgo é um frame de 60–90 ms
+    let frames: number[] | undefined;
+    if (v['fps.current'] != null) {
+      frames = Array.from({ length: 60 }, () => Math.round((1000 / 144 + rnd(-0.6, 0.9)) * 100) / 100);
+      if (spike) frames[30] = Math.round(rnd(60, 90));
+    }
 
     // perfcap: alterna motivos (com durações curtas de propósito, para ver o anti-tremido funcionar)
     let cap: string | null;
@@ -625,10 +653,11 @@ export function startDemo(t: TelemetryService) {
       extremes: delta ? { epoch, values: delta } : undefined,
       profile: g && config.games.profiles?.[exe] ? { exe, ...config.games.profiles[exe] } : null,
       gameSuggestion: config.features?.gameSuggestions === false ? null : suggestion,
-      batteries: BATTERIES,
+      batteries: urlParam('battery') === 'low' ? LOW_BATTERIES : BATTERIES,
+      frames,
       tuning: g && config.gpuTuning.enabled ? { active: true, powerLimitW: 260, clockMaxMhz: 1700 } : { active: false },
       log: { file: 'pitwall_2026-11-18_21-48-00_FC25.csv', size: 1_482_331 + k * 420 },
-      fpsStatus: null,
+      fpsStatus: g && urlParam('fps') === 'anticheat' ? 'O anti-cheat do jogo bloqueia a leitura do FPS (ETW).' : null,
     }));
   };
   if (autoFeed) startFeed();

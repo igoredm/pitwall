@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" data-beasties-container>
+<head>
+  <meta charset="utf-8"><meta name="robots" content="noindex">
+  <title>Pitwall</title>
+  <base href="./">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- O app já tem claro/escuro e o widget tem os temas dele: extensões como o Dark Reader não repintam
+       (no navegador do celular ou da TV elas deixavam bordas marrons e o accent apagado) -->
+  <meta name="darkreader-lock">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <script>
+    // Configurações, assistente e tela do celular: fundo do app já no primeiro quadro (sem clarão branco antes do
+    // código carregar). A janela do widget (#/widget ou sem hash) não é tocada.
+    if (/^#\/?(settings|wizard|mobile)/.test(location.hash))
+      document.documentElement.style.background = matchMedia('(prefers-color-scheme: light)').matches ? '#f3f4f6' : '#0e1014';
+  </script>
+<style>html,body{margin:0;height:100%;overflow:hidden}</style><link rel="stylesheet" href="styles-SEOHDVDP.css" media="print" data-beasties-media="all"><noscript><link rel="stylesheet" href="styles-SEOHDVDP.css"></noscript></head>
+<body>
+  <app-root></app-root>
+<link rel="modulepreload" href="chunk-BlX3OU_x.js"><script src="main-WJUJQZFT.js" type="module"></script><script>document.querySelectorAll('link[data-beasties-media]').forEach(function(l){l.media=l.getAttribute('data-beasties-media');l.removeAttribute('data-beasties-media')})</script></body>
+</html>
