@@ -35,6 +35,26 @@ Download `Pitwall-Setup-<version>.exe` from [Releases](../../releases). The inst
 
 Pitwall runs as administrator (sensors and ETW require it). "Start with Windows" uses a Task Scheduler task with highest privileges.
 
+## Is it safe?
+
+Short version: Pitwall only reads. It never touches the game, and everything it runs is open source and built in public CI.
+
+- **Anti-cheat:** no overlay, no DLL injection, no reading of game memory. FPS comes from Windows ETW events through
+  Intel's PresentMon, the same data Windows already produces for every app. Tested daily with EA FC (EA Javelin). No
+  anti-cheat vendor certifies third-party tools, but there is nothing in the game process for one to detect. If an
+  anti-cheat blocks ETW, Pitwall just shows "FPS —" with the reason and keeps the temperatures.
+- **Why administrator:** CPU/motherboard sensors (through the signed [PawnIO](https://pawnio.eu) driver), the ETW session
+  for FPS and the optional NVIDIA power limit all require it. "Start with Windows" uses a Task Scheduler task so there is no
+  UAC prompt every boot.
+- **Not code-signed (yet):** Windows SmartScreen may warn on the first run (*More info → Run anyway*). Every installer is
+  built by the [public GitHub Actions workflow](.github/workflows/build.yml) and its SHA-256 is in `SHA256SUMS.txt` on the
+  release. The built-in updater checks that hash before installing.
+- **GPU tuning is off by default** and uses only NVIDIA's official NVML API. Nothing is written to the card's firmware;
+  limits are undone when the game or Pitwall closes (and after a crash, on the next start).
+- **Network:** no telemetry, no account. The only outbound request is the update check against GitHub. The phone/TV view
+  and the Home Assistant endpoint are off by default, local network only and read-only.
+- **Found a problem?** See [SECURITY.md](SECURITY.md) (private vulnerability reporting is on).
+
 ## Architecture
 
 - `src/Pitwall` — .NET 10 WinForms (tray + WebView2 window).

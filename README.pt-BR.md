@@ -25,6 +25,26 @@ Spec: [docs/spec.md](docs/spec.md) · Design: [docs/design-notes.md](docs/design
 
 Mais em [docs/screenshots](docs/screenshots) (todos os temas do widget, layouts médio e compacto, Configurações no claro e no escuro, a tela de parear da TV).
 
+## É seguro?
+
+Resumo: o Pitwall só lê. Ele nunca toca no jogo, e tudo o que roda é código aberto, compilado num CI público.
+
+- **Anti-cheat:** sem overlay, sem injetar DLL e sem ler a memória do jogo. O FPS vem dos eventos ETW do Windows pelo
+  PresentMon da Intel, os mesmos dados que o Windows já produz para qualquer app. Testado todo dia com o EA FC (EA
+  Javelin). Nenhum anti-cheat certifica programas de terceiros, mas não há nada no processo do jogo para ele detectar.
+  Se um anti-cheat bloquear o ETW, o Pitwall mostra "FPS —" com o motivo e continua com as temperaturas.
+- **Por que administrador:** os sensores de CPU e placa-mãe (pelo driver assinado [PawnIO](https://pawnio.eu)), a sessão
+  ETW do FPS e o limite de consumo opcional da NVIDIA exigem isso. "Iniciar com o Windows" usa uma tarefa do Agendador,
+  então não aparece o UAC a cada boot.
+- **Ainda sem assinatura digital:** o SmartScreen pode avisar na primeira vez (*Mais informações → Executar assim mesmo*).
+  Todo instalador é compilado pelo [workflow público do GitHub Actions](.github/workflows/build.yml), e o SHA-256 dele está
+  no `SHA256SUMS.txt` da release. O atualizador confere esse hash antes de instalar.
+- **O ajuste da GPU vem desligado** e usa só a API oficial da NVIDIA (NVML). Nada é gravado na placa: os limites voltam
+  ao normal quando o jogo ou o Pitwall fecha (e, depois de uma queda, ao abrir de novo).
+- **Rede:** sem telemetria e sem conta. A única conexão de saída é a busca por atualização no GitHub. A visualização no
+  celular/TV e o endpoint do Home Assistant vêm desligados, funcionam só na rede local e são só leitura.
+- **Achou um problema?** Veja o [SECURITY.md](SECURITY.md) (o relato privado de vulnerabilidade está ativo).
+
 ## Arquitetura
 
 - `src/Pitwall` — .NET 10 WinForms (bandeja + janela WebView2), roda como administrador.
