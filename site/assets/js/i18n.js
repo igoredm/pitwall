@@ -149,6 +149,8 @@ window.PW_I18N = {
     footSecurity: 'Security',
     footLicense: 'MIT license',
     footFine: 'This site uses no cookies and no trackers. Pitwall isn’t affiliated with NVIDIA, Intel, Microsoft or EA; names belong to their owners.',
+    famBy: 'A project by',
+    famAlso: 'Also:',
   },
 
   /* trocados pelo script (os dois idiomas) */

@@ -306,7 +306,7 @@
   addEventListener('scroll', function () {
     if (ticking) return;
     ticking = true;
-    requestAnimationFrame(function () { nav.classList.toggle('scrolled', scrollY > 8); ticking = false; });
+    requestAnimationFrame(function () { nav.classList.toggle('scrolled', scrollY > 4); ticking = false; });
   }, { passive: true });
 
   // ------------------------------------------------------------------ início
