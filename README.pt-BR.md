@@ -85,7 +85,7 @@ cd src/Pitwall && dotnet build  # app; rodar bin/Debug/.../Pitwall.exe (pede UAC
 
 ```bash
 powershell -ExecutionPolicy Bypass -File installer/fetch-deps.ps1      # PresentMon, PawnIO, WebView2 (versões fixas, verificadas)
-powershell -ExecutionPolicy Bypass -File installer/build-battery.ps1   # WirelessBattery (requer MinGW) + HeadsetControl
+powershell -ExecutionPolicy Bypass -File installer/build-battery.ps1   # Battery Hub (requer MinGW) + HeadsetControl
 powershell -ExecutionPolicy Bypass -File installer/build.ps1 -Version 0.7.0
 ```
 
@@ -111,5 +111,5 @@ com um código.
 
 ## Licença
 
-Código do Pitwall: [MIT](LICENSE). `tools/battery-patches/` é GPL-3.0 (modifica o WirelessBattery).
+Código do Pitwall: [MIT](LICENSE). `tools/battery-patches/` é GPL-3.0 (modifica o Battery Hub).
 Programas de terceiros empacotados: ver [installer/THIRD-PARTY-NOTICES.txt](installer/THIRD-PARTY-NOTICES.txt).

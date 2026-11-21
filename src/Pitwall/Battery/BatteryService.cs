@@ -1,5 +1,6 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Pitwall.Native;
 
@@ -17,14 +18,14 @@ public sealed record WirelessDevice(
     bool Connected);
 
 /// <summary>
-/// Bateria de mouse/headset/teclado/controle sem fio via WirelessBattery (GPL-3.0, krisgfx9), que roda como
-/// programa separado: "WirelessBattery.exe --list" a cada minuto (mesmo intervalo do app original).
+/// Bateria de mouse/headset/teclado/controle sem fio via Battery Hub (ex-WirelessBattery, GPL-3.0, krisgfx9), que roda
+/// como programa separado: "BatteryHub.exe --json" a cada minuto (mesmo intervalo do app original).
 /// Ele fala direto com os dispositivos por HID/Bluetooth; sem software do fabricante. O HeadsetControl ao lado
 /// amplia os headsets suportados.
 /// </summary>
 public sealed partial class BatteryService : IDisposable
 {
-    readonly string _exe = Path.Combine(AppContext.BaseDirectory, "tools", "battery", "WirelessBattery.exe");
+    readonly string _exe = Path.Combine(AppContext.BaseDirectory, "tools", "battery", "BatteryHub.exe");
     readonly JobObject _job = new();
     readonly CancellationTokenSource _cts = new();
     readonly AutoResetEvent _refresh = new(false);
@@ -72,7 +73,7 @@ public sealed partial class BatteryService : IDisposable
     void KillOrphans()
     {
         var dir = Path.GetDirectoryName(_exe)!;
-        foreach (var name in new[] { "WirelessBattery", "headsetcontrol" })
+        foreach (var name in new[] { "BatteryHub", "WirelessBattery", "headsetcontrol" })
             foreach (var p in Process.GetProcessesByName(name))
                 using (p)
                     try
@@ -84,7 +85,7 @@ public sealed partial class BatteryService : IDisposable
 
     void Poll()
     {
-        using var p = Process.Start(new ProcessStartInfo(_exe, "--list")
+        using var p = Process.Start(new ProcessStartInfo(_exe, "--json")
         {
             UseShellExecute = false,
             CreateNoWindow = true,
@@ -97,7 +98,7 @@ public sealed partial class BatteryService : IDisposable
         var output = p.StandardOutput.ReadToEndAsync();
         if (!p.WaitForExit(20_000))
         {
-            // Árvore inteira: o WirelessBattery pode ter aberto o headsetcontrol
+            // Árvore inteira: o Battery Hub pode ter aberto o headsetcontrol
             try { p.Kill(entireProcessTree: true); } catch { }
             return;
         }
@@ -107,39 +108,39 @@ public sealed partial class BatteryService : IDisposable
     }
 
     /// <summary>
-    /// Formato de uma linha (src/main.cpp ListToConsole):
-    /// "{name}  [{via}]  [{{Marca}}  ]{NN% | asleep | off / not connected | unknown | texto}[ ({detail})][, charging][, N mV]   ({key})"
+    /// "--json" (src/json_output.h do Battery Hub): um array, campos estáveis segundo o upstream:
+    /// key, name, via, kind (mouse|headset|keyboard|gamepad|phone|other), percent (-1 = sem %), level (texto quando o
+    /// aparelho não dá %), detail, charging, asleep, connected, millivolts, graceSec.
     /// </summary>
-    public static IReadOnlyList<WirelessDevice> Parse(string text)
+    public static IReadOnlyList<WirelessDevice> Parse(string json)
     {
         var list = new List<WirelessDevice>();
-        foreach (var raw in text.Split('\n'))
+        var start = json.IndexOf('[');
+        if (start < 0) return list;
+        using var doc = JsonDocument.Parse(json.AsMemory(start));
+        if (doc.RootElement.ValueKind != JsonValueKind.Array) return list;
+        foreach (var e in doc.RootElement.EnumerateArray())
         {
-            var line = raw.TrimEnd('\r');
-            var m = LineRegex().Match(line);
-            if (!m.Success) continue;
-            var name = m.Groups["name"].Value.Trim();
-            var status = m.Groups["status"].Value;
-            var charging = status.Contains(", charging");
-            status = MvRegex().Replace(status.Replace(", charging", ""), "");
-            status = DetailRegex().Replace(status, "").Trim();
-
-            int? pct = null;
-            string? level = null;
-            bool asleep = false, connected = true;
-            var pm = PctRegex().Match(status);
-            if (pm.Success) pct = int.Parse(pm.Groups[1].Value);
-            else if (status == "asleep") asleep = true;
-            else if (status.StartsWith("off")) connected = false;
-            else if (status != "unknown") level = status;
-
-            list.Add(new WirelessDevice(m.Groups["key"].Value, name, m.Groups["via"].Value, GuessKind(name),
-                pct, level, charging, asleep, connected));
+            if (e.ValueKind != JsonValueKind.Object) continue;
+            var name = Str(e, "name");
+            var key = Str(e, "key");
+            if (name.Length == 0 || key.Length == 0) continue;
+            var pct = e.TryGetProperty("percent", out var p) && p.TryGetInt32(out var n) && n is >= 0 and <= 100 ? n : (int?)null;
+            var level = Str(e, "level");
+            var kind = Str(e, "kind");
+            if (kind is not ("mouse" or "headset" or "keyboard" or "gamepad" or "phone")) kind = GuessKind(name);
+            list.Add(new WirelessDevice(key, name, Str(e, "via"), kind, pct, level.Length > 0 ? level : null,
+                Bool(e, "charging"), Bool(e, "asleep"), !e.TryGetProperty("connected", out var c) || c.ValueKind != JsonValueKind.False));
         }
         return list;
     }
 
-    /// <summary>O --list não diz o tipo; o próprio app adivinha pelo nome (GuessKind). Mesma ideia aqui.</summary>
+    static string Str(JsonElement e, string name) =>
+        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()!.Trim() : "";
+
+    static bool Bool(JsonElement e, string name) => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
+
+    /// <summary>Quando o Battery Hub diz "other": adivinha pelo nome, como o próprio app fazia.</summary>
     static string GuessKind(string name)
     {
         var n = name.ToLowerInvariant();
@@ -150,14 +151,6 @@ public sealed partial class BatteryService : IDisposable
         return "mouse";
     }
 
-    [GeneratedRegex(@"^(?<name>.+?)  \[(?<via>[^\]]*)\]  (?:\{(?<brand>[^}]*)\}  )?(?<status>.+?)   \((?<key>[^)]*)\)\s*$")]
-    private static partial Regex LineRegex();
-    [GeneratedRegex(@"^(\d{1,3})%")]
-    private static partial Regex PctRegex();
-    [GeneratedRegex(@", \d+ mV")]
-    private static partial Regex MvRegex();
-    [GeneratedRegex(@" \(.*\)$")]
-    private static partial Regex DetailRegex();
     [GeneratedRegex(@"headset|headphone|head set|buds|airpods|cloud|arctis|kraken|blackshark|barracuda|nari|astro|a50|jabra|quantum|inzone|virtuoso|void|hs\d|g\d{3}x?\b.*(?:headset|lightspeed)|pulse|wh-|wf-|earbud|fone")]
     private static partial Regex HeadsetRegex();
     [GeneratedRegex(@"controller|gamepad|dualsense|dualshock|xbox|8bitdo|switch pro|gamesir|flydigi|joy-?con|pro controller")]

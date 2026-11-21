@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ---------------------------------------------------------------------------
-Exception: tools/battery-patches/ contains modifications to WirelessBattery
+Exception: tools/battery-patches/ contains modifications to Battery Hub (formerly WirelessBattery)
 (https://github.com/krisgfx9/Wireless-Device-Battery-Monitor) and is licensed
 under the GNU General Public License v3.0, like the program it patches.
 Bundled third-party programs keep their own licenses; see

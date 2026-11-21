@@ -73,8 +73,8 @@ Short version: Pitwall only reads. It never touches the game, and everything it 
   - CSV in `%LOCALAPPDATA%\Pitwall\logs`, flushed to disk on every line (useful when the PC crashes); old logs are pruned
     (30 days / 500 MB by default). A crash report shows the last 60 s before an unexpected shutdown.
   - GPU tuning through NVIDIA's official NVML only; restored on exit, on game exit and after a crash.
-  - Wireless battery: bundled [WirelessBattery](https://github.com/krisgfx9/Wireless-Device-Battery-Monitor) (built from a
-    reviewed commit, plus our AULA driver in `tools/battery-patches`) and [HeadsetControl](https://github.com/Sapd/HeadsetControl).
+  - Wireless battery: bundled [Battery Hub](https://github.com/krisgfx9/Wireless-Device-Battery-Monitor) (built from a
+    reviewed commit without its network and self-update code, plus our AULA driver in `tools/battery-patches`) and [HeadsetControl](https://github.com/Sapd/HeadsetControl).
 - `web` — Angular 22: widget (`#/widget`) and settings (`#/settings`), served to WebView2 at `https://pitwall.local`.
 - `tests/Pitwall.Tests` — xUnit (`dotnet test`).
 - `installer` — Inno Setup script and build scripts.
@@ -86,7 +86,7 @@ Requirements: .NET 10 SDK, Node 24, Inno Setup 6, MinGW-w64 (for the battery rea
 ```bash
 cd web && npm ci && npx ng build
 powershell -ExecutionPolicy Bypass -File installer/fetch-deps.ps1      # PresentMon, PawnIO, WebView2 (pinned, verified)
-powershell -ExecutionPolicy Bypass -File installer/build-battery.ps1   # WirelessBattery + HeadsetControl
+powershell -ExecutionPolicy Bypass -File installer/build-battery.ps1   # Battery Hub + HeadsetControl
 powershell -ExecutionPolicy Bypass -File installer/build.ps1 -Version 0.7.0
 ```
 
@@ -114,5 +114,5 @@ after pairing with a code.
 
 ## License
 
-Pitwall's code: [MIT](LICENSE). `tools/battery-patches/` is GPL-3.0 (it modifies WirelessBattery).
+Pitwall's code: [MIT](LICENSE). `tools/battery-patches/` is GPL-3.0 (it modifies Battery Hub).
 Bundled third-party programs keep their own licenses — see [installer/THIRD-PARTY-NOTICES.txt](installer/THIRD-PARTY-NOTICES.txt).

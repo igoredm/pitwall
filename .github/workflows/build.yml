@@ -56,7 +56,7 @@ jobs:
         shell: pwsh
         run: ./installer/fetch-deps.ps1
 
-      - name: Battery reader (WirelessBattery from reviewed commit)
+      - name: Battery reader (Battery Hub from reviewed commit)
         shell: pwsh
         run: |
           $env:PATH = "${{ runner.temp }}\msys64\ucrt64\bin;$env:PATH"

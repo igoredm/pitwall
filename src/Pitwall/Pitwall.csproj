@@ -13,7 +13,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <AssemblyName>Pitwall</AssemblyName>
     <RootNamespace>Pitwall</RootNamespace>
-    <Version>1.2.1</Version>
+    <Version>1.2.2</Version>
     <Authors>igoredm</Authors>
     <Company>igoredm</Company>
     <Product>Pitwall</Product>
@@ -40,7 +40,7 @@
     <None Include="..\..\tools\PresentMon.exe" Condition="Exists('..\..\tools\PresentMon.exe')" Link="tools\PresentMon.exe" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <!-- Bateria de periféricos sem fio: WirelessBattery + HeadsetControl (GPL-3.0, programas separados; ver installer/build-battery.ps1) -->
+  <!-- Bateria de periféricos sem fio: Battery Hub + HeadsetControl (GPL-3.0, programas separados; ver installer/build-battery.ps1) -->
   <ItemGroup>
     <None Include="..\..\tools\battery\**\*" Link="tools\battery\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

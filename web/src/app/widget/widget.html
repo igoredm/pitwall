@@ -106,6 +106,9 @@
             <span class="scr-id">
               <span class="kind">FPS</span>
               <span class="scr-game" [title]="game.exe"><i></i><span class="gc-name">{{ game.exe }}</span></span>
+              @if (fpsBlocked()) {
+                <span class="fps-note" [title]="t.fpsStatus()">{{ s().fpsBlocked }}</span>
+              }
             </span>
             @if (fps().extras.length) {
               <span class="scr-x">

@@ -27,19 +27,20 @@ qrcode-generator 2.0.4 — Kazuhiko Arase
   Licença: MIT — https://github.com/kazuhikoarase/qrcode-generator
   Desenha o QR code de pareamento do celular (Configurações → Celular), sem rede e sem imagem externa.
 
-WirelessBattery (Wireless Device Battery Monitor) — krisgfx9
+Battery Hub (antes WirelessBattery; Wireless Device Battery Monitor) — krisgfx9
   Licença: GPL-3.0 — https://github.com/krisgfx9/Wireless-Device-Battery-Monitor
-  Programa separado em tools\battery\, executado como "WirelessBattery.exe --list" para ler a bateria
+  Programa separado em tools\battery\, executado como "BatteryHub.exe --json" para ler a bateria
   de mouses, headsets, teclados e controles sem fio. Compilado a partir do commit
-  958a60a4b219189248c97497291fb362aab2a684 com modificações do Pitwall: (1) um driver novo para mouses AULA
-  no receptor 38A6 "AULA Receiver" (Kunlun X5, L9, SC880, SC900 V2...), src/drivers/aula_infortech.cpp
-  (também GPL-3.0); (2) o envio de "pedir suporte" pela rede foi removido (o programa não acessa a internet);
-  (3) o headsetcontrol.exe só é procurado ao lado do exe, nunca na pasta atual ou no PATH.
+  7cc44f2b2c63341e2b478463c7467759837a74a9 (v1.1.0) com modificações do Pitwall: (1) um driver novo para mouses
+  AULA no receptor 38A6 "AULA Receiver" (Kunlun X5, L9, SC880, SC900 V2...), src/drivers/aula_infortech.cpp
+  (também GPL-3.0); (2) o envio de "pedir suporte" pela rede foi removido e o atualizador automático saiu do
+  build (src/no_updates.cpp): o programa não acessa a internet; (3) o headsetcontrol.exe só é procurado ao lado
+  do exe, nunca na pasta atual ou no PATH.
   O código-fonte correspondente, já com as modificações e o diff (PITWALL-CHANGES.diff),
-  acompanha a instalação (tools\battery\WirelessBattery-source-958a60a-pitwall.zip), assim como o texto da
+  acompanha a instalação (tools\battery\BatteryHub-source-7cc44f2-pitwall.zip), assim como o texto da
   licença (tools\battery\LICENSE-GPL-3.0.txt).
 
 HeadsetControl — Denis Arnst (Sapd) e colaboradores
   Licença: GPL-3.0 — https://github.com/Sapd/HeadsetControl
-  Binário oficial 4.3.0 (assinatura PGP verificada), usado pelo WirelessBattery para mais headsets.
+  Binário oficial 4.3.0 (assinatura PGP verificada), usado pelo Battery Hub para mais headsets.
   Código-fonte: tools\battery\headsetcontrol-4.3.0-source.tar.gz

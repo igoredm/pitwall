@@ -59,7 +59,7 @@ as a separate executable. No proprietary components are part of the signed code.
 > 1. `actions/checkout`, `setup-node` (Node 24, `npm ci` from the committed lockfile), `setup-dotnet` (.NET 10),
 >    MSYS2/MinGW (UCRT64) and Inno Setup from Chocolatey.
 > 2. `installer/fetch-deps.ps1` downloads third-party binaries at pinned versions and verifies them (below).
-> 3. `installer/build-battery.ps1` compiles WirelessBattery from a pinned, reviewed commit with our patch.
+> 3. `installer/build-battery.ps1` compiles Battery Hub from a pinned, reviewed commit with our patch.
 > 4. `installer/build.ps1` builds the Angular UI, runs `dotnet publish` (self-contained, win-x64, ReadyToRun, version
 >    taken from the git tag) and compiles the Inno Setup script.
 > 5. SHA-256 checksums are generated, and a `v*` tag creates a **draft** release; a maintainer reviews and publishes it.
@@ -74,7 +74,7 @@ as a separate executable. No proprietary components are part of the signed code.
 | PresentMon 2.6.0 (console) | github.com/GameTechDev/PresentMon release | pinned SHA-256 in `fetch-deps.ps1` | MIT |
 | PawnIO 2.2.0 setup | github.com/namazso/PawnIO.Setup release | pinned SHA-256; official signed installer, run unmodified | GPL-2.0 / LGPL |
 | WebView2 Evergreen bootstrapper | go.microsoft.com (Microsoft) | Authenticode signature must be valid and issued to Microsoft Corporation | Microsoft |
-| WirelessBattery | built in CI from reviewed commit `958a60a` + our patches (AULA driver; network code and PATH lookup removed) | source pinned by commit hash; source zip + diff shipped (GPL) | GPL-3.0 |
+| Battery Hub | built in CI from reviewed commit `7cc44f2` (v1.1.0) + our patches (AULA driver; network, self-update and PATH lookup removed) | source pinned by commit hash; source zip + diff shipped (GPL) | GPL-3.0 |
 | HeadsetControl 4.3.0 | github.com/Sapd/HeadsetControl release | pinned SHA-256 (upstream PGP signature checked when the pin was set) | GPL-3.0 |
 | LibreHardwareMonitorLib 0.9.6, WebView2 SDK | NuGet | NuGet package signatures | MPL-2.0 / Microsoft |
 

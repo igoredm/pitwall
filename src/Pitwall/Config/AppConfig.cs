@@ -176,7 +176,7 @@ public sealed class GpuTuningConfig
     public bool OnlyInGames { get; set; } = true;
 }
 
-/// <summary>Bateria de periféricos sem fio (WirelessBattery). Aparece discreta perto do FPS.</summary>
+/// <summary>Bateria de periféricos sem fio (Battery Hub). Aparece discreta perto do FPS.</summary>
 public sealed class BatteryConfig
 {
     public bool Enabled { get; set; } = true;

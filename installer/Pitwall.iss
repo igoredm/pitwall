@@ -8,7 +8,7 @@
 
 #define AppName "Pitwall"
 #ifndef AppVersion
-  #define AppVersion "1.2.1"
+  #define AppVersion "1.2.2"
 #endif
 #define AppExe "Pitwall.exe"
 
@@ -123,11 +123,16 @@ Filename: "{app}\{#AppExe}"; Parameters: "--updated"; Flags: nowait; Check: Rest
 
 [UninstallRun]
 Filename: "{sys}\taskkill.exe"; Parameters: "/IM {#AppExe} /F"; Flags: runhidden waituntilterminated; RunOnceId: "KillApp"
-Filename: "{sys}\taskkill.exe"; Parameters: "/IM WirelessBattery.exe /IM headsetcontrol.exe /F"; Flags: runhidden waituntilterminated; RunOnceId: "KillHelpers"
+Filename: "{sys}\taskkill.exe"; Parameters: "/IM BatteryHub.exe /IM WirelessBattery.exe /IM headsetcontrol.exe /F"; Flags: runhidden waituntilterminated; RunOnceId: "KillHelpers"
 Filename: "{app}\{#AppExe}"; Parameters: "--set-autostart off"; Flags: runhidden waituntilterminated; RunOnceId: "RemoveAutostart"
 Filename: "{app}\tools\PresentMon.exe"; Parameters: "--terminate_existing_session --session_name PitwallPresentMon"; Flags: runhidden waituntilterminated; RunOnceId: "StopEtw"
 ; Regra do firewall da visualização no celular (Remote.Enabled); some mesmo que o recurso tenha ficado ligado
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=Pitwall-PhoneView"; Flags: runhidden waituntilterminated; RunOnceId: "RemoveFirewallRule"
+
+[InstallDelete]
+; Leitor de bateria com o nome antigo (até a 1.2.1): virou BatteryHub.exe
+Type: files; Name: "{app}\tools\battery\WirelessBattery.exe"
+Type: files; Name: "{app}\tools\battery\WirelessBattery-source-*.zip"
 
 [UninstallDelete]
 ; Cache do WebView2. Config (%APPDATA%\Pitwall) e logs (%LOCALAPPDATA%\Pitwall\logs) ficam, como a maioria dos apps.
@@ -156,7 +161,7 @@ begin
 end;
 
 #ifndef Preview
-// Fecha WirelessBattery/headsetcontrol/PresentMon iniciados da pasta do app (não mexe em cópias de outros lugares).
+// Fecha BatteryHub/headsetcontrol/PresentMon iniciados da pasta do app (não mexe em cópias de outros lugares).
 // Se algum sobrar rodando, o arquivo fica travado ("DeleteFile falhou; código 5").
 procedure KillHelpers;
 var
@@ -164,7 +169,7 @@ var
   Cmd: String;
 begin
   // Por nome (o filtro por caminho falhava: um PowerShell 32-bit não lê o caminho de processos 64-bit)
-  Cmd := '/F /IM WirelessBattery.exe /IM headsetcontrol.exe /IM PresentMon.exe';
+  Cmd := '/F /IM BatteryHub.exe /IM WirelessBattery.exe /IM headsetcontrol.exe /IM PresentMon.exe';
   for I := 1 to 3 do
   begin
     Exec(ExpandConstant('{sys}\taskkill.exe'), Cmd, '', SW_HIDE, ewWaitUntilTerminated, Code);
