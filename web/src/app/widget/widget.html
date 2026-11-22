@@ -21,9 +21,12 @@
         } @else {
           <span class="clock">{{ clock() }}</span>
         }
-        <!-- À direita, empilhados: 1% low etc. e a bateria (numa linha só, os 3 dispositivos não cabiam em 260 px) -->
-        @if ((t.connected() && t.game() && fps().extras.length) || battery().show) {
+        <!-- À direita, empilhados: selo do benchmark, 1% low etc. e a bateria (numa linha só, os 3 dispositivos não cabiam em 260 px) -->
+        @if ((t.connected() && t.game() && (fps().extras.length || benchText())) || battery().show) {
           <span class="mini-side">
+            @if (t.connected() && t.game()) {
+              <ng-container *ngTemplateOutlet="benchChip" />
+            }
             @if (t.connected() && t.game() && fps().extras.length) {
               <span class="mini-extras">
                 @for (m of fps().extras; track m.id) {
@@ -55,7 +58,7 @@
         @if (!t.connected()) {
           <div class="c-sub">{{ s().connecting }}</div>
         } @else if (t.game(); as game) {
-          <div class="fps">{{ fps().current?.text ?? '—' }}<span class="c-fps-label">FPS</span></div>
+          <div class="fps">{{ fps().current?.text ?? '—' }}<span class="c-fps-label">FPS</span><ng-container *ngTemplateOutlet="benchChip" /></div>
           @if (fpsBlocked()) {
             <div class="c-sub fps-note" [title]="t.fpsStatus()">{{ s().fpsBlocked }}</div>
           }
@@ -104,7 +107,7 @@
           @if (miniSmall()) {
             <span class="fps">{{ fps().current?.text ?? '—' }}</span>
             <span class="scr-id">
-              <span class="kind">FPS</span>
+              <span class="kind">FPS <ng-container *ngTemplateOutlet="benchChip" /></span>
               <span class="scr-game" [title]="game.exe"><i></i><span class="gc-name">{{ game.exe }}</span></span>
               @if (fpsBlocked()) {
                 <span class="fps-note" [title]="t.fpsStatus()">{{ s().fpsBlocked }}</span>
@@ -121,6 +124,7 @@
             <span class="scr-game" [title]="game.exe"><i></i><span class="gc-name">{{ theme() === 'terminal' ? '> ' + game.exe : game.exe }}</span></span>
             <span class="fps">{{ fps().current?.text ?? '—' }}</span>
             <span class="kind scr-fl">FPS</span>
+            <ng-container *ngTemplateOutlet="benchChip" />
             @if (fpsBlocked()) {
               <span class="fps-note" [title]="t.fpsStatus()">{{ s().fpsBlocked }}</span>
             }
@@ -177,6 +181,7 @@
           <div class="s-fpsrow">
             <span class="fps">{{ fps().current?.text ?? '—' }}</span>
             <span class="fps-label">FPS</span>
+            <ng-container *ngTemplateOutlet="benchChip" />
           </div>
           @if (fpsBlocked()) {
             <div class="fps-note" [title]="t.fpsStatus()">{{ s().fpsBlockedLong }}</div>
@@ -245,6 +250,7 @@
           <div class="game-chip" [title]="game.exe"><i></i><span class="gc-name">{{ theme() === 'terminal' ? '> ' + game.exe : game.exe }}</span></div>
           <div class="fps">{{ fps().current?.text ?? '—' }}</div>
           <div class="fps-label">FPS</div>
+          <ng-container *ngTemplateOutlet="benchChip" />
         @if (fpsBlocked()) {
           <div class="fps-note" [title]="t.fpsStatus()">{{ s().fpsBlockedLong }}</div>
         }
@@ -293,6 +299,13 @@
     </footer>
   }
 </div>
+
+<!-- 1.3: selo do benchmark ("BENCH 0:42") perto do FPS, em todos os layouts. Conta pelo startedAt; não anima -->
+<ng-template #benchChip>
+  @if (benchText(); as b) {
+    <span class="bench" role="timer" [attr.aria-label]="s().v13.benchChipAria(b)">{{ s().v13.benchChip }} <b>{{ b }}</b></span>
+  }
+</ng-template>
 
 <ng-template #card let-b>
   <section [class]="'card card-' + b.key">

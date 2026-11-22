@@ -1604,6 +1604,50 @@ header {
   b { font-family: var(--font-num); color: var(--text); }
 }
 
+// ---------------------------------------------------------------- 1.3: selo do benchmark
+// "BENCH 0:42" perto do FPS em todos os layouts e temas. Discreto (contorno na cor de destaque, sem preenchimento) e
+// parado: só o número troca uma vez por segundo.
+.bench {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  margin-top: u(8);
+  padding: 0.3em 0.65em;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: f(13);
+  font-weight: 800;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  white-space: nowrap;
+  text-transform: none;
+  color: var(--accent);
+  -webkit-text-fill-color: var(--accent);
+  vertical-align: middle;
+  b {
+    font-family: var(--font-num);
+    font-weight: 700;
+    letter-spacing: 0;
+    color: var(--text);
+    -webkit-text-fill-color: var(--text);
+  }
+}
+.t-terminal .bench,
+.t-minimo .bench { border-radius: u(3); }
+.t-splash .bench { border-width: 2px; }
+// faixa: na mesma linha do "FPS"
+.st .s-fpsrow .bench { margin: 0 0 0 u(10); font-size: f(14); align-self: center; }
+// médio: dentro da linha do FPS (fonte própria, não herda o tamanho do número)
+.c .c-top .fps .bench { margin: 0 0 0 u(6); font-size: u(10); align-self: center; }
+// compacto: em cima da coluna da direita (1% low e bateria), para não apertar a linha do FPS
+.c.tiny .mini-side .bench { margin: 0 0 u(3); font-size: u(9); padding: 0.25em 0.5em; letter-spacing: 0.1em; align-self: flex-end; }
+// telinha: abaixo do "FPS"; na pequena, na linha do "FPS"
+.mn .scr-fps > .bench { margin-top: u(6); font-size: f(15); }
+.mn-s .scr-id .bench { margin: 0 0 0 u(6); font-size: u(11); padding: 0.2em 0.5em; letter-spacing: 0.1em; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
