@@ -698,3 +698,111 @@ O resto do Monitor é só do front: anel de 900 pontos (15 min a 1 Hz) por senso
 **só com a página aberta e visível** (`document.visibilityState`); os segundos com a página oculta ficam vazios no gráfico.
 O período (1/5/15 min) fica no `localStorage` (`pitwall.monitorRange`), não no config. [Copiar leituras] usa `getSensorDump`;
 [Marcar momento] manda `addMarker` e mostra "Marcador N · hh:mm:ss" quando chega o broadcast `marker`.
+
+## 11. 1.3
+
+Contrato de trabalho: `docs/v13-contract.md`. Tudo aqui é só do socket local (o celular não recebe nem manda nada disto;
+`catalog.benchmark` e `catalog.hotkeys` não vão no catálogo do celular). Nada novo no tick além do benchmark quando ele roda.
+
+### 11.1 Config v9
+`ConfigStore.CurrentVersion = 9`. A migração 8 → 9 só preenche os padrões:
+```jsonc
+"hotkeys":   { "enabled": true, "toggleWidget": "Ctrl+Alt+P", "marker": "Ctrl+Alt+M", "benchmark": "Ctrl+Alt+B" }, // vazio = desligado
+"benchmark": { "durationSec": 60 },                // 30 | 60 | 120 | 300; outro valor (ou ausente/null) → 60
+"energy":    { "tariff": null, "currency": "R$" }  // tariff = preço do kWh; null = só kWh
+```
+Sanitize: `tariff` negativo, não finito ou > 1000 → `null`; `currency` vazia → `"R$"` (aparada, até 8 caracteres);
+seções `hotkeys`/`benchmark`/`energy` `null` voltam ao padrão.
+
+### 11.2 Relatório do PC: eventos novos
+`PcEvent` ganha `category: "problem" | "state"` (sempre presente nos eventos lidos pela 1.3; incidentes gravados antes não
+têm) e `exe?` (só `appCrash`/`appHang`).
+
+| kind | origem | janela | `code` / `message` |
+|---|---|---|---|
+| `sleep` | System · `Microsoft-Windows-Kernel-Power` 42 | 7 dias | 1ª linha do texto |
+| `resume` | System · `Microsoft-Windows-Power-Troubleshooter` 1 | 7 dias | 1ª linha do texto |
+| `boot` | System · `Microsoft-Windows-Kernel-General` 12 | 7 dias | 1ª linha do texto |
+| `shutdown` | System · `User32` 1074 e `Microsoft-Windows-Kernel-General` 13 | 7 dias | 1074: `"RuntimeBroker.exe · restart"` (processo + tipo, nunca usuário nem nome do PC); 13: 1ª linha |
+| `appCrash` | Application · `Application Error` 1000 | 30 dias | `code` = módulo com falha (`nvwgf2umx.dll`), `exe` = jogo |
+| `appHang` | Application · `Application Hang` 1002 | 30 dias | `exe` = jogo |
+
+- `state` = sleep/resume/boot/shutdown; o resto (os da 1.2 também) = `problem`.
+- `appCrash`/`appHang` só entram se o exe for um **jogo conhecido**: exes de qualquer sessão do `sessions.json` +
+  `games.include`. O XPath filtra provider/ID/tempo; o exe é comparado no C# (sem diferenciar maiúsculas), olhando o 1º dado
+  do evento antes de formatar o texto (até 5000 registros do log Application percorridos por leitura).
+- `exe` vem do 1º dado do evento; sem ele, do texto em EN ou PT-BR ("Faulting application name:" / "Nome do aplicativo com
+  falha:", "The program X.exe" / "O programa X.exe"). O módulo vem do 4º dado ou de "Faulting module name:" / "Nome do módulo com falha:".
+- `pcReport.events`: até 200 `problem` (30 dias, System + Application) + até 150 `state` (7 dias), mais novos primeiro.
+- Mensagens: além dos caminhos `C:\Users\<nome>` e do nome do usuário, o **nome do PC** também vira `…`.
+- `PcIncident.events` (±10 min) inclui os de `state` (ex.: `sleep` 03:12 → `kernelPower41` 03:40). O `kind` do incidente
+  continua decidido só por `bugcheck` / `kernelPower41` com código.
+
+**`GameSession.gameExit?: "crash" | "hang"`**: houve `appCrash` (→ `crash`, tem prioridade) ou `appHang` (→ `hang`) do exe
+da sessão entre `start` e `end + 2 min` (sessão sem `end` = `start + durationSec`). Preenchido uma vez por sessão:
+- ~20 s depois do fim da sessão, numa thread de fundo (só o log Application, só aquele exe), com `features.crashReport`
+  ligado (desligado = nem olha o log); se mudar, broadcast `sessions`;
+- em todo `getPcReport` (usa os eventos já lidos para o relatório; se alguma sessão mudar, broadcast `sessions`).
+
+### 11.3 Sessão: driver e energia
+`GameSession` ganha, opcionais:
+- `gpuDriver`: versão do driver no início da sessão — NVML (`"591.44"`) ou, sem NVML, a do registro (`SystemInfo.GpuDriver`,
+  só a parte antes de ` (`). Lida uma vez por execução do app.
+- `energyWh`: Σ `(gpu.power + cpu.power) × dt` dos ticks da sessão, em Wh com 1 casa. Soma só o que tiver leitura; tick sem
+  nenhum dos dois não conta; sem nenhuma leitura = ausente. Gravado junto com o resto (a cada ~30 s e no fim). O mesmo vale
+  para `Benchmark.energyWh`.
+
+### 11.4 Tendência por jogo
+```json
+{ "type": "getTrend", "exe": "FC25.exe" }
+→ { "type": "trend", "exe": "FC25.exe",
+    "games": [ { "exe": "FC25.exe", "count": 14, "last": "2026-11-20T21:00:02-03:00" } ],
+    "points": [ { "start": "...", "durationSec": 5498, "avgFps": 141.2, "low1": 88.4, "avgGpuTemp": 71.3, "avgHotspot": 92.8,
+                  "peakHotspot": 101.5, "avgGpuPower": 236.4, "stutters": 17, "gpuDriver": "591.44", "energyWh": 410.2 } ] }
+```
+- Só sessões encerradas (a aberta fica de fora) com `durationSec ≥ 120` **e** `avgFps`.
+- `games` = jogos com ≥ 2 dessas sessões (a contagem é das sessões que entram na tendência, não de todas), mais sessões
+  primeiro; empate = jogado mais recentemente primeiro. `last` = início da sessão mais nova.
+- `exe` ausente/vazio = o primeiro de `games`; `exe` pedido vale mesmo fora de `games` (ex.: só 1 sessão). Resposta com a
+  grafia das sessões. Sem nada = `"exe": null` (explícito), `games: []`, `points: []`.
+- `points` do mais antigo para o mais novo; campos `null` não vão. Lido da memória (o `sessions.json` já carregado), sem disco.
+
+### 11.5 Benchmark
+**Início** pelo atalho `hotkeys.benchmark` (3º `RegisterHotKey`, id 3; rodando = cancela) ou `startBenchmark`. Só começa com
+jogo aberto **e** FPS chegando (`fps.current` com leitura). Os pedidos (socket/atalho) entram numa fila aplicada no próximo
+tick (thread de telemetria). Enquanto roda: um `SessionStatsAccumulator` próprio (mesmas regras de média, 1%, 0,1%,
+engasgos com o aquecimento de 10 s, motivo do clock e energia), alimentado com os frames do jogo desde o início (os frames
+de antes só enchem a janela da mediana dos engasgos). Sem benchmark, nada roda no tick.
+
+| Cliente → servidor | Resposta |
+|---|---|
+| `startBenchmark { durationSec?, note? }` | broadcast `benchmarkState` (`running` ou `error`). `durationSec` ausente = `benchmark.durationSec`; fora de 30/60/120/300 → 60. `note` até 200 caracteres. Já rodando = reenvia o estado atual |
+| `cancelBenchmark` | broadcast `benchmarkState` `cancelled` (nada é salvo); sem benchmark = nada |
+| `getBenchmarks` | `benchmarks` (só para quem pediu) |
+| `renameBenchmark { id, note }` | broadcast `benchmarks` (nota vazia = sem nota) |
+| `deleteBenchmark { id }` | broadcast `benchmarks` |
+
+```json
+{ "type": "benchmarkState", "state": "running", "exe": "FC25.exe", "startedAt": "2026-11-22T21:00:00-03:00", "durationSec": 60 }
+{ "type": "benchmarkState", "state": "error", "error": "noFps", "exe": "FC25.exe" }
+{ "type": "benchmarkState", "state": "done", "exe": "FC25.exe", "startedAt": "...", "durationSec": 60, "result": { "...": "Benchmark" } }
+{ "type": "benchmarks", "items": [ { "id": "20261122-210000", "exe": "FC25.exe", "start": "...", "durationSec": 60, "avgFps": 143.2,
+  "low1": 98.1, "low01": 71.4, "stutters": 2, "avgGpuLoad": 97.4, "avgCpuLoad": 38.2, "avgGpuTemp": 72.1, "avgHotspot": 93.5,
+  "avgGpuPower": 301.2, "avgGpuClock": 1860, "avgCpuTemp": 66.0, "energyWh": 5.8, "clockReasonSec": { "power": 41, "none": 19 },
+  "gpu": "NVIDIA GeForce RTX 3080", "cpu": "12th Gen Intel Core i5-12600K", "gpuDriver": "591.44",
+  "sessionStart": "2026-11-22T20:41:10-03:00", "note": "ultra RT" } ] }
+```
+- `benchmarkState` vai em broadcast **só nas mudanças** (início, fim, cancelado, erro), nunca por segundo: o front conta pelo `startedAt`.
+- `error`: `noGame` (sem jogo), `noFps` (jogo sem FPS), `gameEnded` (o jogo fechou antes de 10 s). O jogo fechou com ≥ 10 s →
+  `done` com `result.partial: true` e `result.durationSec` = segundos medidos (arredondados). Completo: `durationSec` = o pedido.
+- Um novo `done` também faz broadcast de `benchmarks` (a lista já com ele).
+- `catalog.benchmark` (cliente novo): `running` ou o último `done`; um `error`/`cancelled` antigo vai como `{ "state": "idle" }`.
+- `catalog.hotkeys` = `{ toggleWidget, marker, benchmark }` com `ok | inUse | invalid | off`.
+- `%APPDATA%\Pitwall\benchmarks.json`, os 200 mais novos (mais novo primeiro). `id` = hora local do início
+  `yyyyMMdd-HHmmss` (`-2`, `-3`… se repetir).
+- Marcadores na sessão aberta (`via: "benchmark"`; também marcam o CSV e saem no broadcast `marker` com `via: "benchmark"`,
+  sem o balão "Marcador N"): "Benchmark: início" / "Benchmark: start"; "Benchmark: fim (60 s)" / "Benchmark: end (60 s)";
+  cancelado: "Benchmark: cancelado" / "Benchmark: cancelled" (extra, não estava no contrato). Texto no idioma do app na hora.
+- Bandeja (clicar abre `sessions/bench`): "Benchmark: 60 s · 143 FPS · 1% 98" (EN "… · 1% low 98"), com " (parcial)" se
+  for o caso; erro (`noGame`/`noFps`/`gameEnded`) também ganha um balão curto, para quem usou o atalho em tela cheia saber
+  por que não começou.
