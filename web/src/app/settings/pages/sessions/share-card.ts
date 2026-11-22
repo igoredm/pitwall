@@ -3,6 +3,7 @@ import { Catalog, GameSession, MetricSetting } from '../../../models';
 import { level } from '../../../widget/metric-views';
 import { fmtDuration } from '../../format';
 import { extent } from '../../reports';
+import { InsightTone, sessionInsights } from './insights';
 import { durationSec, fmtPm, gameName, hardwareLine, perMinute, redCaption, secondsRed } from './session-util';
 
 /**
@@ -12,7 +13,9 @@ import { durationSec, fmtPm, gameName, hardwareLine, perMinute, redCaption, seco
 export const CARD_W = 1200;
 export const CARD_H = 630;
 
-const C = { bg: '#0E1014', tx: '#ECEEF2', tx2: '#A3AAB6', tx3: '#848C99', hair: '#23272E', red: '#FF6B70', fps: '#3DDC84' };
+const C = { bg: '#0E1014', tx: '#ECEEF2', tx2: '#A3AAB6', tx3: '#848C99', hair: '#23272E', red: '#FF6B70', fps: '#3DDC84', yellow: '#F2B33D' };
+/** Cor do ponto de cada frase de "O que segurou o FPS". */
+const TONE: Record<InsightTone, string> = { crit: C.red, warn: C.yellow, info: C.tx3 };
 const FONT = "Manrope, 'Segoe UI', system-ui, sans-serif";
 const URL_TEXT = 'github.com/igoredm/pitwall';
 
@@ -36,9 +39,18 @@ export interface ShareData {
   redCap: string | null;
   fps: (number | null)[] | null;
   version: string;
+  /** 1.3: até 2 frases de "O que segurou o FPS". */
+  insights: { tone: InsightTone; text: string }[];
 }
 
-export function shareData(x: GameSession, s: Dict, cat: Catalog | null, settings: Map<string, MetricSetting>, fps: (number | null)[] | null): ShareData {
+export function shareData(
+  x: GameSession,
+  s: Dict,
+  cat: Catalog | null,
+  settings: Map<string, MetricSetting>,
+  fps: (number | null)[] | null,
+  opts: { bench?: boolean } = {},
+): ShareData {
   const d = new Date(x.start);
   const parts = new Intl.DateTimeFormat(s.locale, { day: 'numeric', month: 'short', year: 'numeric' }).formatToParts(d);
   const part = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
@@ -59,7 +71,7 @@ export function shareData(x: GameSession, s: Dict, cat: Catalog | null, settings
     game: gameName(x),
     date,
     dateShort: d.toLocaleDateString(s.locale, { day: '2-digit', month: '2-digit', year: 'numeric' }),
-    dur: fmtDuration(durationSec(x)),
+    dur: opts.bench ? s.v13.benchDur(fmtDuration(durationSec(x))) : fmtDuration(durationSec(x)),
     hw: hardwareLine(x, cat),
     avg: r(x.avgFps),
     low1: r(x.low1),
@@ -72,6 +84,9 @@ export function shareData(x: GameSession, s: Dict, cat: Catalog | null, settings
     redCap: red ? redCaption(x, s, settings, cat) : null,
     fps: fps && extent(fps) ? fps : null,
     version: cat?.version ?? cat?.about?.app ?? '',
+    insights: sessionInsights(x, s)
+      .slice(0, 2)
+      .map((i) => ({ tone: i.tone, text: i.text })),
   };
 }
 
@@ -91,6 +106,7 @@ export function shareText(v: ShareData, s: Dict): string {
     v.stutters != null && v.perMin ? s.rp.tStutters(v.stutters, v.perMin) : '',
     v.peaks.length ? `${s.rp.tPeaks}: ${v.peaks.map((p) => `${peakName[p.key]} ${p.text}`).join(' · ')}` : '',
     redLine(v, s),
+    ...v.insights.map((i) => `· ${i.text}`),
     `Pitwall ${v.version}`.trim(),
   ]
     .filter(Boolean)
@@ -110,6 +126,7 @@ export function shareMarkdown(v: ShareData, s: Dict): string {
   if (v.hw) out.push(v.hw);
   if (cols.length) out.push('', `| ${cols.map((c) => c[0]).join(' | ')} |`, `|${cols.map(() => '---:').join('|')}|`, `| ${cols.map((c) => c[1]).join(' | ')} |`, '');
   if (v.peaks.length) out.push(`${s.rp.tPeaks}: ${v.peaks.map((p, i) => `${peakName[p.key]} ${i === 0 ? `**${p.text}**` : p.text}`).join(' · ')}`);
+  if (v.insights.length) out.push(...v.insights.map((i) => `- ${i.text}`), '');
   out.push([redLine(v, s), `*Pitwall ${v.version}*`].filter(Boolean).join(' · '));
   return out.join('\n');
 }
@@ -216,6 +233,17 @@ export async function drawCard(canvas: HTMLCanvasElement, v: ShareData, s: Dict)
     text(label, x, base(yv + 42, 15, 21), C.tx3);
     x += Math.max(wv, wl) + 32;
   }
+
+  // 1.3: até 2 frases de "O que segurou o FPS" embaixo dos números (ponto com a cor do tom)
+  v.insights.forEach((ins, i) => {
+    const top = (v.avg ? 396 : 318) + i * 26;
+    ctx.fillStyle = TONE[ins.tone];
+    ctx.beginPath();
+    ctx.arc(61, top + 12, 5, 0, Math.PI * 2);
+    ctx.fill();
+    font(600, 17);
+    text(fit(ctx, ins.text, 740), 76, base(top, 17, 24), C.tx2);
+  });
 
   // Direita (300 px): Picos e, por último, o tempo acima do limite crítico, com divisores
   const rows: { label: string; value: string; red: boolean }[] = v.peaks.map((p) => ({

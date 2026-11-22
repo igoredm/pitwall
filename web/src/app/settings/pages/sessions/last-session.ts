@@ -6,7 +6,9 @@ import { Icon } from '../../../ui/icon';
 import { clock, dayTime, fmtDuration } from '../../format';
 import { extent, num } from '../../reports';
 import { SettingsCtx } from '../../settings-ctx';
+import { sessionInsights } from './insights';
 import { crashed, durationSec, endTime, fmtPm, perMinute } from './session-util';
+import { fmtCost, fmtEnergy } from './trend-util';
 import { Timeline } from './timeline';
 
 interface Cell {
@@ -53,6 +55,13 @@ interface Cell {
         <a class="lnk" href="#/settings/health/latest" (click)="$event.preventDefault(); seePc.emit(x.incidentId ?? null)">{{ sx.rp.seePcReport }} <pw-icon name="chevron" [size]="14" [stroke]="2" /></a>
       </div>
     }
+    @if (exitLine(); as ex) {
+      <div class="note n-y crash" role="note">
+        <span class="pw-y"><pw-icon name="warn" [size]="16" [stroke]="2" /></span>
+        <span class="rl b6">{{ ex }}</span>
+        <a class="lnk" href="#/settings/health/events" (click)="$event.preventDefault(); ctx.go('health', 'events')">{{ sx.v13.seeEvents }} <pw-icon name="chevron" [size]="14" [stroke]="2" /></a>
+      </div>
+    }
     <div class="grp">
       <div class="strip">
         @for (c of cells(); track c.key) {
@@ -71,6 +80,20 @@ interface Cell {
           </div>
         }
       </div>
+      @if (insights().length) {
+        <div class="bt ins" role="list" [attr.aria-label]="sx.v13.insTitle">
+          <div class="cap insh">{{ sx.v13.insTitle }}</div>
+          @for (i of insights(); track i.id) {
+            <div class="insr" role="listitem">
+              <i [class]="'idot d-' + i.tone" [attr.aria-label]="sx.v13.insTone[i.tone]" role="img"></i>
+              <span class="rl">{{ i.text }}</span>
+              @if (i.link) {
+                <a class="lnk" [href]="'#/settings/' + i.link" (click)="$event.preventDefault(); ctx.go(i.link)">{{ sx.pages[i.link] }}</a>
+              }
+            </div>
+          }
+        </div>
+      }
       <div class="bt">
         <pw-timeline [series]="series()" [durationSec]="dur()" [markers]="x.markers ?? []" [crashed]="isCrash()" />
       </div>
@@ -85,6 +108,14 @@ interface Cell {
               <span class="cap via">{{ m.via }}</span>
             </div>
           }
+        </div>
+      }
+      @if (energy(); as e) {
+        <div class="row bt tight en" [title]="sx.v13.energyTip">
+          <span class="t2">{{ e.line }}@if (e.cost) {
+              <span class="b6 cost">{{ e.cost }}</span>
+            }</span>
+          <span class="cap ell">{{ sx.v13.energyTip }}</span>
         </div>
       }
     </div>
@@ -109,6 +140,59 @@ interface Cell {
     .pw-r {
       color: var(--r);
       display: flex;
+    }
+    .pw-y {
+      color: var(--y);
+      display: flex;
+    }
+    .ins {
+      padding: 10px 16px 12px;
+    }
+    .insh {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .insr {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      font-size: 13.5px;
+      line-height: 1.45;
+      padding: 3px 0;
+      .lnk {
+        font-size: 12.5px;
+        white-space: nowrap;
+      }
+    }
+    .idot {
+      flex-shrink: 0;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      transform: translateY(-1px);
+      &.d-crit {
+        background: var(--r);
+      }
+      &.d-warn {
+        background: var(--y);
+      }
+      &.d-info {
+        background: var(--tx3);
+      }
+    }
+    .en {
+      gap: 16px;
+      padding-block: 10px;
+      font-size: 13px;
+      .cap {
+        flex: 1;
+        min-width: 0;
+        text-align: right;
+      }
+    }
+    .cost {
+      margin-left: 8px;
+      color: var(--tx);
     }
     .b6 {
       font-weight: 600;
@@ -275,6 +359,31 @@ export class LastSession {
     ];
   });
 
+  /** 1.3: "O que segurou o FPS" (até 4). O jogo que fechou com erro já tem a linha própria em cima. */
+  protected readonly insights = computed(() => {
+    if (this.live()) return [];
+    return sessionInsights(this.session(), this.s())
+      .filter((i) => i.id !== 'gameExit')
+      .slice(0, 4);
+  });
+
+  /** 1.3: "O jogo fechou com erro às 22:31." (appCrash/appHang do exe da sessão). */
+  protected readonly exitLine = computed(() => {
+    const x = this.session();
+    if (!x.gameExit || this.live()) return null;
+    const end = endTime(x);
+    const t = end ? clock(end, this.s()) : '—';
+    return x.gameExit === 'crash' ? this.s().v13.exitCrash(t) : this.s().v13.exitHang(t);
+  });
+
+  /** 1.3: "Energia ≈ 0,42 kWh (GPU + CPU)" e, com tarifa, "≈ R$ 0,38". */
+  protected readonly energy = computed(() => {
+    const wh = this.session().energyWh;
+    if (wh == null || this.live()) return null;
+    const s = this.s();
+    return { line: s.v13.energyLine(fmtEnergy(wh, s)), cost: fmtCost(wh, this.ctx.draft()?.energy, s) };
+  });
+
   protected readonly markerRows = computed(() => {
     const s = this.s();
     const hk = (this.ctx.draft()?.hotkeys?.marker ?? 'Ctrl+Alt+M').split('+').join(' ');
@@ -285,7 +394,7 @@ export class LastSession {
         at: clock(new Date(m.at), s, true),
         min: s.rp.atMin(Math.round(m.t / 60)),
         note: m.note || null,
-        via: via === 'hotkey' ? hk : via === 'button' ? s.rp.viaButton : '',
+        via: via === 'hotkey' ? hk : via === 'button' ? s.rp.viaButton : via === 'benchmark' ? s.v13.benchTitle : '',
       };
     });
   });

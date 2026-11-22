@@ -65,6 +65,33 @@ describe('relatório de jogo (Compartilhar)', () => {
   });
 });
 
+describe('1.3: O que segurou o FPS no Compartilhar', () => {
+  const x: GameSession = {
+    exe: 'FC25.exe',
+    start: '2026-11-19T21:00:02',
+    durationSec: 1800,
+    avgFps: 141,
+    avgGpuLoad: 97,
+    stutters: 70,
+    clockReasonSec: { power: 600, none: 1200 },
+    secondsAboveCrit: { 'gpu.hotspot': 240 },
+  };
+
+  test('até 2 frases, as mais graves primeiro', () => {
+    const v = shareData(x, pt, cat, settings, null);
+    expect(v.insights).toEqual([
+      { tone: 'crit', text: 'Hot spot acima do limite crítico definido por 4 min.' },
+      { tone: 'warn', text: 'Clock limitado por energia em 33% do tempo.' },
+    ]);
+    expect(shareText(v, pt).split('\n')).toContain('· Hot spot acima do limite crítico definido por 4 min.');
+    expect(shareMarkdown(v, pt).split('\n')).toContain('- Clock limitado por energia em 33% do tempo.');
+  });
+
+  test('benchmark: "Benchmark 1 min" no lugar da duração', () => {
+    expect(shareData({ ...x, durationSec: 60 }, pt, cat, settings, null, { bench: true }).dur).toBe('Benchmark 1 min');
+  });
+});
+
 describe('Relatório do PC (copiar)', () => {
   const inc: PcIncident = {
     id: '20261118-211405',

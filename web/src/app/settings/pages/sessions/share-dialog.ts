@@ -23,7 +23,7 @@ type Done = 'img' | 'saved' | 'png' | 'text' | 'md';
     @let sx = s();
     @let x = session();
     <div class="hd">
-      <span class="ttl" id="share-t">{{ sx.rp.shareTitle }}</span>
+      <span class="ttl" id="share-t">{{ bench() ? sx.v13.shareBenchTitle : sx.rp.shareTitle }}</span>
       <span class="cap ell"><span class="mono">{{ x.exe }}</span> · {{ when() }}</span>
       <span class="grow"></span>
       <button #closeBtn type="button" class="btn qt sm ib" [attr.aria-label]="sx.close" (click)="close.emit()"><pw-icon name="x" [size]="15" /></button>
@@ -158,6 +158,8 @@ export class ShareDialog {
   protected readonly s = inject(I18n).s;
   private readonly host = inject(ElementRef<HTMLElement>);
   readonly session = input.required<GameSession>();
+  /** 1.3: é um benchmark (sem série da partida; "Benchmark 60 s" no lugar da duração). */
+  readonly bench = input(false);
   readonly close = output<void>();
 
   protected readonly w = CARD_W;
@@ -171,7 +173,7 @@ export class ShareDialog {
   private drawn: Promise<void> = Promise.resolve();
 
   protected readonly when = computed(() => dayTime(this.session().start, this.s()));
-  private readonly data = computed(() => shareData(this.session(), this.s(), this.t.catalog(), this.t.settings(), this.fps() ?? null));
+  private readonly data = computed(() => shareData(this.session(), this.s(), this.t.catalog(), this.t.settings(), this.fps() ?? null, { bench: this.bench() }));
   protected readonly text = computed(() => shareText(this.data(), this.s()));
   protected readonly md = computed(() => shareMarkdown(this.data(), this.s()));
   protected readonly aria = computed(() => this.s().rp.cardAria(this.data().game, this.data().avg ?? ''));
@@ -181,6 +183,8 @@ export class ShareDialog {
     effect(() => {
       const x = this.session();
       this.fps.set(undefined);
+      // Benchmark não tem CSV próprio: o card sai sem a linha do FPS
+      if (this.bench()) return this.fps.set(null);
       this.t.requestSessionSeries(x.start, !!x.end || !!x.endedByCrash).then((sr) => {
         if (this.session() === x) this.fps.set(sr.available ? (sr.series['fps.current'] ?? null) : null);
       });

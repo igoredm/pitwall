@@ -31,6 +31,8 @@ function ramp(n: number, a: number, b: number, amp: number, seed: number, dips: 
 export interface ReportsDemo {
   /** Responde às mensagens novas; true = tratada. */
   handle(msg: any, send: (m: any) => void): boolean;
+  /** 1.3: eventos a mais na lista do relatório (suspensão, ligar/desligar, jogo que fechou com erro). */
+  addEvents(list: PcEvent[]): void;
 }
 
 export function startReportsDemo(opts: {
@@ -99,8 +101,9 @@ export function startReportsDemo(opts: {
   const b1 = t1 + 2 * min;
   const t2 = new Date(now - 7 * day).setHours(23, 2, 4, 0);
   const b2 = t2 + 3 * min;
-  const t3 = new Date(now - 16 * day).setHours(2, 18, 30, 0);
-  const b3 = t3 + 9 * hour;
+  // 1.3: a queda fora de jogo veio logo depois de uma suspensão (o padrão "sleep 03:12 → KP41 03:40")
+  const t3 = new Date(now - 3 * day).setHours(3, 12, 4, 0);
+  const b3 = t3 + 28 * min;
   const inc: PcIncidentSummary[] = [
     {
       id: 'inc-1',
@@ -138,15 +141,21 @@ export function startReportsDemo(opts: {
       time: iso(t3),
       bootTime: iso(b3),
       uptimeSec: 9 * 3600 + 3 * 60,
-      events: [ev(b3 + 3000, 'kernelPower41', 'Microsoft-Windows-Kernel-Power 41', 41)],
+      events: [
+        ev(t3 + 3000, 'sleep', 'Microsoft-Windows-Kernel-Power 42', 42, { category: 'state' }),
+        ev(b3, 'boot', 'Microsoft-Windows-Kernel-General 12', 12, { category: 'state' }),
+        ev(b3 + 4000, 'kernelPower41', 'Microsoft-Windows-Kernel-Power 41', 41),
+        ev(b3 + 11_000, 'unexpectedShutdown', 'EventLog 6008', 6008),
+      ],
       seen: true,
     },
   ];
-  const incidents = empty ? [] : inc;
+  // mais novo primeiro (a do sleep é de 3 dias atrás, a tela azul de 7)
+  const incidents = empty ? [] : [inc[0], inc[2], inc[1]];
   const others: PcEvent[] = empty
     ? [ev(now - 4 * day - 3 * hour, 'gpuReset', 'Display 4101', 4101, { code: 'nvlddmkm' })]
     : [ev(now - 4 * day - 3 * hour, 'gpuReset', 'Display 4101', 4101, { code: 'nvlddmkm' }), ev(now - 10 * day - 5 * hour, 'whea', 'Microsoft-Windows-WHEA-Logger 17', 17, { code: 'PCI Express Root Port' })];
-  const events = [...incidents.flatMap((x) => x.events), ...others].sort((a, b) => b.time.localeCompare(a.time));
+  let events = [...incidents.flatMap((x) => x.events), ...others].sort((a, b) => b.time.localeCompare(a.time));
   // Como no backend: sem pcPending com features.crashReport desligado
   const pending = () => (opts.config().features?.crashReport !== false ? incidents.find((x) => !x.seen) : undefined);
   catalog.pcPending = pending();
@@ -252,6 +261,9 @@ export function startReportsDemo(opts: {
   };
 
   return {
+    addEvents(list) {
+      events = [...events, ...list].sort((a, b) => b.time.localeCompare(a.time));
+    },
     handle(msg, send) {
       switch (msg.type) {
         case 'getPcReport':

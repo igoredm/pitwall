@@ -5,7 +5,7 @@ import { TelemetryService } from '../../../telemetry.service';
 import { Icon } from '../../../ui/icon';
 import { clock } from '../../format';
 import { EventRow } from './event-row';
-import { axisLabels, chartRows, incidentHead, saveNote } from './pc-view';
+import { axisLabels, chartRows, incidentHead, incidentSequence, saveNote } from './pc-view';
 
 /**
  * Bloco "Última queda" (ou o incidente escolhido no histórico): cabeçalho, 6 gráficos dos 2 min antes com eixo comum,
@@ -84,6 +84,13 @@ import { axisLabels, chartRows, incidentHead, saveNote } from './pc-view';
       </div>
       <div class="row bt tight"><span class="cap">{{ note() }}</span></div>
       <div class="nearh"><div class="th">{{ near().title }}</div></div>
+      @if (near().events.length) {
+        <ol class="seq" [attr.aria-label]="sx.v13.seqTitle">
+          @for (q of sequence(); track q.key; let last = $last) {
+            <li [class]="'sq sq-' + q.kind"><span class="sql">{{ q.label }}</span> <span class="sqt">{{ q.time }}</span>@if (!last) {<span class="arr" aria-hidden="true">→</span>}</li>
+          }
+        </ol>
+      }
       @for (e of near().events; track e.time + e.eventId) {
         <pw-event-row [event]="e" [near]="true" />
       } @empty {
@@ -172,6 +179,36 @@ import { axisLabels, chartRows, incidentHead, saveNote } from './pc-view';
       border-top: 1px solid var(--hair);
       padding: 12px 16px 4px;
     }
+    .seq {
+      list-style: none;
+      margin: 0;
+      padding: 4px 16px 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 0;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    .sq {
+      white-space: nowrap;
+    }
+    .sql {
+      font-weight: 700;
+    }
+    .sq-state .sql,
+    .sq-mark .sql {
+      font-weight: 600;
+      color: var(--tx2);
+    }
+    .sqt {
+      margin-left: 5px;
+      color: var(--tx3);
+      font-variant-numeric: tabular-nums;
+    }
+    .arr {
+      color: var(--tx3);
+      margin: 0 8px;
+    }
     @container (max-width: 560px) {
       .crow {
         grid-template-columns: 92px minmax(0, 1fr) 112px;
@@ -197,6 +234,9 @@ export class PcIncidentView {
     return d ? axisLabels(d, this.s()) : [];
   });
   protected readonly note = computed(() => saveNote(this.summary(), this.s()));
+
+  /** 1.3: o incidente em ordem (suspensão, última gravação, volta, eventos). */
+  protected readonly sequence = computed(() => incidentSequence(this.summary(), this.s()));
 
   /** Eventos de time − 10 min até time + 10 min (o backend já anexa só os de perto). */
   protected readonly near = computed(() => {

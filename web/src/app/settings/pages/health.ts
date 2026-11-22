@@ -5,7 +5,7 @@ import { TelemetryService, hashParams } from '../../telemetry.service';
 import { Icon } from '../../ui/icon';
 import { clock } from '../format';
 import { PageHead } from '../page-head';
-import { evTime, fmtUp, setHashParams, shortCode } from '../reports';
+import { evCategory, evTime, fmtUp, setHashParams, shortCode } from '../reports';
 import { SettingsCtx } from '../settings-ctx';
 import { EventRow } from './health/event-row';
 import { PcIncidentView } from './health/incident';
@@ -95,17 +95,26 @@ import { PcReadings } from './health/readings';
       <div class="sh">
         <div>
           <h2>{{ sx.rp.eventsTitle }}</h2>
-          <div class="ht">{{ sx.rp.eventsHint }}</div>
+          <div class="ht">{{ sx.v13.eventsHint }}</div>
         </div>
-        @if (r) {
-          <span class="cap nw">{{ sx.rp.eventsCount(r.events.length) }}</span>
-        }
+        <span class="evtools">
+          @if (r) {
+            <span class="cap nw">{{ sx.rp.eventsCount(events().length) }}</span>
+          }
+          <span class="seg" role="group" [attr.aria-label]="sx.v13.filterAria">
+            <button type="button" [attr.aria-pressed]="!showAll()" (click)="showAll.set(false)">{{ sx.v13.filterProblems }}</button>
+            <button type="button" [attr.aria-pressed]="showAll()" (click)="showAll.set(true)">{{ sx.v13.filterAll }}</button>
+          </span>
+        </span>
       </div>
       <div class="grp evgrp">
-        @for (e of r?.events ?? []; track e.time + e.eventId + $index) {
+        @for (e of events(); track e.time + e.eventId + $index) {
           <pw-event-row [event]="e" />
         } @empty {
-          <div class="row"><span class="cap">{{ r ? sx.rp.eventsEmpty : sx.rp.loading }}</span></div>
+          <div class="row"><span class="cap">{{ r ? (showAll() ? sx.v13.eventsEmptyAll : sx.v13.eventsEmpty) : sx.rp.loading }}</span></div>
+        }
+        @if (hiddenState(); as n) {
+          <button type="button" class="row bt tight more" (click)="showAll.set(true)"><span class="cap">{{ sx.v13.hiddenState(n) }}</span></button>
         }
       </div>
     </section>
@@ -184,6 +193,33 @@ import { PcReadings } from './health/readings';
     .nw {
       white-space: nowrap;
     }
+    .evtools {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .more {
+      width: 100%;
+      border: 0;
+      border-top: 1px solid var(--hair);
+      background: none;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      padding: 10px 16px;
+      border-radius: 0 0 9px 9px;
+      &:focus-visible {
+        outline: none;
+        box-shadow: inset 0 0 0 2px var(--ac);
+      }
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .more:hover .cap {
+        color: var(--tx2);
+      }
+    }
     .sm13 {
       font-size: 13px;
     }
@@ -253,6 +289,14 @@ export class HealthPage {
   private readonly viewed = new Set<string>();
   /** Relógio de 30 s para o "ligado há". */
   private readonly now = signal(Date.now());
+
+  /** 1.3: "Problemas | Tudo" (suspensão, ligar e desligar ficam escondidos por padrão). */
+  protected readonly showAll = signal(false);
+  protected readonly events = computed(() => {
+    const list = this.t.pcReport()?.events ?? [];
+    return this.showAll() ? list : list.filter((e) => evCategory(e) === 'problem');
+  });
+  protected readonly hiddenState = computed(() => (this.showAll() ? 0 : (this.t.pcReport()?.events ?? []).filter((e) => evCategory(e) === 'state').length));
 
   protected readonly turnOn = (c: AppConfig) => (c.features = { gameSuggestions: true, sessionPeaks: true, clockReason: true, ...c.features, crashReport: true });
 

@@ -51,6 +51,7 @@ import {
   WirelessDevice,
 } from './models';
 import { startReportsDemo } from './demo-reports';
+import { startDemo13 } from './demo-13';
 import { TelemetryService, urlParam } from './telemetry.service';
 import { demo12Monitor } from './demo-12-monitor';
 
@@ -378,6 +379,8 @@ export function startDemo(t: TelemetryService) {
 
   // 1.2: Relatório do PC, campos novos das sessões e getSessionSeries (demo-reports.ts)
   const reports = startReportsDemo({ now, empty, catalog, config: () => config, sessions, history, crashSession: empty ? undefined : crashSession });
+  // 1.3: driver, energia, jogo que fechou com erro, eventos de estado, tendência e benchmark (demo-13.ts)
+  const v13 = startDemo13({ now, empty, idle, en: demoEn(), catalog, config, sessions, history, reports, game: exe });
 
   // 1.0: arquivos da pasta de CSV (um por sessão + alguns soltos), para getLogStats e a prévia da retenção
   const logFiles: { t: number; bytes: number }[] =
@@ -411,6 +414,7 @@ export function startDemo(t: TelemetryService) {
   let pairErrors = 0;
   t.attachDemo((msg: any) => {
     if (reports.handle(msg, send)) return;
+    if (v13.handle(msg, send)) return;
     switch (msg.type) {
       case 'setConfig':
         config = structuredClone(msg.config);
@@ -544,6 +548,7 @@ export function startDemo(t: TelemetryService) {
     if (!t.remoteMode) send({ type: 'sessions', sessions });
     if (config.features?.sessionPeaks !== false) send({ type: 'extremes', epoch, values: {} });
     if (!t.remoteMode) v12.start(send);
+    if (!t.remoteMode) v13.start(send);
     tick();
     setInterval(tick, 1000);
   };

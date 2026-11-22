@@ -44,6 +44,23 @@ export function evKey(e: PcEvent): string {
   return e.kind === 'whea' && e.fatal ? 'wheaFatal' : e.kind;
 }
 
+/** 1.3: suspensão, retomada, ligar e desligar = estado; o resto (e eventos de backend 1.2 sem category) = problema. */
+const STATE_KINDS = new Set<PcEvent['kind']>(['sleep', 'resume', 'boot', 'shutdown']);
+export function evCategory(e: PcEvent): 'problem' | 'state' {
+  return e.category ?? (STATE_KINDS.has(e.kind) ? 'state' : 'problem');
+}
+
+/** Nome do evento (1.2 + 1.3); desconhecido = a fonte. */
+export function evName(e: PcEvent, s: Dict): string {
+  const k = evKey(e);
+  return s.rp.evName[k] ?? s.v13.evName[k] ?? e.source;
+}
+
+/** O que o evento quer dizer (frase de fato); desconhecido = a mensagem do Windows. */
+export function evMeaning(e: PcEvent, s: Dict): string {
+  return s.rp.evMeaning[evKey(e)] ?? s.v13.evMeaning(e) ?? e.message ?? '';
+}
+
 /** Fonte em mono: provedor sem o prefixo "Microsoft-Windows-", mais o código ou componente. */
 export function evSource(e: PcEvent): string {
   const src = e.source.replace(/^Microsoft-Windows-/i, '');

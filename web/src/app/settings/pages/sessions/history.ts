@@ -54,6 +54,8 @@ import { crashed, durationSec, sameStart } from './session-util';
               <span class="pill p-r">{{ sx.pcShutDown }}</span>
             } @else if (r.live) {
               <span class="pill p-g">{{ sx.inProgress }}</span>
+            } @else if (r.x.gameExit) {
+              <span class="pill p-y">{{ r.x.gameExit === 'crash' ? sx.v13.pillCrash : sx.v13.pillHang }}</span>
             }
           </button>
           <span class="t2 sm13 nw">{{ r.when }}</span>
