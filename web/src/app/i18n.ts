@@ -4,6 +4,7 @@ import { reportsEn, reportsPt } from './i18n-12-reports';
 import { TelemetryService, urlParam } from './telemetry.service';
 import { widgetEn, widgetPt } from './i18n-12-widget';
 import { monitorEn, monitorPt } from './i18n-12-monitor';
+import { v13En, v13Pt } from './i18n-13-reports';
 
 export type Lang = 'pt-BR' | 'en';
 export type LanguagePref = 'auto' | Lang;
@@ -624,9 +625,9 @@ const ptBR = {
     ['Se o PC desligar do nada.', 'O Pitwall guarda aqui os 2 minutos antes da queda e as últimas leituras, junto com os eventos do Windows. Copie e cole num fórum para pedir ajuda.'],
     ['Um tamanho para cada tela.', 'Completo, Médio e Compacto, e Faixa e Mini para telas pequenas. No Automático, o Pitwall escolhe pelo tamanho da janela.'],
     ['A ordem é a prioridade.', 'Arraste pela alça para reordenar: nos tamanhos menores, as primeiras aparecem antes. Os limites amarelo e vermelho de cada métrica ficam aqui também.'],
-    ['Cada partida vira um relatório.', 'FPS, engasgos e temperaturas da partida inteira. Compare duas partidas ou compartilhe um card com os números.'],
+    ['Cada partida vira um relatório.', 'FPS, engasgos e temperaturas da partida inteira. Veja a tendência do jogo quando o driver muda, meça um trecho com o benchmark, compare duas partidas ou compartilhe um card.'],
     ['Ajuste seguro da GPU.', 'Limita o consumo e o clock pela API oficial da NVIDIA. Vem desligado. Nada é gravado na placa: tudo volta sozinho quando o jogo ou o Pitwall fecha.'],
-    ['Atalhos de teclado.', 'Ctrl Alt P mostra ou esconde o widget e Ctrl Alt M marca um momento da partida, que aparece depois no relatório. Troque as teclas aqui.'],
+    ['Atalhos de teclado.', 'Ctrl Alt P mostra ou esconde o widget, Ctrl Alt M marca um momento da partida e Ctrl Alt B mede um benchmark. Tudo aparece depois no relatório. Troque as teclas aqui.'],
     ['Tudo também pela bandeja.', 'Clique com o botão direito no ícone do Pitwall perto do relógio: mostrar ou esconder o widget, zerar picos, abrir as configurações e rever este tour.'],
   ] as [string, string][],
   tourTrayCrumb: 'Bandeja do Windows',
@@ -695,6 +696,7 @@ const ptBR = {
   ...widgetPt,
   ...monitorPt,
   ...reportsPt,
+  ...v13Pt,
 };
 
 export type Dict = typeof ptBR;
@@ -1293,9 +1295,9 @@ const en: Dict = {
     ['If your PC shuts off out of nowhere.', 'Pitwall keeps the 2 minutes before the crash and the last readings here, with the Windows events. Copy and paste them into a forum to ask for help.'],
     ['A size for every screen.', 'Full, Mid and Compact, plus Strip and Small screen for small displays. On Auto, Pitwall picks by window size.'],
     ['Order is priority.', 'Drag the handle to reorder: on smaller sizes, the first ones show up first. Each metric’s yellow and red limits live here too.'],
-    ['Every match becomes a report.', 'FPS, stutters and temperatures for the whole match. Compare two matches or share a card with the numbers.'],
+    ['Every match becomes a report.', "FPS, stutters and temperatures for the whole match. See each game's trend when the driver changes, measure a stretch with the benchmark, compare two matches or share a card."],
     ['Safe GPU tuning.', 'Caps power and clock through NVIDIA’s official API. Off by default. Nothing is written to the card: it all reverts by itself when the game or Pitwall closes.'],
-    ['Keyboard shortcuts.', 'Ctrl Alt P shows or hides the widget and Ctrl Alt M marks a moment in the match, which shows up later in its report. Change the keys here.'],
+    ['Keyboard shortcuts.', 'Ctrl Alt P shows or hides the widget, Ctrl Alt M marks a moment in the match and Ctrl Alt B runs a benchmark. It all shows up later in the report. Change the keys here.'],
     ['Everything from the tray too.', 'Right-click the Pitwall icon by the clock: show or hide the widget, reset peaks, open settings and replay this tour.'],
   ],
   tourTrayCrumb: 'Windows tray',
@@ -1364,6 +1366,7 @@ const en: Dict = {
   ...widgetEn,
   ...monitorEn,
   ...reportsEn,
+  ...v13En,
 };
 
 /** Exportado para os testes (npm test); a página usa I18n.s. */

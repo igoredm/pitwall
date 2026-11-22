@@ -45,7 +45,7 @@ const FEATURES: Feature[] = [
     key: 'hotkeys',
     group: 'game',
     get: (c) => c.hotkeys?.enabled ?? true,
-    set: (c, v) => (c.hotkeys = { toggleWidget: 'Ctrl+Alt+P', marker: 'Ctrl+Alt+M', ...c.hotkeys, enabled: v }),
+    set: (c, v) => (c.hotkeys = { toggleWidget: 'Ctrl+Alt+P', marker: 'Ctrl+Alt+M', benchmark: 'Ctrl+Alt+B', ...c.hotkeys, enabled: v }),
     page: 'app',
     anchor: 'hotkeys',
   },

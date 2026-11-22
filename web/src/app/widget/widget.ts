@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { AppConfig, MetricGroup, MetricView, ThemeName, WidgetLayout } from '../models';
 import { I18n } from '../i18n';
 import { TelemetryService } from '../telemetry.service';
@@ -11,6 +11,8 @@ import { FitScale } from './fit-scale';
 import { FitTiles } from './fit-tiles';
 import { LIMITS, LayoutSize, NOT_COUNTED, buildViews, groupLabel, hasChipPeak, isDarkTheme, peakText } from './metric-views';
 import { autoLayout } from './auto-layout';
+import { benchRemaining, fmtCountdown } from '../benchmark';
+
 
 interface Block {
   key: MetricGroup;
@@ -102,6 +104,14 @@ export class Widget {
       : MODE_CLASS[this.mode()] + (this.compactWide() ? ' cw' : '') + (this.stripWide() ? ' st-wide' : '') + (this.miniSmall() ? ' mn-s' : ''),
   );
   protected readonly now = signal(new Date());
+  /** 1.3: estado do benchmark (no demo, ?bench=running começa um de 5 min). */
+  private readonly benchState = this.t.benchmark;
+  private readonly benchNow = signal(Date.now());
+  /** "0:42" enquanto o benchmark roda (null = sem selo). */
+  protected readonly benchText = computed(() => {
+    const left = benchRemaining(this.benchState(), this.benchNow());
+    return left == null ? null : fmtCountdown(left);
+  });
   private readonly systemDark = signal(matchMedia('(prefers-color-scheme: dark)').matches);
 
   protected readonly config = this.t.config;
@@ -240,7 +250,23 @@ export class Widget {
       timer = setTimeout(tick, 60_000 - (Date.now() % 60_000) + 50);
     };
     tick();
+    // 1.3: selo do benchmark — acorda uma vez por segundo, no segundo do startedAt, só enquanto roda
+    let benchTimer: ReturnType<typeof setTimeout> | undefined;
+    effect(() => {
+      const st = this.benchState();
+      clearTimeout(benchTimer);
+      if (st?.state !== 'running' || !st.startedAt) return;
+      const started = new Date(st.startedAt).getTime();
+      const step = () => {
+        const now = Date.now();
+        this.benchNow.set(now);
+        if (benchRemaining(st, now) === 0) return;
+        benchTimer = setTimeout(step, 1000 - (((now - started) % 1000) + 1000) % 1000 + 20);
+      };
+      step();
+    });
     inject(DestroyRef).onDestroy(() => {
+      clearTimeout(benchTimer);
       window.removeEventListener('resize', onResize);
       mq.removeEventListener('change', onScheme);
       clearTimeout(timer);

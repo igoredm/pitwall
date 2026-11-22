@@ -806,3 +806,26 @@ de antes só enchem a janela da mediana dos engasgos). Sem benchmark, nada roda 
 - Bandeja (clicar abre `sessions/bench`): "Benchmark: 60 s · 143 FPS · 1% 98" (EN "… · 1% low 98"), com " (parcial)" se
   for o caso; erro (`noGame`/`noFps`/`gameEnded`) também ganha um balão curto, para quem usou o atalho em tela cheia saber
   por que não começou.
+
+### 11.F Front (Relatórios de jogo, Relatório do PC, widget)
+Tipos em `web/src/app/models.ts` (seção "1.3"), exatamente os de `docs/v13-contract.md`. O que é só do front:
+
+- **"O que segurou o FPS"**: `sessionInsights(session, dict)` em `settings/pages/sessions/insights.ts` (regra pura com
+  testes). Recebe o dicionário do idioma no lugar de "settings" (os limites são os fixos do contrato). "Última partida"
+  mostra até 4 (a de `gameExit` vira a linha amarela "O jogo fechou com erro às hh:mm → Ver no Relatório do PC"); o card,
+  o texto e o Markdown do Compartilhar levam até 2. Sessão aberta não mostra frases.
+- **Tendência** (`#trend`): pede `getTrend` ao abrir e ao reconectar (mantém o jogo escolhido). Desenha só pontos com
+  `avgFps`; troca de driver = ponto com driver conhecido diferente do último conhecido. Frase de antes/depois: só a
+  **última** troca, mediana do FPS médio do trecho com o driver anterior × das sessões com o driver novo, ≥ 3 de cada
+  lado (`trend-util.ts › driverShift`). Mediana móvel de 5 = janela que termina no ponto.
+- **Benchmark** (`#bench`): pede `getBenchmarks` ao abrir. A contagem usa `startedAt` + `durationSec` (relógio local);
+  o widget acorda 1×/s só enquanto `state === 'running'`. Ao receber `benchmarkState` `done` com `result`, o front põe o
+  resultado no topo da lista sem esperar outro `benchmarks`. Comparar dois reaproveita `compareRows` (o benchmark vira
+  uma sessão sem picos). Compartilhar usa o mesmo card, com "Benchmark 1 min" no lugar da duração e sem a linha do FPS.
+- **Energia**: abaixo de 100 Wh mostra Wh, senão kWh (2 casas); custo com `energy.tariff` (2 casas, "< R$ 0,01" abaixo
+  de um centavo). Tarifa e moeda ficam em Relatórios de jogo › `#energy`.
+- **Relatório do PC**: `category` ausente (backend 1.2) = `problem`, exceto sleep/resume/boot/shutdown. Filtro
+  "Problemas | Tudo" (padrão Problemas, com "+N de suspensão, ligar ou desligar em Tudo"). O incidente mostra a sequência
+  em ordem (eventos, "última gravação" e "PC voltou" quando não há `boot` a ±2 min).
+- **Demo**: `?demo=1` gera o que pede a seção Demo do contrato; `&bench=running` começa um benchmark de 5 min (selo no
+  widget); `&exit=crash|hang` marca a última partida.

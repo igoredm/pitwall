@@ -1,12 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { I18n } from '../../i18n';
-import { AppConfig, GameSession, SessionSeries } from '../../models';
+import { benchAsSession } from '../../benchmark';
+import { AppConfig, Benchmark, GameSession, SessionSeries } from '../../models';
 import { TelemetryService, hashParams } from '../../telemetry.service';
 import { Icon } from '../../ui/icon';
 import { PageHead } from '../page-head';
 import { setHashParams } from '../reports';
 import { SettingsCtx } from '../settings-ctx';
 import { SessionAverages } from './sessions/averages';
+import { SessionBench } from './sessions/bench';
+import { SessionTrend } from './sessions/trend';
+import { fmtCost, fmtEnergy } from './sessions/trend-util';
+import { num } from '../reports';
 import { SessionCompare } from './sessions/compare';
 import { CsvRecording } from './sessions/csv-recording';
 import { SessionHistory } from './sessions/history';
@@ -23,7 +28,7 @@ const PAGE = 20;
  */
 @Component({
   selector: 'pw-page-sessions',
-  imports: [PageHead, Icon, LastSession, SessionAverages, SessionCompare, SessionHistory, CsvRecording, ShareDialog],
+  imports: [PageHead, Icon, LastSession, SessionAverages, SessionTrend, SessionBench, SessionCompare, SessionHistory, CsvRecording, ShareDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let sx = s();
@@ -64,6 +69,15 @@ const PAGE = 20;
           </section>
         }
       }
+
+      <!-- ================================================= 1.3: tendência e benchmark -->
+      <section class="sec" data-anchor="trend">
+        <pw-session-trend />
+      </section>
+
+      <section class="sec" data-anchor="bench">
+        <pw-session-bench (share)="shareBench.set($event)" />
+      </section>
 
       <!-- ================================================= comparar -->
       @if (known().length > 1) {
@@ -106,12 +120,43 @@ const PAGE = 20;
         </section>
       }
 
+      <!-- ================================================= 1.3: custo da energia -->
+      <section class="sec" data-anchor="energy">
+        <div class="sh">
+          <div>
+            <h2>{{ sx.v13.energySec }}</h2>
+            <div class="ht">{{ sx.v13.energyHint }}</div>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="row ener">
+            <div class="rl">
+              <div class="lb" id="l-tariff">{{ sx.v13.tariff }}</div>
+              <div class="ht" [title]="sx.v13.energyTip">{{ energyExample() }}</div>
+            </div>
+            <label class="fld">
+              <span class="cap">{{ sx.v13.currency }}</span>
+              <input class="in sm cur" type="text" maxlength="4" [value]="d.energy?.currency ?? 'R$'" (change)="setCurrency($any($event.target).value)" />
+            </label>
+            <label class="fld">
+              <span class="cap">{{ sx.v13.tariff }}</span>
+              <input class="in sm num tar" type="text" inputmode="decimal" aria-labelledby="l-tariff" [placeholder]="sx.v13.tariffPh" [value]="tariffText()" (change)="setTariff($any($event.target).value)" />
+            </label>
+          </div>
+        </div>
+      </section>
+
       <pw-csv-recording />
     }
 
     @if (shareFor(); as x) {
       <div class="scrim" animate.enter="fade-in" animate.leave="fade-out" (click)="shareFor.set(null)">
         <pw-share-dialog animate.enter="dlg-in" animate.leave="dlg-out" [session]="x" (close)="shareFor.set(null)" (click)="$event.stopPropagation()" />
+      </div>
+    }
+    @if (shareBench(); as b) {
+      <div class="scrim" animate.enter="fade-in" animate.leave="fade-out" (click)="shareBench.set(null)">
+        <pw-share-dialog animate.enter="dlg-in" animate.leave="dlg-out" [session]="benchSession(b)" [bench]="true" (close)="shareBench.set(null)" (click)="$event.stopPropagation()" />
       </div>
     }
   `,
@@ -121,6 +166,21 @@ const PAGE = 20;
     }
     .autoopen {
       margin-top: 12px;
+    }
+    .ener {
+      flex-wrap: wrap;
+      row-gap: 10px;
+    }
+    .fld {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .cur {
+      width: 64px;
+    }
+    .tar {
+      width: 96px;
     }
   `,
 })
@@ -137,6 +197,34 @@ export class SessionsPage {
   protected readonly exe = signal('');
   protected readonly hist = signal<{ items: GameSession[]; total: number; loading: boolean }>({ items: [], total: 0, loading: true });
   protected readonly shareFor = signal<GameSession | null>(null);
+  /** 1.3: benchmark no diálogo Compartilhar. */
+  protected readonly shareBench = signal<Benchmark | null>(null);
+  protected benchSession(b: Benchmark) {
+    return benchAsSession(b);
+  }
+
+  /** 1.3: tarifa no formato do idioma ("0,89"). */
+  protected readonly tariffText = computed(() => {
+    const v = this.ctx.draft()?.energy?.tariff;
+    return v == null ? '' : num(v, v < 10 ? 2 : 0, this.s()).replace(/([.,]\d*?)0+$/, '$1').replace(/[.,]$/, '');
+  });
+
+  /** "Uma hora a 400 W: ≈ 0,40 kWh, ≈ R$ 0,36." */
+  protected readonly energyExample = computed(() => {
+    const s = this.s();
+    return s.v13.energyExample(fmtEnergy(400, s), fmtCost(400, this.ctx.draft()?.energy, s));
+  });
+
+  protected setTariff(raw: string) {
+    const txt = raw.trim().replace(/\s/g, '').replace(',', '.');
+    const v = txt === '' ? null : Number(txt);
+    if (v != null && !(Number.isFinite(v) && v >= 0)) return;
+    this.ctx.update((c) => (c.energy = { currency: 'R$', ...c.energy, tariff: v }));
+  }
+
+  protected setCurrency(raw: string) {
+    this.ctx.update((c) => (c.energy = { tariff: null, ...c.energy, currency: raw.trim().slice(0, 4) }));
+  }
   /** Marcadas para comparar, na ordem (A, B). Vem da URL; sem nada, a última partida é a A. */
   protected readonly selection = signal<string[]>(['a', 'b'].map((k) => hashParams().get(k)).filter((v): v is string => !!v));
   private readonly userTouched = signal(this.selection().length > 0);

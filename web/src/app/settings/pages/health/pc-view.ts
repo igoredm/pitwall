@@ -2,7 +2,7 @@ import type { Dict } from '../../../i18n';
 import { Catalog, Level, MetricGroup, MetricSetting, PcIncident, PcIncidentSummary, PcSeriesId } from '../../../models';
 import { level, shortCpu, shortGpu } from '../../../widget/metric-views';
 import { clock } from '../../format';
-import { dayOrNull, evKey, evSource, extent, fmtReading, fmtUp, seriesPaths, yOf } from '../../reports';
+import { dayOrNull, evCategory, evKey, evMeaning, evName, evSource, extent, fmtReading, fmtUp, seriesPaths, yOf } from '../../reports';
 
 /** Os 6 gráficos de 2 min (ordem do design); série ausente some da lista. */
 export const PC_CHARTS: { id: PcSeriesId; unit: string; unitOnMax: boolean }[] = [
@@ -144,7 +144,33 @@ export function eventPills(inc: PcIncidentSummary, s: Dict): { text: string; red
   const whea = keys.filter((k) => k === 'whea').length;
   if (whea) out.push({ text: s.rp.wheaCount(whea), red: false });
   if (keys.includes('gpuReset')) out.push({ text: s.rp.evPill['gpuReset'], red: false });
+  // 1.3: jogo que fechou e a suspensão antes da queda (o padrão "sleep → KP41")
+  if (keys.includes('appCrash')) out.push({ text: s.v13.evPill['appCrash'], red: false });
+  else if (keys.includes('appHang')) out.push({ text: s.v13.evPill['appHang'], red: false });
+  const t = new Date(inc.time).getTime();
+  if (inc.events.some((e) => e.kind === 'sleep' && Math.abs(new Date(e.time).getTime() - t) <= 600_000)) out.push({ text: s.v13.evPill['sleep'], red: false });
   return out;
+}
+
+/**
+ * 1.3: o incidente em ordem (eventos de estado e de problema, a última gravação e a volta do PC), para ver padrões como
+ * "Suspensão 03:12 → última gravação 03:12 → Windows iniciou 03:40 → Kernel-Power 41 03:40". Só fatos e horas.
+ */
+export function incidentSequence(inc: PcIncidentSummary, s: Dict): { key: string; label: string; time: string; kind: 'state' | 'problem' | 'mark' }[] {
+  const items: { at: number; key: string; label: string; kind: 'state' | 'problem' | 'mark' }[] = inc.events.map((e, i) => ({
+    at: new Date(e.time).getTime(),
+    key: `e${i}`,
+    label: evName(e, s),
+    kind: evCategory(e),
+  }));
+  items.push({ at: new Date(inc.time).getTime(), key: 'save', label: s.v13.seqLastSave, kind: 'mark' });
+  // "PC voltou" só quando o log não tem o "Windows iniciou" daquela hora
+  const back = inc.bootTime ? new Date(inc.bootTime).getTime() : null;
+  if (back != null && !inc.events.some((e) => e.kind === 'boot' && Math.abs(new Date(e.time).getTime() - back) <= 120_000))
+    items.push({ at: back, key: 'back', label: s.v13.seqBack, kind: 'mark' });
+  return items
+    .sort((a, b) => a.at - b.at)
+    .map((x) => ({ key: x.key, label: x.label, time: clock(x.at, s, true), kind: x.kind }));
 }
 
 /** Intervalo de gravação do buffer: 5 s em jogo, 10 s fora (docs/v12-contract.md › Buffer do PC). */
@@ -180,10 +206,10 @@ export function incidentText(inc: PcIncident, s: Dict, cat: Catalog | null, sett
   if (inc.events.length) {
     out.push('', b(s.rp.txtEvents));
     for (const e of [...inc.events].sort((x, y) => x.time.localeCompare(y.time))) {
-      const k = evKey(e);
-      const name = s.rp.evName[k] ?? e.source;
+      const name = evName(e, s);
       const src = evSource(e);
-      out.push(md ? `- ${clock(new Date(e.time), s, true)} · **${name}** · \`${src}\` — ${s.rp.evMeaning[k] ?? ''}` : `${clock(new Date(e.time), s, true)} ${name} (${src}): ${s.rp.evMeaning[k] ?? ''}`);
+      const meaning = evMeaning(e, s);
+      out.push(md ? `- ${clock(new Date(e.time), s, true)} · **${name}** · \`${src}\` — ${meaning}` : `${clock(new Date(e.time), s, true)} ${name} (${src}): ${meaning}`);
     }
   }
   out.push('', md ? `*Pitwall ${version} · ${s.rp.txtHead}*` : `Pitwall ${version} · ${s.rp.txtHead}`);

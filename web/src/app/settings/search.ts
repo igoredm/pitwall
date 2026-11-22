@@ -71,6 +71,11 @@ function buildIndex(s: Dict): Entry[] {
   add('sessions', 'last', P.sessions, s.rp.stutters, s.rp.wholeMatch, 'sessions', s.rp.searchLast);
   add('sessions', 'last', P.sessions, s.rp.avgTitle, s.rp.avgHint, 'sessions', s.rp.searchAvg);
   add('sessions', 'compare', P.sessions, s.rp.cmpTitle, s.rp.cmpHint, 'sessions', s.rp.searchCompare);
+  // 1.3
+  add('sessions', 'trend', P.sessions, s.v13.trendTitle, s.v13.trendHint, 'sessions', s.v13.searchTrend);
+  add('sessions', 'bench', P.sessions, s.v13.benchTitle, s.v13.benchHint(null), 'sessions', s.v13.searchBench);
+  add('sessions', 'energy', P.sessions, s.v13.energySec, s.v13.energyHint, 'sessions', s.v13.searchEnergy);
+  add('sessions', 'last', P.sessions, s.v13.insTitle, s.v13.insGpuBound(97), 'sessions', 'segurou limitou gargalo bottleneck held back limit gpu uso load');
   add('sessions', 'last', P.sessions, s.rp.shareTitle, s.rp.pngHint, 'sessions', s.rp.searchShare);
   add('sessions', 'last', s.rp.lastMatch, s.rp.lastMatch, s.rp.sessionsIntro, 'sessions', 'resumo summary fps medio average low');
   add('sessions', 'history', s.history, s.history, s.allGames, 'sessions', 'historico history partidas matches');
@@ -101,6 +106,7 @@ function buildIndex(s: Dict): Entry[] {
   add('app', 'hotkeys', s.hkSec, s.hkEnable, s.hkEnableHint, 'app', 'atalho atalhos hotkey hotkeys shortcut teclado keyboard ctrl alt');
   add('app', 'hotkeys', s.hkSec, s.hkToggle, '', 'eye', 'atalho hotkey mostrar esconder show hide widget');
   add('app', 'hotkeys', s.hkSec, s.hkMarker, '', 'flag', 'atalho hotkey marcador marker');
+  add('app', 'hotkeys', s.hkSec, s.v13.hkBench, '', 'play', 'atalho hotkey benchmark medir ctrl alt b');
   add('app', 'updates', s.updatesTitle, s.updatesTitle, s.updAutoHint, 'download', 'atualizar update versao version beta canal channel');
   add('app', 'tour', s.helpSec, s.replayTour, s.replayTourHint, 'play', 'tutorial tour ajuda help');
   add('app', 'help', s.helpSec, s.shortcuts, `Ctrl K ${s.kbSearch}`, 'app', 'atalho shortcut teclado keyboard');

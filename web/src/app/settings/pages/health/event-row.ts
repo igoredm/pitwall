@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { I18n } from '../../../i18n';
 import { PcEvent } from '../../../models';
 import { clock } from '../../format';
-import { evKey, evSource, evTime } from '../../reports';
+import { evCategory, evMeaning, evName, evSource, evTime } from '../../reports';
 
 /**
  * Uma linha de evento do Windows: hora | nome + fonte em mono | o que quer dizer. Sem diagnóstico e sem cor
@@ -11,7 +11,7 @@ import { evKey, evSource, evTime } from '../../reports';
 @Component({
   selector: 'pw-event-row',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'ev', '[class.near]': 'near()' },
+  host: { class: 'ev', '[class.near]': 'near()', '[class.state]': 'view().state' },
   template: `
     @let v = view();
     <span class="evt">{{ v.time }}</span>
@@ -60,6 +60,11 @@ import { evKey, evSource, evTime } from '../../reports';
       color: var(--tx2);
       line-height: 1.45;
     }
+    /* 1.3: suspensão, ligar e desligar são contexto, não problema: nome no peso normal */
+    :host(.state) .evn {
+      font-weight: 600;
+      color: var(--tx2);
+    }
     @container (max-width: 560px) {
       :host,
       :host(.near) {
@@ -79,12 +84,12 @@ export class EventRow {
   protected readonly view = computed(() => {
     const s = this.s();
     const e = this.event();
-    const k = evKey(e);
     return {
       time: this.near() ? clock(new Date(e.time), s, true) : evTime(e.time, s),
-      name: s.rp.evName[k] ?? e.source,
+      name: evName(e, s),
       source: evSource(e),
-      meaning: s.rp.evMeaning[k] ?? e.message ?? '',
+      meaning: evMeaning(e, s),
+      state: evCategory(e) === 'state',
     };
   });
 }
