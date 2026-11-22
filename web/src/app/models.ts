@@ -96,7 +96,24 @@ export interface AppConfig {
   features?: FeaturesConfig;
   /** 1.2: atalhos globais. */
   hotkeys?: HotkeysConfig;
+  /** 1.3 (config v9): duração do benchmark por atalho. */
+  benchmark?: BenchmarkConfig;
+  /** 1.3 (config v9): preço do kWh para o custo da sessão. */
+  energy?: EnergyConfig;
   metrics: MetricSetting[];
+}
+
+/** 1.3: 30 | 60 | 120 | 300 (outro valor → 60 no backend). */
+export type BenchmarkDuration = 30 | 60 | 120 | 300;
+export const BENCHMARK_DURATIONS: BenchmarkDuration[] = [30, 60, 120, 300];
+export interface BenchmarkConfig {
+  durationSec: BenchmarkDuration;
+}
+
+/** 1.3: tariff = preço do kWh; null = só mostra kWh. */
+export interface EnergyConfig {
+  tariff: number | null;
+  currency: string;
 }
 
 /** 1.0: tema das configurações. "system" segue o prefers-color-scheme do Windows. */
@@ -134,6 +151,8 @@ export interface HotkeysConfig {
   enabled: boolean;
   toggleWidget: string;
   marker: string;
+  /** 1.3: começa/cancela o benchmark (padrão Ctrl+Alt+B; vazio = desligado). */
+  benchmark?: string;
 }
 
 /** v0.7: aviso do Windows quando uma métrica fica >= vermelho por 5 s. */
@@ -250,6 +269,8 @@ export interface Catalog {
   pcPending?: PcIncidentSummary;
   /** 1.2: estado de registro dos atalhos. */
   hotkeys?: HotkeyStatus;
+  /** 1.3: estado do benchmark para cliente novo (depois, broadcast benchmarkState). */
+  benchmark?: BenchmarkState;
 }
 
 /** 1.0: versões mostradas em App › Sobre (texto livre vindo do backend; ausente/null = não encontrado). */
@@ -397,6 +418,13 @@ export interface GameSession {
   /** Hardware no momento da sessão (card de compartilhar). */
   gpu?: string;
   cpu?: string;
+  // 1.3
+  /** Houve appCrash/appHang do exe da sessão entre o início e o fim + 2 min. */
+  gameExit?: 'crash' | 'hang';
+  /** Versão do driver de vídeo no início da sessão. */
+  gpuDriver?: string;
+  /** (gpu.power + cpu.power) × dt, em Wh (1 casa). */
+  energyWh?: number;
 }
 
 /** 1.2: marcador (atalho ou botão "Marcar momento"). t = segundos desde o início da sessão. */
@@ -406,7 +434,7 @@ export interface SessionMarker {
   at: string;
   note?: string;
   /** De onde veio (ausente nos marcadores antigos). */
-  via?: 'hotkey' | 'button';
+  via?: 'hotkey' | 'button' | 'benchmark';
 }
 
 /** 1.2: séries do buffer do PC (pc-ring.json). */
@@ -421,17 +449,27 @@ export type PcIncidentKind = 'abruptShutdown' | 'bugcheck';
 export interface PcEvent {
   /** ISO 8601. */
   time: string;
-  kind: 'kernelPower41' | 'unexpectedShutdown' | 'bugcheck' | 'whea' | 'gpuReset';
+  kind: PcEventKind;
+  /** 1.3: state = sleep/resume/boot/shutdown; o resto = problem. Ausente (backend 1.2) = problem. */
+  category?: PcEventCategory;
+  /** 1.3: appCrash/appHang: o exe do jogo. */
+  exe?: string;
   /** Provedor + id, ex.: "Microsoft-Windows-WHEA-Logger 17". */
   source: string;
   eventId: number;
   /** WHEA erro/crítico. */
   fatal?: boolean;
-  /** BugCheck: "0x00000124"; WHEA: componente ("PCI Express Root Port", "Processor Core"). */
+  /** BugCheck: "0x00000124"; WHEA: componente ("PCI Express Root Port", "Processor Core"); appCrash: módulo com falha. */
   code?: string;
   /** Texto do evento (primeira linha, sem dados pessoais). */
   message?: string;
 }
+
+/** 1.2 + 1.3 (sleep … appHang). */
+export type PcEventKind =
+  | 'kernelPower41' | 'unexpectedShutdown' | 'bugcheck' | 'whea' | 'gpuReset'
+  | 'sleep' | 'resume' | 'boot' | 'shutdown' | 'appCrash' | 'appHang';
+export type PcEventCategory = 'problem' | 'state';
 
 export interface PcIncidentSummary {
   id: string;
@@ -490,6 +528,8 @@ export type HotkeyState = 'ok' | 'inUse' | 'invalid' | 'off';
 export interface HotkeyStatus {
   toggleWidget: HotkeyState;
   marker: HotkeyState;
+  /** 1.3 */
+  benchmark?: HotkeyState;
 }
 
 /** 1.2: resposta a getSessionSeries (do CSV da sessão, reamostrado). */
@@ -545,6 +585,77 @@ export type ClientMessage12 =
   | { type: 'getSensorDump' }
   | { type: 'createApiToken'; name: string };
 
+// ───────────────────────────── 1.3 (docs/v13-contract.md) ─────────────────────────────
+
+/** 1.3: um ponto da tendência (uma sessão ≥ 120 s com avgFps). */
+export interface TrendPoint {
+  start: string;
+  durationSec: number;
+  avgFps?: number;
+  low1?: number;
+  avgGpuTemp?: number;
+  avgHotspot?: number;
+  peakHotspot?: number;
+  avgGpuPower?: number;
+  stutters?: number;
+  gpuDriver?: string;
+  energyWh?: number;
+}
+
+/** 1.3: resposta a getTrend. points do mais antigo ao mais novo; games = jogos com ≥ 2 sessões, mais jogados primeiro. */
+export interface Trend {
+  exe: string | null;
+  games: { exe: string; count: number; last: string }[];
+  points: TrendPoint[];
+}
+
+/** 1.3: um benchmark salvo (%APPDATA%/Pitwall/benchmarks.json, 200 mais novos). */
+export interface Benchmark {
+  id: string;
+  exe: string;
+  start: string;
+  durationSec: number;
+  partial?: boolean;
+  note?: string;
+  avgFps?: number;
+  low1?: number;
+  low01?: number;
+  stutters?: number;
+  avgGpuLoad?: number;
+  avgCpuLoad?: number;
+  avgGpuTemp?: number;
+  avgHotspot?: number;
+  avgGpuPower?: number;
+  avgGpuClock?: number;
+  avgCpuTemp?: number;
+  energyWh?: number;
+  clockReasonSec?: Record<string, number>;
+  gpu?: string;
+  cpu?: string;
+  gpuDriver?: string;
+  sessionStart?: string;
+}
+
+export type BenchmarkError = 'noGame' | 'noFps' | 'gameEnded';
+
+/** 1.3: broadcast benchmarkState em cada mudança (o front conta o tempo pelo startedAt). */
+export interface BenchmarkState {
+  state: 'idle' | 'running' | 'done' | 'cancelled' | 'error';
+  exe?: string;
+  startedAt?: string;
+  durationSec?: number;
+  error?: BenchmarkError;
+  result?: Benchmark;
+}
+
+/** 1.3: mensagens novas do cliente. */
+export type ClientMessage13 =
+  | { type: 'getTrend'; exe?: string }
+  | { type: 'startBenchmark'; durationSec?: number; note?: string }
+  | { type: 'cancelBenchmark' }
+  | { type: 'getBenchmarks' }
+  | { type: 'renameBenchmark'; id: string; note: string }
+  | { type: 'deleteBenchmark'; id: string };
 
 /** v0.7: valor de gpu.perfcap (snapshot.texts). */
 export type PerfCapReason = 'thermal' | 'power' | 'voltage' | 'idle' | 'sync' | 'none';
@@ -631,7 +742,11 @@ export type ServerMessage =
   | SensorDump
   | ApiToken
   | MarkerMessage
-  | ExtremesAppMessage;
+  | ExtremesAppMessage
+  // 1.3
+  | ({ type: 'trend' } & Trend)
+  | { type: 'benchmarks'; items: Benchmark[] }
+  | ({ type: 'benchmarkState' } & BenchmarkState);
 
 /** v0.7: resposta a startPairing (só para quem pediu). */
 export type PairingMessage =
@@ -680,7 +795,8 @@ export type ClientMessage =
   | { type: 'skipUpdate' }
   | { type: 'setUpdateChannel'; channel: 'stable' | 'beta' }
   | { type: 'getUpdate' }
-  | ClientMessage12;
+  | ClientMessage12
+  | ClientMessage13;
 
 /** v0.7: config sanitizada que o celular recebe (socket da rede). */
 export interface RemoteViewConfig {

@@ -2,6 +2,8 @@ import { Injectable, computed, signal } from '@angular/core';
 import {
   ApiToken,
   AppConfig,
+  Benchmark,
+  BenchmarkState,
   Catalog,
   ClockReasonStats,
   Extremes,
@@ -28,6 +30,7 @@ import {
   ServerMessage,
   SessionSeries,
   SessionsPage,
+  Trend,
 } from './models';
 import { PerfCapFilter, PerfCapShown } from './perfcap';
 
@@ -161,6 +164,12 @@ export class TelemetryService {
   readonly pcReportAt = signal(0);
   /** 1.2: último incidente recebido (getPcIncident). */
   readonly pcIncident = signal<PcIncident | null>(null);
+  /** 1.3: última resposta a getTrend (null = ainda não pediu / não chegou). */
+  readonly trend = signal<Trend | null>(null);
+  /** 1.3: benchmarks salvos (getBenchmarks / rename / delete); null = ainda não chegou. */
+  readonly benchmarks = signal<Benchmark[] | null>(null);
+  /** 1.3: estado do benchmark (catalog.benchmark e broadcast benchmarkState). */
+  readonly benchmark = signal<BenchmarkState | null>(null);
 
   /** ?batteries=demo na URL: dispositivos de exemplo para pré-visualizar o visual em dev. */
   private readonly demoBatteries = urlParam('batteries') === 'demo';
@@ -292,6 +301,33 @@ export class TelemetryService {
     });
     if (cache) this.seriesCache.set(key, p);
     return p;
+  }
+
+  /** 1.3: tendência de um jogo (sem exe = o jogo com mais sessões). A resposta chega em trend. */
+  requestTrend(exe?: string) {
+    this.send(exe ? { type: 'getTrend', exe } : { type: 'getTrend' });
+  }
+
+  /** 1.3: lista de benchmarks (resposta em benchmarks). */
+  requestBenchmarks() {
+    this.send({ type: 'getBenchmarks' });
+  }
+
+  /** 1.3: começa um benchmark (o backend responde com benchmarkState running ou error). */
+  startBenchmark(durationSec?: number, note?: string) {
+    this.send({ type: 'startBenchmark', ...(durationSec ? { durationSec } : {}), ...(note ? { note } : {}) });
+  }
+
+  cancelBenchmark() {
+    this.send({ type: 'cancelBenchmark' });
+  }
+
+  renameBenchmark(id: string, note: string) {
+    this.send({ type: 'renameBenchmark', id, note });
+  }
+
+  deleteBenchmark(id: string) {
+    this.send({ type: 'deleteBenchmark', id });
   }
 
   /** 1.0: celular/TV sem token: manda o código digitado como primeira mensagem do socket da rede. */
@@ -428,6 +464,7 @@ export class TelemetryService {
       case 'catalog':
         this.catalog.set(msg);
         if (msg.update) this.update.set(msg.update);
+        if (msg.benchmark) this.benchmark.set(msg.benchmark);
         break;
       case 'config':
         this.config.set(msg.config as AppConfig);
@@ -484,6 +521,23 @@ export class TelemetryService {
       case 'apiToken':
         this.apiToken.set(msg);
         break;
+      // 1.3 · tendência e benchmark
+      case 'trend': {
+        const { type: _t, ...trend } = msg;
+        this.trend.set(trend);
+        break;
+      }
+      case 'benchmarks':
+        this.benchmarks.set(msg.items ?? []);
+        break;
+      case 'benchmarkState': {
+        const { type: _t, ...st } = msg;
+        this.benchmark.set(st);
+        // Benchmark salvo: o resultado entra na lista sem esperar outro getBenchmarks
+        const r = st.result;
+        if (st.state === 'done' && r) this.benchmarks.update((list) => (list ? [r, ...list.filter((b) => b.id !== r.id)] : list));
+        break;
+      }
       case 'snapshot': {
         const now = Date.now();
         this.lastSnapshotAt.set(now);

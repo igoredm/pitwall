@@ -106,8 +106,8 @@ export class HotkeyRow {
   readonly value = input<string>('');
   /** catalog.hotkeys.<nome>. */
   readonly status = input<HotkeyState | undefined>(undefined);
-  /** O outro atalho (iguais = aviso). */
-  readonly other = input<string>('');
+  /** Os outros atalhos (algum igual = aviso). 1.3: são dois (alternar, marcador, benchmark). */
+  readonly other = input<string | readonly string[]>('');
   readonly disabled = input(false);
   readonly changed = output<string>();
 
@@ -122,7 +122,8 @@ export class HotkeyRow {
     const s = this.s();
     if (this.capturing()) return { text: this.invalid() ? s.hkInvalid : s.hkCaptureHint, color: this.invalid() ? 'var(--y)' : undefined };
     if (this.disabled() || !this.value()) return { text: '' };
-    if (sameHotkey(this.other(), this.value())) return { text: s.hkSame, color: 'var(--r)' };
+    const others = this.other();
+    if ((typeof others === 'string' ? [others] : others).some((o) => sameHotkey(o, this.value()))) return { text: s.v13.hkSame, color: 'var(--r)' };
     if (this.status() === 'inUse') return { text: s.hkInUseHint(this.parts().join(' + ')), color: 'var(--r)' };
     if (this.status() === 'invalid') return { text: s.hkInvalid, color: 'var(--y)' };
     return { text: '' };

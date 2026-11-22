@@ -81,8 +81,9 @@ const RATES = [250, 500, 1000, 2000];
             </div>
             <button type="button" class="sw" role="switch" aria-labelledby="l-hk" [attr.aria-checked]="hk().enabled" (click)="setHotkey('enabled', !hk().enabled)"></button>
           </div>
-          <pw-hotkey-row id="hk-toggle" [label]="sx.hkToggle" [value]="hk().toggleWidget" [other]="hk().marker" [status]="t.catalog()?.hotkeys?.toggleWidget" [disabled]="!hk().enabled" (changed)="setHotkey('toggleWidget', $event)" />
-          <pw-hotkey-row id="hk-marker" [label]="sx.hkMarker" [value]="hk().marker" [other]="hk().toggleWidget" [status]="t.catalog()?.hotkeys?.marker" [disabled]="!hk().enabled" (changed)="setHotkey('marker', $event)" />
+          <pw-hotkey-row id="hk-toggle" [label]="sx.hkToggle" [value]="hk().toggleWidget" [other]="[hk().marker, hk().benchmark ?? '']" [status]="t.catalog()?.hotkeys?.toggleWidget" [disabled]="!hk().enabled" (changed)="setHotkey('toggleWidget', $event)" />
+          <pw-hotkey-row id="hk-marker" [label]="sx.hkMarker" [value]="hk().marker" [other]="[hk().toggleWidget, hk().benchmark ?? '']" [status]="t.catalog()?.hotkeys?.marker" [disabled]="!hk().enabled" (changed)="setHotkey('marker', $event)" />
+          <pw-hotkey-row id="hk-bench" [label]="sx.v13.hkBench" [value]="hk().benchmark ?? ''" [other]="[hk().toggleWidget, hk().marker]" [status]="t.catalog()?.hotkeys?.benchmark" [disabled]="!hk().enabled" (changed)="setHotkey('benchmark', $event)" />
         </div>
       </section>
 
@@ -340,7 +341,7 @@ export class AppPage {
   protected readonly dumpCopied = signal(false);
   private dumpTimer?: ReturnType<typeof setTimeout>;
   /** 1.2: atalhos (padrão do backend quando a config ainda não tem). */
-  protected readonly hk = computed<HotkeysConfig>(() => ({ enabled: true, toggleWidget: 'Ctrl+Alt+P', marker: 'Ctrl+Alt+M', ...this.ctx.draft()?.hotkeys }));
+  protected readonly hk = computed<HotkeysConfig>(() => ({ enabled: true, toggleWidget: 'Ctrl+Alt+P', marker: 'Ctrl+Alt+M', benchmark: 'Ctrl+Alt+B', ...this.ctx.draft()?.hotkeys }));
 
   protected readonly notes = computed(() => markdownToBlocks(this.t.update()?.notes ?? ''));
   protected readonly channel = computed(() => this.t.update()?.channel ?? this.ctx.draft()?.update?.channel ?? 'stable');
