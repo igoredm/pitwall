@@ -6,15 +6,19 @@ namespace Pitwall.Health;
 public sealed class PcEvent
 {
     public DateTime Time { get; set; }
-    /// <summary>kernelPower41 | unexpectedShutdown | bugcheck | whea | gpuReset</summary>
+    /// <summary>kernelPower41 | unexpectedShutdown | bugcheck | whea | gpuReset | 1.3: sleep | resume | boot | shutdown | appCrash | appHang</summary>
     public string Kind { get; set; } = "";
+    /// <summary>1.3: problem | state (state = sleep/resume/boot/shutdown).</summary>
+    public string? Category { get; set; }
     /// <summary>Provedor + id, ex.: "Microsoft-Windows-WHEA-Logger 17".</summary>
     public string Source { get; set; } = "";
     public int EventId { get; set; }
     /// <summary>WHEA com nível Erro/Crítico.</summary>
     public bool? Fatal { get; set; }
-    /// <summary>BugCheck: "0x00000124"; WHEA: componente.</summary>
+    /// <summary>BugCheck: "0x00000124"; WHEA: componente; appCrash: módulo com falha (ex.: nvwgf2umx.dll).</summary>
     public string? Code { get; set; }
+    /// <summary>1.3: appCrash/appHang: exe do jogo.</summary>
+    public string? Exe { get; set; }
     /// <summary>Primeira linha do texto do evento, sem caminhos/nomes de usuário (até ~200 caracteres).</summary>
     public string? Message { get; set; }
 }

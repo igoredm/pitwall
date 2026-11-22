@@ -17,6 +17,7 @@ public sealed class PcHealth
     static readonly TimeSpan EventsMaxAge = TimeSpan.FromMinutes(10);
 
     readonly IReadOnlyList<MetricDefinition> _definitions;
+    readonly Func<IReadOnlySet<string>>? _games;
     readonly IReadOnlySet<string> _available;
     readonly PcRing _ring;
     readonly PcIncidentStore _store = new();
@@ -39,9 +40,11 @@ public sealed class PcHealth
     public bool Active => _active;
     public PcIncidentStore Store => _store;
 
-    public PcHealth(IReadOnlyList<MetricDefinition> definitions, IReadOnlySet<string> available)
+    /// <param name="games">1.3: exes de jogos conhecidos (sessões + lista de jogos), para o filtro do log Application.</param>
+    public PcHealth(IReadOnlyList<MetricDefinition> definitions, IReadOnlySet<string> available, Func<IReadOnlySet<string>>? games = null)
     {
         _definitions = definitions;
+        _games = games;
         _available = available;
         _ring = new PcRing(PcRing.Ids.Where(available.Contains));
         Previous = PcRing.Load();
@@ -154,13 +157,15 @@ public sealed class PcHealth
         return inc;
     }
 
-    /// <summary>Eventos dos últimos 30 dias (cache de até 10 min). Reanexa os que chegaram depois aos incidentes.</summary>
+    /// <summary>Eventos (problemas de 30 dias, estado de 7; cache de até 10 min). Reanexa os que chegaram depois aos incidentes.</summary>
     public List<PcEvent> Events(bool force = false)
     {
         lock (_eventsGate)
         {
             if (!force && _eventsAt != default && DateTime.Now - _eventsAt < EventsMaxAge) return _events;
-            _events = PcEvents.Read();
+            IReadOnlySet<string>? known = null;
+            try { known = _games?.Invoke(); } catch { }
+            _events = PcEvents.Read(known);
             _eventsAt = DateTime.Now;
             foreach (var s in _store.List())
                 if (s.BootTime is { } b && DateTime.Now - b < TimeSpan.FromDays(PcEvents.Days))

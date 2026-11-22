@@ -128,7 +128,7 @@ public class ConfigV6Tests
     public void NewInstall_TutorialPendingAndFeaturesOn()
     {
         var c = ConfigStore.Parse(null);
-        Assert.Equal(8, ConfigStore.CurrentVersion); // v8: atalhos, engasgos, API (1.2)
+        Assert.Equal(9, ConfigStore.CurrentVersion); // v9: benchmark e energia (1.3)
         Assert.False(c.TutorialDone);
         Assert.False(c.FirstRunDone);
         Assert.True(c.Features.CrashReport);

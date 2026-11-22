@@ -77,39 +77,45 @@ public sealed class HotkeyService : NativeWindow, IDisposable
 {
     const int WmHotkey = 0x0312;
     const uint ModNoRepeat = 0x4000;
-    const int IdToggle = 1, IdMarker = 2;
+    const int IdToggle = 1, IdMarker = 2, IdBenchmark = 3;
 
     [DllImport("user32.dll", SetLastError = true)] static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
     [DllImport("user32.dll", SetLastError = true)] static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
     readonly Action _toggleWidget;
     readonly Action _marker;
+    readonly Action? _benchmark;
     string? _appliedKey;
 
     public string ToggleState { get; private set; } = HotkeyState.Off;
     public string MarkerState { get; private set; } = HotkeyState.Off;
+    /// <summary>1.3: atalho do benchmark.</summary>
+    public string BenchmarkState { get; private set; } = HotkeyState.Off;
 
     /// <summary>Estado mudou (para o catálogo).</summary>
-    public event Action<string, string>? StatusChanged;
+    public event Action<string, string, string>? StatusChanged;
 
-    public HotkeyService(Action toggleWidget, Action marker)
+    public HotkeyService(Action toggleWidget, Action marker, Action? benchmark = null)
     {
         _toggleWidget = toggleWidget;
         _marker = marker;
+        _benchmark = benchmark;
         CreateHandle(new CreateParams { Caption = "Pitwall hotkeys", Parent = new IntPtr(-3) }); // HWND_MESSAGE
     }
 
     /// <summary>Registra de novo se a config dos atalhos mudou (no-op se for igual à última aplicada).</summary>
     public void Apply(HotkeysConfig cfg)
     {
-        var key = $"{cfg.Enabled}|{cfg.ToggleWidget}|{cfg.Marker}";
+        var key = $"{cfg.Enabled}|{cfg.ToggleWidget}|{cfg.Marker}|{cfg.Benchmark}";
         if (key == _appliedKey || Handle == IntPtr.Zero) return;
         _appliedKey = key;
         UnregisterHotKey(Handle, IdToggle);
         UnregisterHotKey(Handle, IdMarker);
+        UnregisterHotKey(Handle, IdBenchmark);
         ToggleState = cfg.Enabled ? Register(IdToggle, cfg.ToggleWidget) : HotkeyState.Off;
         MarkerState = cfg.Enabled ? Register(IdMarker, cfg.Marker) : HotkeyState.Off;
-        StatusChanged?.Invoke(ToggleState, MarkerState);
+        BenchmarkState = cfg.Enabled && _benchmark != null ? Register(IdBenchmark, cfg.Benchmark) : HotkeyState.Off;
+        StatusChanged?.Invoke(ToggleState, MarkerState, BenchmarkState);
     }
 
     string Register(int id, string? text)
@@ -128,6 +134,7 @@ public sealed class HotkeyService : NativeWindow, IDisposable
             {
                 if ((int)m.WParam == IdToggle) _toggleWidget();
                 else if ((int)m.WParam == IdMarker) _marker();
+                else if ((int)m.WParam == IdBenchmark) _benchmark?.Invoke();
             }
             catch { }
             return;
@@ -141,6 +148,7 @@ public sealed class HotkeyService : NativeWindow, IDisposable
         {
             UnregisterHotKey(Handle, IdToggle);
             UnregisterHotKey(Handle, IdMarker);
+            UnregisterHotKey(Handle, IdBenchmark);
             DestroyHandle();
         }
     }

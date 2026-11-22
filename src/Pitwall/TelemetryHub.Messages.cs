@@ -87,7 +87,20 @@ public sealed partial class TelemetryHub
                     }
                     return null;
                 case "getPcReport":
-                    return _health.ReportMessage(_crashFeature);
+                {
+                    var pcReport = _health.ReportMessage(_crashFeature);
+                    ApplyGameExitsFromReport();
+                    return pcReport;
+                }
+                // 1.3
+                case "getTrend":
+                    return TrendMessage(node);
+                case "startBenchmark":
+                case "cancelBenchmark":
+                case "getBenchmarks":
+                case "renameBenchmark":
+                case "deleteBenchmark":
+                    return BenchmarkMessage(node["type"]!.GetValue<string>(), node);
                 case "getPcIncident":
                     return _health.IncidentMessage(Str(node["id"]));
                 case "dismissPcIncident":
