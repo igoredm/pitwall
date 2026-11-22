@@ -73,8 +73,9 @@ public sealed class TrayApp : ApplicationContext
         // 1.2: atalhos globais (RegisterHotKey, sem hook de teclado) e aviso curto de cada marcador
         _hotkeys = new HotkeyService(
             () => Toggle(c => c.Widget.Visible = !c.Widget.Visible),
-            () => Task.Run(() => { try { _hub.AddMarker(null, Games.SessionMarker.ViaHotkey); } catch { } })); // salva o sessions.json: fora da thread da interface
-        _hotkeys.StatusChanged += (toggle, marker) => _hub.SetHotkeyStatus(toggle, marker);
+            () => Task.Run(() => { try { _hub.AddMarker(null, Games.SessionMarker.ViaHotkey); } catch { } }), // salva o sessions.json: fora da thread da interface
+            _hub.ToggleBenchmark); // 1.3: só põe o pedido na fila (o tick aplica)
+        _hotkeys.StatusChanged += (toggle, marker, bench) => _hub.SetHotkeyStatus(toggle, marker, bench);
         _hotkeys.Apply(config.Current.Hotkeys);
         config.Changed += _ => _ui.Post(_ => _hotkeys.Apply(_config.Current.Hotkeys), null);
         hub.MarkerAdded += m => _ui.Post(_ =>
@@ -83,6 +84,11 @@ public sealed class TrayApp : ApplicationContext
             ShowBalloon(2500, "Pitwall", L.T($"Marcador {m.Index} · {time}", $"Marker {m.Index} · {time}"), ToolTipIcon.Info,
                 m.Exe != null ? "sessions" : "monitor", m.Exe != null ? "last" : null);
         }, null);
+        // 1.3: benchmark terminou (ou não pôde começar): balão curto
+        hub.BenchmarkChanged += st =>
+        {
+            if (BenchmarkBalloon(st) is { } text) _ui.Post(_ => ShowBalloon(4000, "Pitwall", text, ToolTipIcon.Info, "sessions", "bench"), null);
+        };
         UpdateTray.Attach(_ui, hub.Updater, ExitThread, (timeout, title, text, icon) => ShowBalloon(timeout, title, text, icon, "app", "updates"));
 
         // Alerta de vermelho: balão da bandeja (o Windows 10/11 mostra como notificação). Sem dependência nova.
@@ -250,6 +256,26 @@ public sealed class TrayApp : ApplicationContext
                      $"The PC shut down without warning at {at}. See the last readings."),
         };
         ShowBalloon(10000, L.T("Pitwall · relatório do PC", "Pitwall · PC report"), text, ToolTipIcon.Warning, "health", "latest");
+    }
+
+    /// <summary>1.3: "Benchmark: 60 s · 143 FPS · 1% 98" no fim; erro curto quando não começou; null nos outros estados.</summary>
+    internal static string? BenchmarkBalloon(Games.BenchmarkState st)
+    {
+        if (st.State == Games.BenchmarkState.Done && st.Result is { } r)
+        {
+            var fps = r.AvgFps is { } f ? $" · {f:0} FPS" : "";
+            var low = r.Low1 is { } l ? L.T($" · 1% {l:0}", $" · 1% low {l:0}") : "";
+            var partial = r.Partial == true ? L.T(" (parcial)", " (partial)") : "";
+            return $"Benchmark: {r.DurationSec:0} s{fps}{low}{partial}";
+        }
+        if (st.State != Games.BenchmarkState.Failed) return null;
+        return st.Error switch
+        {
+            Games.BenchmarkState.NoGame => L.T("Benchmark: abra um jogo primeiro.", "Benchmark: open a game first."),
+            Games.BenchmarkState.NoFps => L.T("Benchmark: o FPS do jogo ainda não está chegando.", "Benchmark: no FPS from the game yet."),
+            Games.BenchmarkState.GameEnded => L.T("Benchmark: o jogo fechou antes de 10 s (não salvo).", "Benchmark: the game closed before 10 s (not saved)."),
+            _ => null,
+        };
     }
 
     /// <summary>Destino do último balão mostrado (o Windows mostra um por vez; clicar nele abre essa página).</summary>

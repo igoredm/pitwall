@@ -42,6 +42,7 @@ public sealed partial class TelemetryHub
                 gpuDriver = _tuner.DriverVersion,
             },
             hotkeys = remote ? null : _hotkeys,
+            benchmark = remote ? null : CatalogBenchmark(),
             crashReport = _crashFeature ? _crashReport : null,
             pcPending = _crashFeature ? _health.Pending : null,
             remote = new { running = _remote.Running, port = _remote.Running ? _remote.Port : (int?)null, error = _remote.LastError },
@@ -95,9 +96,9 @@ public sealed partial class TelemetryHub
     static readonly JsonSerializerOptions AboutJson = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     /// <summary>1.2: estado dos atalhos (catalog.hotkeys: ok | inUse | invalid | off), informado pela bandeja.</summary>
-    public void SetHotkeyStatus(string toggleWidget, string marker)
+    public void SetHotkeyStatus(string toggleWidget, string marker, string benchmark)
     {
-        _hotkeys = new { toggleWidget, marker };
+        _hotkeys = new { toggleWidget, marker, benchmark };
         _ws.Broadcast(CatalogMessage());
     }
 

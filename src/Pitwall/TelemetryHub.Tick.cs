@@ -78,6 +78,8 @@ public sealed partial class TelemetryHub
         var game = _games.Update(cfg.Games);
         if (game?.Pid != CurrentGame?.Pid)
         {
+            // 1.3: benchmark do jogo que fechou termina antes da sessão (o marcador de fim entra nela)
+            if (_bench.IsRunning) BenchmarkGameEnded(now);
             EndSession();
             _sessions.Start(game);
             _log.Rotate(game?.Exe);
@@ -88,7 +90,8 @@ public sealed partial class TelemetryHub
             if (game != null)
             {
                 var (gpuName, cpuName) = (_sensors.GpuName, _sensors.CpuName);
-                _sessions.UpdateOpen(s => { s.Gpu = gpuName; s.Cpu = cpuName; });
+                var driver = GpuDriverNow();
+                _sessions.UpdateOpen(s => { s.Gpu = gpuName; s.Cpu = cpuName; s.GpuDriver = driver; });
             }
             if (game != null)
             {
@@ -153,6 +156,8 @@ public sealed partial class TelemetryHub
                 });
             }
         }
+        // 1.3: benchmark (pedidos da fila + o acumulador dele; nada roda sem benchmark)
+        if (_bench.IsRunning || !_benchCommands.IsEmpty) BenchmarkTick(cfg, game, stats, has, clockReason, dt, now);
         CheckAlerts(cfg, now);
 
         // Buffer do Relatório do PC (com ou sem jogo): desligado = nada na memória nem no disco

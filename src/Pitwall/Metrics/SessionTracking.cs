@@ -177,6 +177,7 @@ public sealed class SessionStatsAccumulator
                 _avgCount[i]++;
             }
         if (!(dtSec > 0)) return;
+        AddEnergy(values, dtSec);
         foreach (var s in settings)
         {
             if (s.Warn == null && s.Crit == null) continue;
@@ -189,6 +190,40 @@ public sealed class SessionStatsAccumulator
                 if (s.Warn == null) _warnSec[s.Id] = _warnSec.GetValueOrDefault(s.Id) + dtSec;
             }
         }
+    }
+
+    // 1.3: energia (J) = Σ (gpu.power + cpu.power) × dt; só o que tiver leitura, nenhum dos dois = o tick não conta
+    double _energyJ;
+    bool _energyAny;
+
+    void AddEnergy(IReadOnlyDictionary<string, double?> values, double dtSec)
+    {
+        double watts = 0;
+        var any = false;
+        foreach (var id in EnergyIds)
+            if (values.TryGetValue(id, out var v) && v is { } w && double.IsFinite(w) && w >= 0)
+            {
+                watts += w;
+                any = true;
+            }
+        if (!any) return;
+        _energyJ += watts * dtSec;
+        _energyAny = true;
+    }
+
+    static readonly string[] EnergyIds = ["gpu.power", "cpu.power"];
+
+    /// <summary>1.3: energia estimada até agora (Wh, 1 casa); null sem nenhuma leitura de consumo.</summary>
+    public double? EnergyWh => _energyAny ? Math.Round(_energyJ / 3600, 1) : null;
+
+    /// <summary>
+    /// 1.3 (benchmark): só enche a janela da mediana dos engasgos com frames de antes do início (não contam na média nem nos lows).
+    /// </summary>
+    public void Prime(ReadOnlySpan<float> frametimes)
+    {
+        if (_stutters == null || frametimes.IsEmpty) return;
+        _primed = true;
+        _stutters.Prime(frametimes);
     }
 
     readonly Dictionary<string, double> _reasonSec = [];
@@ -236,6 +271,25 @@ public sealed class SessionStatsAccumulator
         s.Stutters = Stutters;
         s.AnimErrorMs = _avgCount[7] > 0 ? Math.Round(_avgSum[7] / _avgCount[7], 2) : null;
         s.PcLatencyMs = Avg(8);
+        s.EnergyWh = EnergyWh;
+    }
+
+    /// <summary>1.3: as mesmas regras da sessão num benchmark (<paramref name="b"/>.DurationSec fica com quem chamou).</summary>
+    public void ApplyTo(Games.Benchmark b)
+    {
+        b.AvgFps = R(_frames.AvgFps);
+        b.Low1 = R(_frames.Low(0.01));
+        b.Low01 = R(_frames.Low(0.001));
+        b.Stutters = Stutters;
+        b.AvgGpuLoad = Avg(4);
+        b.AvgCpuLoad = Avg(6);
+        b.AvgGpuTemp = Avg(0);
+        b.AvgHotspot = Avg(1);
+        b.AvgGpuPower = Avg(2);
+        b.AvgGpuClock = Avg(3) is { } clk ? Math.Round(clk) : null;
+        b.AvgCpuTemp = Avg(5);
+        b.EnergyWh = EnergyWh;
+        b.ClockReasonSec = ClockReasonSeconds();
     }
 
     double? Avg(int i) => _avgCount[i] > 0 ? R(_avgSum[i] / _avgCount[i]) : null;

@@ -58,6 +58,10 @@ public sealed class AppConfig
     public FeaturesConfig Features { get; set; } = new();
     /// <summary>1.2 (config v8): atalhos globais (RegisterHotKey).</summary>
     public HotkeysConfig Hotkeys { get; set; } = new();
+    /// <summary>1.3 (config v9): benchmark por atalho.</summary>
+    public BenchmarkConfig Benchmark { get; set; } = new();
+    /// <summary>1.3 (config v9): energia e custo por sessão.</summary>
+    public EnergyConfig Energy { get; set; } = new();
     public List<MetricSetting> Metrics { get; set; } = [];
 }
 
@@ -110,6 +114,27 @@ public sealed class HotkeysConfig
     public string ToggleWidget { get; set; } = "Ctrl+Alt+P";
     /// <summary>Grava um marcador no CSV e na sessão ("travou aqui").</summary>
     public string Marker { get; set; } = "Ctrl+Alt+M";
+    /// <summary>1.3: começa um benchmark (ou cancela o que está rodando).</summary>
+    public string Benchmark { get; set; } = "Ctrl+Alt+B";
+}
+
+/// <summary>1.3: benchmark por atalho.</summary>
+public sealed class BenchmarkConfig
+{
+    /// <summary>Durações aceitas (s); outro valor vira <see cref="DefaultDuration"/>.</summary>
+    public static readonly int[] Durations = [30, 60, 120, 300];
+    public const int DefaultDuration = 60;
+    public int DurationSec { get; set; } = DefaultDuration;
+
+    public static int Snap(int? sec) => sec is { } s && Durations.Contains(s) ? s : DefaultDuration;
+}
+
+/// <summary>1.3: estimativa de energia (GPU + CPU) e custo por sessão.</summary>
+public sealed class EnergyConfig
+{
+    /// <summary>Preço do kWh; null = só mostra kWh.</summary>
+    public double? Tariff { get; set; }
+    public string Currency { get; set; } = "R$";
 }
 
 /// <summary>Visualização no celular pela rede local (somente leitura). Desligada por padrão.</summary>

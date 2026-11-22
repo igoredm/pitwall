@@ -108,7 +108,7 @@ public sealed partial class TelemetryHub : IDisposable
         if (presentMon.Available)
             foreach (var d in MetricCatalog.Static.Where(d => d.Group == MetricGroup.Fps)) _available.Add(d.Id);
         if (tuner.ClockReasonsMask() != null) _available.Add("gpu.perfcap");
-        _health = new PcHealth(_definitions, _available);
+        _health = new PcHealth(_definitions, _available, KnownGameExes);
 
         var dynamicMissing = sensors.DynamicDefinitions.Where(d => config.Current.Metrics.All(m => m.Id != d.Id)).ToList();
         if (dynamicMissing.Count > 0) config.Update(c => MetricCatalog.EnsureSettings(c, dynamicMissing));
@@ -317,7 +317,11 @@ public sealed partial class TelemetryHub : IDisposable
             catch { }
         });
         RefreshLastReasons();
-        if (ended != null) SessionEnded?.Invoke(ended);
+        if (ended != null)
+        {
+            ScheduleGameExitCheck(ended);
+            SessionEnded?.Invoke(ended);
+        }
     }
 
     public void Dispose()

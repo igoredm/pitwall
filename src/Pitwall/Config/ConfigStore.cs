@@ -80,7 +80,7 @@ public sealed class ConfigStore
     }
 
     /// <summary>Versão atual do formato do config.json.</summary>
-    public const int CurrentVersion = 8;
+    public const int CurrentVersion = 9;
 
     static AppConfig Load()
     {
@@ -161,6 +161,11 @@ public sealed class ConfigStore
             // 1.2: atalhos, engasgos e API de leitura nascem com o padrão das classes (nada a converter)
             config.Version = 8;
         }
+        if (config.Version < 9)
+        {
+            // 1.3: atalho do benchmark, duração do benchmark e tarifa de energia nascem com o padrão das classes
+            config.Version = 9;
+        }
         // tutorialDone é apelido de tour.done
         config.TutorialDone = config.Tour.Done;
     }
@@ -205,6 +210,12 @@ public sealed class ConfigStore
         c.Remote ??= new();
         c.Features ??= new();
         c.Tour ??= new();
+        c.Hotkeys ??= new();
+        c.Benchmark ??= new();
+        c.Benchmark.DurationSec = BenchmarkConfig.Snap(c.Benchmark.DurationSec);
+        c.Energy ??= new();
+        if (c.Energy.Tariff is { } tariff && (!double.IsFinite(tariff) || tariff < 0 || tariff > 1_000)) c.Energy.Tariff = null;
+        c.Energy.Currency = string.IsNullOrWhiteSpace(c.Energy.Currency) ? "R$" : c.Energy.Currency.Trim()[..Math.Min(c.Energy.Currency.Trim().Length, 8)];
         c.Tour.Step = Math.Clamp(c.Tour.Step, 0, 1000);
         if (!Appearances.Contains(c.Appearance)) c.Appearance = "system";
         c.Update ??= new();

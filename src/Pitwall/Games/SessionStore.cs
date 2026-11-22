@@ -57,6 +57,39 @@ public sealed class GameSession
     public bool? EndedByCrash { get; set; }
     /// <summary>1.2: id do incidente do Relatório do PC (incidents\&lt;id&gt;.json).</summary>
     public string? IncidentId { get; set; }
+    /// <summary>1.3: "crash" (Application Error 1000) ou "hang" (Application Hang 1002) do exe da sessão entre o início e o fim + 2 min.</summary>
+    public string? GameExit { get; set; }
+    /// <summary>1.3: versão do driver da GPU no início da sessão (NVML ou registro).</summary>
+    public string? GpuDriver { get; set; }
+    /// <summary>1.3: energia estimada (GPU + CPU) na sessão, Wh com 1 casa.</summary>
+    public double? EnergyWh { get; set; }
+}
+
+/// <summary>1.3: regra pura do <see cref="GameSession.GameExit"/>.</summary>
+public static class GameExitRules
+{
+    public const string Crash = "crash", Hang = "hang";
+    /// <summary>Margem depois do fim (o Windows grava o 1000/1002 logo depois que o processo some).</summary>
+    public static readonly TimeSpan After = TimeSpan.FromMinutes(2);
+
+    /// <summary>Fim da sessão: <c>end</c> ou, sem ele (o PC caiu), início + duração. Null = não dá para saber.</summary>
+    public static DateTime? EndOf(GameSession s) => s.End ?? (s.DurationSec is { } d ? s.Start.AddSeconds(d) : null);
+
+    /// <summary>"crash" se houver appCrash do exe em [início, fim + 2 min]; senão "hang" se houver appHang; senão null.</summary>
+    public static string? For(GameSession s, IEnumerable<Health.PcEvent> events)
+    {
+        if (EndOf(s) is not { } end) return null;
+        var to = end + After;
+        string? found = null;
+        foreach (var e in events)
+        {
+            if (e.Kind is not ("appCrash" or "appHang") || !string.Equals(e.Exe, s.Exe, StringComparison.OrdinalIgnoreCase)) continue;
+            if (e.Time < s.Start || e.Time > to) continue;
+            if (e.Kind == "appCrash") return Crash;
+            found = Hang;
+        }
+        return found;
+    }
 }
 
 /// <summary>1.2: marcador de uma sessão. <see cref="T"/> = segundos desde o início da sessão.</summary>
@@ -70,6 +103,8 @@ public sealed class SessionMarker
 
     public const string ViaHotkey = "hotkey";
     public const string ViaButton = "button";
+    /// <summary>1.3: início/fim de um benchmark.</summary>
+    public const string ViaBenchmark = "benchmark";
 }
 
 /// <summary>1.2: marcador gravado (TelemetryHub.MarkerAdded). <paramref name="Exe"/> = jogo da sessão aberta; null fora de jogo.</summary>
@@ -217,6 +252,42 @@ public sealed class SessionStore
             s.IncidentId = incidentId;
             Save();
             return true;
+        }
+    }
+
+    /// <summary>1.3: exes de todas as sessões (sem diferenciar maiúsculas).</summary>
+    public HashSet<string> Exes()
+    {
+        lock (_gate) return _sessions.Select(s => s.Exe).Where(e => !string.IsNullOrEmpty(e)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>1.3: sessões encerradas, mais recente primeiro (sem a aberta).</summary>
+    public List<GameSession> Closed()
+    {
+        lock (_gate) return [.. _sessions.Where(s => !ReferenceEquals(s, _open))];
+    }
+
+    /// <summary>
+    /// 1.3: preenche <see cref="GameSession.GameExit"/> das sessões encerradas que ainda não têm, a partir dos eventos
+    /// (appCrash/appHang). Salva só se mudou. True = alguma sessão mudou.
+    /// </summary>
+    public bool ApplyGameExits(IReadOnlyList<Health.PcEvent> events)
+    {
+        if (!events.Any(e => e.Kind is "appCrash" or "appHang")) return false;
+        lock (_gate)
+        {
+            var changed = false;
+            foreach (var s in _sessions)
+            {
+                if (s.GameExit != null || ReferenceEquals(s, _open)) continue;
+                if (GameExitRules.For(s, events) is { } exit)
+                {
+                    s.GameExit = exit;
+                    changed = true;
+                }
+            }
+            if (changed) Save();
+            return changed;
         }
     }
 
