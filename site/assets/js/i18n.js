@@ -15,7 +15,7 @@ window.PW_I18N = {
     heroLead: 'Pitwall is a Windows widget that stays outside the game: no overlay, no injected DLL, nothing for anti-cheat to flag. FPS and 1% lows from PresentMon, GPU hot spot, clocks, power, RAM and the battery of your wireless mouse and headset.',
     ctaDownload: 'Download for Windows',
     ctaTry: 'Try it in the browser',
-    heroFine: 'Free and open source (MIT) · v1.2.1 · Windows 10 and 11',
+    heroFine: 'Free and open source (MIT) · Windows 10 and 11',
     heroFigure: 'The Pitwall widget running live with sample data',
     heroAlt: 'Pitwall widget: RTX 3080 GPU at 97% with a 99 °C hot spot, 143 FPS in the middle, CPU at 42% and RAM at 58%',
     heroTag: 'Live, with sample data',
@@ -111,7 +111,7 @@ window.PW_I18N = {
 
     dlTitle: 'Get Pitwall.',
     dlBody: 'One installer. PresentMon is bundled; PawnIO and the WebView2 Runtime are installed if missing. On first run, a short setup helps you pick the screen and theme.',
-    dlBtn: 'Download v1.2.1',
+    dlBtn: 'Download the latest version',
     dlNotes: 'Release notes',
     dlFine: 'Not code-signed yet: SmartScreen may warn you the first time.',
     r1k: 'System',

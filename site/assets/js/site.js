@@ -48,6 +48,39 @@
   }
   function setMeta(sel, v) { var m = document.querySelector('meta[' + sel + ']'); if (m) m.setAttribute('content', v); }
 
+  // ------------------------------------------------------------------ baixar
+  // No clique, pergunta ao GitHub qual é o instalador da release mais recente e baixa direto.
+  // Só consulta quem clicou. Se algo falhar, segue o href: a página da release.
+  var SETUP = /^Pitwall-Setup-[\w.-]+\.exe$/i;
+  var RELEASE_API = 'https://api.github.com/repos/igoredm/pitwall/releases/latest';
+  var downloading = false;
+
+  function latestSetup() {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, 3000);
+    return fetch(RELEASE_API, { signal: ctrl.signal, headers: { Accept: 'application/vnd.github+json' }, credentials: 'omit', referrerPolicy: 'no-referrer' })
+      .then(function (r) { if (!r.ok) throw new Error('release'); return r.json(); })
+      .then(function (rel) {
+        var a = (rel.assets || []).filter(function (x) { return SETUP.test(x.name); })[0];
+        if (!a || a.browser_download_url.indexOf('https://github.com/igoredm/pitwall/releases/download/') !== 0) throw new Error('asset');
+        return a.browser_download_url;
+      })
+      .finally(function () { clearTimeout(timer); });
+  }
+
+  document.querySelectorAll('a[data-download]').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      if (downloading) return;
+      downloading = true;
+      link.setAttribute('aria-busy', 'true');
+      latestSetup()
+        .then(function (url) { location.href = url; }, function () { location.href = link.href; })
+        .finally(function () { downloading = false; link.removeAttribute('aria-busy'); });
+    });
+  });
+
   // ------------------------------------------------------------------ iframes sob demanda
   // Cada "slot" só cria o iframe quando chega perto da tela e o destrói quando sai (o widget atualiza a cada 1 s:
   // fora da tela, não precisa gastar CPU). O pôster (imagem) fica por baixo até o widget desenhar.
