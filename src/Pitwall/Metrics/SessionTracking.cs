@@ -181,6 +181,7 @@ public sealed class SessionStatsAccumulator
         foreach (var s in settings)
         {
             if (s.Warn == null && s.Crit == null) continue;
+            if (IsStaticCapacity(s.Id)) continue;
             if (!values.TryGetValue(s.Id, out var v) || v is not { } d || !double.IsFinite(d)) continue;
             // Mesma regra do widget: >= limite. "Acima do amarelo" inclui o tempo no vermelho.
             if (s.Warn is { } w && d >= w) _warnSec[s.Id] = _warnSec.GetValueOrDefault(s.Id) + dtSec;
@@ -225,6 +226,10 @@ public sealed class SessionStatsAccumulator
         _primed = true;
         _stutters.Prime(frametimes);
     }
+
+    /// <summary>1.3.1: espaço em disco não muda com a partida; não conta como "tempo acima do limite" da sessão.</summary>
+    internal static bool IsStaticCapacity(string id) =>
+        id.StartsWith("disk", StringComparison.Ordinal) && id.EndsWith(".used", StringComparison.Ordinal);
 
     readonly Dictionary<string, double> _reasonSec = [];
 

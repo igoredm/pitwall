@@ -84,7 +84,7 @@ export function shareData(
     redCap: red ? redCaption(x, s, settings, cat) : null,
     fps: fps && extent(fps) ? fps : null,
     version: cat?.version ?? cat?.about?.app ?? '',
-    insights: sessionInsights(x, s)
+    insights: sessionInsights(x, s, cat)
       .slice(0, 2)
       .map((i) => ({ tone: i.tone, text: i.text })),
   };

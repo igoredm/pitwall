@@ -34,10 +34,19 @@ export function fmtPm(v: number, s: Dict, digits = 1): string {
 
 /** Maior tempo acima do limite crítico (vermelho) entre as métricas (s). */
 export function secondsRed(x: GameSession): number | null {
-  const crit = x.secondsAboveCrit;
-  if (!crit) return x.secondsAboveWarn ? 0 : null;
-  const vals = Object.values(crit);
+  if (!x.secondsAboveCrit) return x.secondsAboveWarn ? 0 : null;
+  const vals = critEntries(x).map(([, v]) => v);
   return vals.length ? Math.max(...vals) : 0;
+}
+
+/** 1.3.1: espaço em disco não muda com a partida (sessões antigas ainda trazem esse tempo). */
+export function isCapacityMetric(id: string): boolean {
+  return /^disk\d+\.used$/.test(id);
+}
+
+/** Tempo acima do limite crítico por métrica, sem as de capacidade. */
+export function critEntries(x: GameSession): [string, number][] {
+  return Object.entries(x.secondsAboveCrit ?? {}).filter(([id]) => !isCapacityMetric(id));
 }
 
 /**
@@ -46,7 +55,7 @@ export function secondsRed(x: GameSession): number | null {
  * do catálogo; sem limite conhecido, só o nome. null = nenhuma métrica passou.
  */
 export function redCaption(x: GameSession, s: Dict, settings: Map<string, MetricSetting>, cat: Catalog | null): string | null {
-  const list = Object.entries(x.secondsAboveCrit ?? {})
+  const list = critEntries(x)
     .filter(([, v]) => v > 0)
     .sort((a, b) => b[1] - a[1]);
   if (!list.length) return null;

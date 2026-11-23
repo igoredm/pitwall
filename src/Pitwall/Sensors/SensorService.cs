@@ -247,6 +247,7 @@ public sealed partial class SensorService : IDisposable
         }
 
         // Discos
+        var disksWithVolumes = DiskVolumes.PhysicalDisksWithVolumes();
         var n = 0;
         foreach (var disk in all.Where(h => h.HardwareType == HardwareType.Storage))
         {
@@ -255,7 +256,8 @@ public sealed partial class SensorService : IDisposable
             var temp = disk.Sensors.FirstOrDefault(s => s.SensorType == SensorType.Temperature && s.Name is "Composite Temperature" or "Temperature");
             if (temp != null) { AddDynamic($"disk{n}.temp", temp, MetricGroup.Other, $"{disk.Name.Trim()} · temperatura", "°C", 60, 70); ids.Add($"disk{n}.temp"); }
             var used = disk.Sensors.FirstOrDefault(s => s.SensorType == SensorType.Load && s.Name == "Used Space");
-            if (used != null) { AddDynamic($"disk{n}.used", used, MetricGroup.Other, $"{disk.Name.Trim()} · espaço usado", "%", 90, 97); ids.Add($"disk{n}.used"); }
+            // Disco sem volume legível: o LHM diz ~100% sem refletir o uso real (1.3.1)
+            if (used != null && DiskVolumes.HasReadableSpace(disk.Identifier.ToString(), disksWithVolumes)) { AddDynamic($"disk{n}.used", used, MetricGroup.Other, $"{disk.Name.Trim()} · espaço usado", "%", 90, 97); ids.Add($"disk{n}.used"); }
             var act = disk.Sensors.FirstOrDefault(s => s.SensorType == SensorType.Load && s.Name == "Total Activity");
             if (act != null) { AddDynamic($"disk{n}.activity", act, MetricGroup.Other, $"{disk.Name.Trim()} · atividade", "%"); ids.Add($"disk{n}.activity"); }
             _optional.Add((disk, 10, [.. ids])); // SMART é lento; temperatura de disco muda devagar

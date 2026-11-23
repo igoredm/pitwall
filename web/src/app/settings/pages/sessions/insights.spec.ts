@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { DICTS } from '../../../i18n';
-import type { GameSession } from '../../../models';
+import type { Catalog, GameSession } from '../../../models';
 import { sessionInsights } from './insights';
 
 const pt = DICTS['pt-BR'];
@@ -9,6 +9,14 @@ const session = (x: Partial<GameSession> = {}): GameSession => ({ exe: 'FC25.exe
 const ids = (x: Partial<GameSession>) => sessionInsights(session(x), pt).map((i) => i.id);
 
 describe('sessionInsights', () => {
+  test('espaço em disco não entra; outra métrica usa o nome do catálogo', () => {
+    expect(ids({ secondsAboveCrit: { 'disk1.used': 16964 } })).toEqual([]);
+    const cat = { metrics: [{ id: 'disk2.temp', name: 'Fanxiang · temperatura' }] } as unknown as Catalog;
+    const r = sessionInsights(session({ secondsAboveCrit: { 'disk1.used': 900, 'disk2.temp': 60 } }), pt, cat);
+    expect(r.map((i) => i.id)).toEqual(['crit:disk2.temp']);
+    expect(r[0].text).toContain('Fanxiang · temperatura');
+  });
+
   test('sessão sem dados: nada', () => {
     expect(sessionInsights(session(), pt)).toEqual([]);
   });

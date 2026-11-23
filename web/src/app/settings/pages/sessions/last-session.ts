@@ -362,7 +362,7 @@ export class LastSession {
   /** 1.3: "O que segurou o FPS" (até 4). O jogo que fechou com erro já tem a linha própria em cima. */
   protected readonly insights = computed(() => {
     if (this.live()) return [];
-    return sessionInsights(this.session(), this.s())
+    return sessionInsights(this.session(), this.s(), this.t.catalog())
       .filter((i) => i.id !== 'gameExit')
       .slice(0, 4);
   });

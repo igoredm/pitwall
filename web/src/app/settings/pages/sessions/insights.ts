@@ -1,8 +1,8 @@
 import type { Dict } from '../../../i18n';
-import { GameSession, SettingsPage } from '../../../models';
+import { Catalog, GameSession, SettingsPage } from '../../../models';
 import { capitalize, fmtDuration } from '../../format';
 import { num } from '../../reports';
-import { durationSec, perMinute } from './session-util';
+import { critEntries, durationSec, perMinute } from './session-util';
 
 /**
  * 1.3 · "O que segurou o FPS" (docs/v13-contract.md › 2): frases de fato com os números da sessão, nunca diagnóstico.
@@ -35,7 +35,7 @@ export const INSIGHT_RULES = {
  * Regras (todas com números da sessão): GPU no limite / com folga, clock limitado por energia / temperatura, tempo
  * acima do limite crítico (as 2 métricas que mais ficaram, ≥ 30 s), engasgos por minuto e o jogo que fechou com erro.
  */
-export function sessionInsights(x: GameSession, s: Dict): Insight[] {
+export function sessionInsights(x: GameSession, s: Dict, cat?: Catalog | null): Insight[] {
   const v = s.v13;
   const out: Insight[] = [];
   const pct = (a: number) => Math.round(a * 100);
@@ -43,12 +43,12 @@ export function sessionInsights(x: GameSession, s: Dict): Insight[] {
   if (x.gameExit === 'crash') out.push({ id: 'gameExit', tone: 'crit', text: v.insCrash });
   else if (x.gameExit === 'hang') out.push({ id: 'gameExit', tone: 'crit', text: v.insHang });
 
-  const crit = Object.entries(x.secondsAboveCrit ?? {})
+  const crit = critEntries(x)
     .filter(([, sec]) => sec >= INSIGHT_RULES.critSec)
     .sort((a, b) => b[1] - a[1])
     .slice(0, INSIGHT_RULES.critMax);
   for (const [id, sec] of crit) {
-    const name = s.rp.redNames[id] ?? s.rp.rows[id] ?? id;
+    const name = s.rp.redNames[id] ?? s.rp.rows[id] ?? cat?.metrics?.find((m) => m.id === id)?.name ?? id;
     out.push({ id: `crit:${id}`, tone: 'crit', text: v.insCrit(capitalize(name), fmtDuration(sec)) });
   }
 
