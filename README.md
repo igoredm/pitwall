@@ -73,7 +73,7 @@ Short version: Pitwall only reads. It never touches the game, and everything it 
   - CSV in `%LOCALAPPDATA%\Pitwall\logs`, flushed to disk on every line (useful when the PC crashes); old logs are pruned
     (30 days / 500 MB by default). A crash report shows the last 60 s before an unexpected shutdown.
   - GPU tuning through NVIDIA's official NVML only; restored on exit, on game exit and after a crash.
-  - Wireless battery: bundled [Battery Hub](https://github.com/krisgfx9/Wireless-Device-Battery-Monitor) (built from a
+  - Wireless battery: bundled Battery Hub by krisgfx9 ([source history](https://github.com/ferloom/Wireless-Device-Battery-Monitor), original repo currently offline; built from a
     reviewed commit without its network and self-update code, plus our AULA driver in `tools/battery-patches`) and [HeadsetControl](https://github.com/Sapd/HeadsetControl).
 - `web` — Angular 22: widget (`#/widget`) and settings (`#/settings`), served to WebView2 at `https://pitwall.local`.
 - `tests/Pitwall.Tests` — xUnit (`dotnet test`).

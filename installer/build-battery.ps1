@@ -11,6 +11,8 @@
 # Requer MinGW-w64 (winget install BrechtSanders.WinLibs.POSIX.UCRT) e git.
 param(
     [string]$Commit = "7cc44f2b2c63341e2b478463c7467759837a74a9",
+    # Hash da árvore de arquivos do commit revisado: garante o mesmo código, venha de onde vier
+    [string]$Tree = "e3b0176baec2f5964762cb8c5ec93e9bda63fd6d",
     [string]$UpstreamVersion = "1.1.0",
     [string]$HeadsetControlVersion = "4.3.0",
     [string]$HeadsetControlSha256 = "e371da043710ddb8fc70af77f2ccad1cd03f8c6f49ba423e08764ad7a94a3c40"
@@ -28,9 +30,14 @@ if (-not (Get-Command g++ -ErrorAction SilentlyContinue)) {
 }
 
 Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue
-git clone -q https://github.com/krisgfx9/Wireless-Device-Battery-Monitor $work
+# O repositório original (krisgfx9) saiu do ar em 2026-11-22 (conta suspensa). O ferloom preserva o histórico: daqui só
+# usamos o commit revisado, não a reescrita em Rust que está na main dele.
+git clone -q https://github.com/ferloom/Wireless-Device-Battery-Monitor $work
+if ($LASTEXITCODE) { throw "git clone falhou" }
 Push-Location $work
 git checkout -q $Commit
+if ($LASTEXITCODE) { throw "commit $Commit não encontrado" }
+if ((git rev-parse "HEAD^{tree}") -ne $Tree) { throw "o código do commit $Commit não é o revisado" }
 
 # Drivers próprios do Pitwall (tools\battery-patches): hoje o AULA "Infortech" (Kunlun X5, L9, SC880, SC900 V2...).
 $patches = Join-Path $root "tools\battery-patches"

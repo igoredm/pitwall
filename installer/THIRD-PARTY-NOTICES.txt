@@ -28,7 +28,8 @@ qrcode-generator 2.0.4 — Kazuhiko Arase
   Desenha o QR code de pareamento do celular (Configurações → Celular), sem rede e sem imagem externa.
 
 Battery Hub (antes WirelessBattery; Wireless Device Battery Monitor) — krisgfx9
-  Licença: GPL-3.0 — https://github.com/krisgfx9/Wireless-Device-Battery-Monitor
+  Licença: GPL-3.0. Repositório original: github.com/krisgfx9/Wireless-Device-Battery-Monitor (fora do ar desde
+  2026-11-22); o mesmo commit é obtido de https://github.com/ferloom/Wireless-Device-Battery-Monitor
   Programa separado em tools\battery\, executado como "BatteryHub.exe --json" para ler a bateria
   de mouses, headsets, teclados e controles sem fio. Compilado a partir do commit
   7cc44f2b2c63341e2b478463c7467759837a74a9 (v1.1.0) com modificações do Pitwall: (1) um driver novo para mouses
