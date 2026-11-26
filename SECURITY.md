@@ -66,8 +66,8 @@ Details: [docs/updater.md](docs/updater.md).
 ### Bundled third-party binaries
 
 PresentMon and PawnIO are downloaded by the build from their official releases at pinned versions and verified by SHA-256;
-the WebView2 bootstrapper is verified by Microsoft's Authenticode signature; Battery Hub is built from a reviewed commit (network and self-update code removed)
-and HeadsetControl is pinned by hash. See `installer/fetch-deps.ps1`, `installer/build-battery.ps1` and
+the WebView2 bootstrapper is verified by Microsoft's Authenticode signature; Battery Hub is built from a reviewed commit of our fork
+(only a windowless JSON reader, checked to import no network libraries). See `installer/fetch-deps.ps1`, `installer/build-battery.ps1` and
 [installer/THIRD-PARTY-NOTICES.txt](installer/THIRD-PARTY-NOTICES.txt).
 
 ---

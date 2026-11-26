@@ -26,12 +26,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: MinGW (UCRT)
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          install: mingw-w64-ucrt-x86_64-gcc
-          path-type: inherit
+      - name: Rust (battery reader)
+        shell: pwsh
+        run: |
+          rustup toolchain install 1.100.0 --profile minimal --no-self-update
+          rustup default 1.100.0
 
       - name: Inno Setup
         run: choco install innosetup --version 6.7.1 --no-progress -y
@@ -56,11 +55,9 @@ jobs:
         shell: pwsh
         run: ./installer/fetch-deps.ps1
 
-      - name: Battery reader (Battery Hub from reviewed commit)
+      - name: Battery reader (Battery Hub, reviewed commit of our fork)
         shell: pwsh
-        run: |
-          $env:PATH = "${{ runner.temp }}\msys64\ucrt64\bin;$env:PATH"
-          ./installer/build-battery.ps1
+        run: ./installer/build-battery.ps1
 
       - name: Tests
         run: dotnet test tests/Pitwall.Tests/Pitwall.Tests.csproj -c Release

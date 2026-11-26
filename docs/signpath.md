@@ -22,8 +22,8 @@ Antes de enviar:
 
 **Repository:** https://github.com/igoredm/pitwall
 
-**License:** MIT (OSI-approved). `tools/battery-patches/` is GPL-3.0 because it modifies a GPL-3.0 program; it is built
-as a separate executable. No proprietary components are part of the signed code.
+**License:** MIT (OSI-approved). The bundled battery reader is GPL-3.0 (built from our fork of a GPL-3.0 program) and
+ships as a separate executable with its source. No proprietary components are part of the signed code.
 
 **Project description:**
 
@@ -74,8 +74,7 @@ as a separate executable. No proprietary components are part of the signed code.
 | PresentMon 2.6.0 (console) | github.com/GameTechDev/PresentMon release | pinned SHA-256 in `fetch-deps.ps1` | MIT |
 | PawnIO 2.2.0 setup | github.com/namazso/PawnIO.Setup release | pinned SHA-256; official signed installer, run unmodified | GPL-2.0 / LGPL |
 | WebView2 Evergreen bootstrapper | go.microsoft.com (Microsoft) | Authenticode signature must be valid and issued to Microsoft Corporation | Microsoft |
-| Battery Hub | built in CI from reviewed commit `7cc44f2` (v1.1.0) + our patches (AULA driver; network, self-update and PATH lookup removed) | source pinned by commit hash; source zip + diff shipped (GPL) | GPL-3.0 |
-| HeadsetControl 4.3.0 | github.com/Sapd/HeadsetControl release | pinned SHA-256 (upstream PGP signature checked when the pin was set) | GPL-3.0 |
+| Battery Hub (Rust) | built in CI from reviewed commit `96d9bf5` of github.com/igoredm/Wireless-Device-Battery-Monitor (ferloom v1.7.6 + our windowless JSON reader and AULA driver) | commit + tree hash pinned; the binary must import no network DLL; source zip + diff shipped (GPL) | GPL-3.0 |
 | LibreHardwareMonitorLib 0.9.6, WebView2 SDK | NuGet | NuGet package signatures | MPL-2.0 / Microsoft |
 
 > We only request signing for our own files (`Pitwall.exe`, `Pitwall.dll` and the installer). Third-party

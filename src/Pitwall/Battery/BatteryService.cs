@@ -18,10 +18,10 @@ public sealed record WirelessDevice(
     bool Connected);
 
 /// <summary>
-/// Bateria de mouse/headset/teclado/controle sem fio via Battery Hub (ex-WirelessBattery, GPL-3.0, krisgfx9), que roda
-/// como programa separado: "BatteryHub.exe --json" a cada minuto (mesmo intervalo do app original).
-/// Ele fala direto com os dispositivos por HID/Bluetooth; sem software do fabricante. O HeadsetControl ao lado
-/// amplia os headsets suportados.
+/// Bateria de mouse/headset/teclado/controle sem fio via Battery Hub (GPL-3.0; versão em Rust do ferloom, a partir do
+/// original do krisgfx9), que roda como programa separado: "BatteryHub.exe --json" a cada minuto. Desde a 1.5 é o
+/// batteryhub-json do nosso fork (uma leitura, JSON, sai). Ele fala direto com os dispositivos por HID/Bluetooth;
+/// sem software do fabricante.
 /// </summary>
 public sealed partial class BatteryService : IDisposable
 {
