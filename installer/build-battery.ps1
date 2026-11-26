@@ -30,14 +30,14 @@ if (-not (Get-Command g++ -ErrorAction SilentlyContinue)) {
 }
 
 Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue
-# O repositório original (krisgfx9) saiu do ar em 2026-11-22 (conta suspensa). Daqui só usamos o commit revisado.
-# Em 2026-11-25 o ferloom reescreveu o histórico: o commit não está mais em nenhum branch (um clone normal não traz),
-# mas o GitHub ainda entrega pelo hash. O hash da árvore abaixo garante que é o mesmo código.
+# O repositório original (krisgfx9) saiu do ar em 2026-11-22 (conta suspensa) e o ferloom reescreveu o histórico em
+# 2026-11-25. O commit revisado fica guardado no nosso fork (branch pitwall-cpp-7cc44f2); o hash da árvore abaixo
+# garante que é o mesmo código.
 New-Item -ItemType Directory $work | Out-Null
 Push-Location $work
 git init -q
-git fetch -q --depth 1 https://github.com/ferloom/Wireless-Device-Battery-Monitor.git $Commit
-if ($LASTEXITCODE) { throw "commit $Commit não encontrado no ferloom" }
+git fetch -q --depth 1 https://github.com/igoredm/Wireless-Device-Battery-Monitor.git $Commit
+if ($LASTEXITCODE) { throw "commit $Commit não encontrado no fork igoredm" }
 git checkout -q FETCH_HEAD
 if ($LASTEXITCODE) { throw "checkout de $Commit falhou" }
 if ((git rev-parse "HEAD^{tree}") -ne $Tree) { throw "o código do commit $Commit não é o revisado" }
