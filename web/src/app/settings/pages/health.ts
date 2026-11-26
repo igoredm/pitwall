@@ -8,6 +8,7 @@ import { PageHead } from '../page-head';
 import { evCategory, evTime, fmtUp, setHashParams, shortCode } from '../reports';
 import { SettingsCtx } from '../settings-ctx';
 import { EventRow } from './health/event-row';
+import { Installs } from './health/installs';
 import { PcIncidentView } from './health/incident';
 import { eventPills } from './health/pc-view';
 import { PcReadings } from './health/readings';
@@ -15,11 +16,11 @@ import { PcReadings } from './health/readings';
 /**
  * PC › Relatório do PC (docs/design-notes.md › v1.2 › 2): "Agora", a última queda (ou a escolhida no histórico) com os
  * 2 min antes, as últimas medições, os eventos do Windows dos últimos 30 dias e o histórico de incidentes.
- * Âncoras: latest, events, history. ?incident=<id> no hash abre um incidente direto (link de Relatórios de jogo).
+ * Âncoras: latest, events, installs (1.4), history. ?incident=<id> no hash abre um incidente direto (link de Relatórios de jogo).
  */
 @Component({
   selector: 'pw-page-health',
-  imports: [PageHead, Icon, EventRow, PcIncidentView, PcReadings],
+  imports: [PageHead, Icon, EventRow, PcIncidentView, PcReadings, Installs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let sx = s();
@@ -117,6 +118,11 @@ import { PcReadings } from './health/readings';
           <button type="button" class="row bt tight more" (click)="showAll.set(true)"><span class="cap">{{ sx.v13.hiddenState(n) }}</span></button>
         }
       </div>
+    </section>
+
+    <!-- ================================================= 1.4: instalado recentemente -->
+    <section class="sec" data-anchor="installs">
+      <pw-installs [installs]="r ? (r.installs ?? []) : null" [events]="r?.events ?? []" />
     </section>
 
     <!-- ================================================= histórico -->

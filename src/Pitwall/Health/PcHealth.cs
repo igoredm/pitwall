@@ -32,6 +32,8 @@ public sealed class PcHealth
     readonly Lock _eventsGate = new();
     List<PcEvent> _events = [];
     DateTime _eventsAt;
+    List<PcInstall> _installs = [];
+    DateTime _installsAt;
 
     /// <summary>pc-ring.json da execução anterior (lido antes de este processo gravar o seu).</summary>
     public PcRingFile? Previous { get; private set; }
@@ -174,11 +176,24 @@ public sealed class PcHealth
         }
     }
 
+    /// <summary>1.4: o que foi instalado nos últimos 30 dias (cache de até 10 min, como os eventos).</summary>
+    public List<PcInstall> Installs(bool force = false)
+    {
+        lock (_eventsGate)
+        {
+            if (!force && _installsAt != default && DateTime.Now - _installsAt < EventsMaxAge) return _installs;
+            _installs = PcInstalls.Read();
+            _installsAt = DateTime.Now;
+            return _installs;
+        }
+    }
+
     public PcIncidentSummary? Pending => _store.Pending;
 
     public string ReportMessage(bool ringActive)
     {
         var events = Events();
+        var installs = Installs();
         return JsonSerializer.Serialize(new
         {
             type = "pcReport",
@@ -187,6 +202,7 @@ public sealed class PcHealth
             lastCleanExit = _lastCleanExit,
             incidents = _store.List(),
             events,
+            installs,
             ringActive,
         }, ConfigStore.Json);
     }

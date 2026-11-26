@@ -516,8 +516,25 @@ export interface PcReport {
   incidents: PcIncidentSummary[];
   /** Eventos dos últimos 30 dias, mais novos primeiro (≤ 200). */
   events: PcEvent[];
+  /** 1.4: instalado nos últimos 30 dias, mais novos primeiro (≤ 150). Ausente = backend 1.3. */
+  installs?: PcInstall[];
   /** features.crashReport desligado = buffer parado. */
   ringActive: boolean;
+}
+
+/** 1.4: programa, driver ou atualização instalado (Relatório do PC › Instalado recentemente). */
+export interface PcInstall {
+  /** ISO 8601. */
+  time: string;
+  /** Só a data é conhecida (hora = meia-noite). */
+  dateOnly?: boolean;
+  kind: 'program' | 'driver' | 'update' | 'store';
+  name: string;
+  version?: string;
+  /** Editor do programa / provedor do driver. */
+  publisher?: string;
+  /** Driver: net | bluetooth | display | media | hid | usb | storage | printer | system | other. */
+  deviceClass?: string;
 }
 
 /** 1.2: motivo de não haver FPS (snapshot.texts['fps.reason']). */

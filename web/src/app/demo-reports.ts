@@ -4,7 +4,7 @@
  * eventos do Windows, o detalhe de cada incidente (120 s de séries + últimas medições), as sessões com os campos novos
  * (médias, engasgos, marcadores, uma que terminou em queda) e getSessionSeries.
  */
-import { AppConfig, Catalog, GameSession, PcEvent, PcIncident, PcIncidentSummary, PcReading, PcReport, SessionSeries } from './models';
+import { AppConfig, Catalog, GameSession, PcEvent, PcIncident, PcIncidentSummary, PcInstall, PcReading, PcReport, SessionSeries } from './models';
 
 const iso = (ms: number) => new Date(ms).toISOString();
 const min = 60_000;
@@ -160,6 +160,22 @@ export function startReportsDemo(opts: {
   const pending = () => (opts.config().features?.crashReport !== false ? incidents.find((x) => !x.seen) : undefined);
   catalog.pcPending = pending();
 
+  // 1.4: um driver de terceiros alguns dias antes das quedas, e o resto do que costuma aparecer
+  const dayStart = (t: number) => new Date(new Date(t).toDateString()).getTime();
+  const installs: PcInstall[] = empty
+    ? []
+    : [
+        { time: iso(now - 1 * day - 4 * hour), kind: 'update', name: '2026-11 Atualização cumulativa para Windows 11 (KB5070311)' },
+        { time: iso(dayStart(now - 2 * day)), dateOnly: true, kind: 'program', name: 'TeamSpeak', version: '6.0.0', publisher: 'TeamSpeak' },
+        { time: iso(now - 2 * day - 6 * hour), kind: 'store', name: 'Microsoft.WindowsNotepad' },
+        { time: iso(now - 5 * day - 7 * hour), kind: 'driver', name: 'bcmwl63a.inf', version: '7.35.118.40', publisher: 'Broadcom', deviceClass: 'net' },
+        { time: iso(now - 5 * day - 7 * hour), kind: 'driver', name: 'applebtbc.inf', version: '6.0.6100.0', publisher: 'Apple Inc.', deviceClass: 'bluetooth' },
+        { time: iso(now - 5 * day - 7 * hour), kind: 'driver', name: 'bth.inf', version: '10.0.26100.9974', publisher: 'Microsoft', deviceClass: 'bluetooth' },
+        { time: iso(dayStart(now - 8 * day)), dateOnly: true, kind: 'program', name: 'NVIDIA App', version: '11.0.9.585', publisher: 'NVIDIA Corporation' },
+        { time: iso(now - 8 * day - 2 * hour), kind: 'driver', name: 'nvvad.inf', version: '4.92.0.0', publisher: 'NVIDIA', deviceClass: 'media' },
+        { time: iso(dayStart(now - 14 * day)), dateOnly: true, kind: 'program', name: 'Geeks3D FurMark 2.10.2 x64', version: '2.10.2', publisher: 'Geeks3D' },
+      ];
+
   const bootTime = now - 2 * hour - 58 * min;
   const report = (): PcReport => ({
     type: 'pcReport',
@@ -168,6 +184,7 @@ export function startReportsDemo(opts: {
     lastCleanExit: iso(now - 2 * day),
     incidents: incidents.map((x) => ({ ...x })),
     events,
+    installs,
     ringActive: opts.config().features?.crashReport !== false,
   });
 

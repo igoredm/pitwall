@@ -829,3 +829,28 @@ Tipos em `web/src/app/models.ts` (seção "1.3"), exatamente os de `docs/v13-con
   em ordem (eventos, "última gravação" e "PC voltou" quando não há `boot` a ±2 min).
 - **Demo**: `?demo=1` gera o que pede a seção Demo do contrato; `&bench=running` começa um benchmark de 5 min (selo no
   widget); `&exit=crash|hang` marca a última partida.
+
+## 12. 1.4
+
+### 12.1 "Não é um jogo" (página → backend)
+
+`{ "type": "markNotGame", "exe": "X.exe" }`: o exe vai para `games.ignore` (e sai de `games.include`), todas as sessões
+dele são apagadas de sessions.json, inclusive a aberta (o fim dela não grava nada). Só aceita um exe que tenha sessão ou
+seja o jogo atual. Responde com `config` e `sessions` em broadcast. Os CSVs ficam (a limpeza da pasta cuida deles).
+
+### 12.2 Relatório do PC: `installs`
+
+`pcReport.installs` (ausente = backend 1.3): até 150 itens dos últimos 30 dias, mais novos primeiro, cache de 10 min
+junto com os eventos.
+
+| campo | |
+|---|---|
+| `time` | ISO; `dateOnly: true` = só a data é conhecida (InstallDate do registro) |
+| `kind` | `program` (chaves Uninstall, sem SystemComponent/ParentKeyName/updates) · `driver` (Kernel-PnP/Configuration 400, a 1ª vez de cada inf+versão no log; UserPnp 20003 quando não coberto) · `update` (WindowsUpdateClient 19, sem as definições do Defender KB2267602) · `store` (app da Store pelo Windows Update) |
+| `name` | programa / inf original (do DriverStore, não `oemNN.inf`) / serviço / título da atualização |
+| `version`, `publisher` | quando houver (driver de serviço: fabricante pelo VEN_/VID_) |
+| `deviceClass` | driver: net, bluetooth, display, media, hid, usb, storage, printer, system, other |
+
+A página mostra "Principais" (sem Store e sem drivers da Microsoft) ou "Tudo" e, por item, as quedas do PC nos 7 dias
+antes e depois (Kernel-Power 41, 6008, BugCheck, WHEA grave, reinício do driver de vídeo; eventos a até 2 min, ou
+BugCheck a até 15 min, contam como a mesma queda). Coincidência no tempo, sem diagnóstico.

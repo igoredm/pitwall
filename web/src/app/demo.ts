@@ -437,6 +437,16 @@ export function startDemo(t: TelemetryService) {
         catalog.crashReport = undefined;
         send({ ...catalog });
         break;
+      case 'markNotGame': {
+        const exe = String(msg.exe ?? '').toLowerCase();
+        if (!exe) break;
+        if (!config.games.ignore.some((x) => x.toLowerCase() === exe)) config.games.ignore.push(String(msg.exe));
+        config.games.include = config.games.include.filter((x) => x.toLowerCase() !== exe);
+        for (const l of [sessions, history]) for (let i = l.length - 1; i >= 0; i--) if (l[i].exe.toLowerCase() === exe) l.splice(i, 1);
+        send({ type: 'config', config: structuredClone(config) });
+        send({ type: 'sessions', sessions: [...sessions] });
+        break;
+      }
       case 'acceptGameSuggestion':
       case 'dismissGameSuggestion':
         if (suggestion) {

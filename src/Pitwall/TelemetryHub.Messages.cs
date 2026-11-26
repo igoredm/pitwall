@@ -122,6 +122,8 @@ public sealed partial class TelemetryHub
                     });
                     return null;
                 }
+                case "markNotGame":
+                    return MarkNotGame(Str(node["exe"]));
                 case "testAlert":
                     AlertRaised?.Invoke(L.T("Pitwall · aviso de teste", "Pitwall · test alert"),
                         L.T("É assim que o aviso aparece quando uma métrica fica no vermelho.", "This is how the alert looks when a metric stays in the red."));

@@ -261,6 +261,21 @@ public sealed class SessionStore
         lock (_gate) return _sessions.Select(s => s.Exe).Where(e => !string.IsNullOrEmpty(e)).ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// 1.4 ("Não é um jogo"): apaga todas as sessões do exe, inclusive a aberta (o fim dela então não grava nada).
+    /// Devolve quantas saíram.
+    /// </summary>
+    public int RemoveExe(string exe)
+    {
+        lock (_gate)
+        {
+            if (_open != null && string.Equals(_open.Exe, exe, StringComparison.OrdinalIgnoreCase)) _open = null;
+            var removed = _sessions.RemoveAll(s => string.Equals(s.Exe, exe, StringComparison.OrdinalIgnoreCase));
+            if (removed > 0) Save();
+            return removed;
+        }
+    }
+
     /// <summary>1.3: sessões encerradas, mais recente primeiro (sem a aberta).</summary>
     public List<GameSession> Closed()
     {

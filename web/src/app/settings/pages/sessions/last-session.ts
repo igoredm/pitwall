@@ -43,6 +43,7 @@ interface Cell {
         } @else {
           <button type="button" class="btn sm" (click)="share.emit()"><pw-icon name="share" [size]="14" />{{ sx.rp.share }}</button>
         }
+        <button type="button" class="btn sm" [title]="sx.v14.notGameTip" (click)="notGame.emit()">{{ sx.v14.notGame }}</button>
         @if (x.csvFile && t.inHost) {
           <button type="button" class="btn sm" (click)="t.host({ type: 'openLogFile', file: x.csvFile })"><pw-icon name="file" [size]="14" />{{ sx.openCsv }}</button>
         }
@@ -303,6 +304,8 @@ export class LastSession {
   readonly series = input<SessionSeries | null | undefined>(undefined);
   readonly share = output<void>();
   readonly seePc = output<string | null>();
+  /** 1.4: "Não é um jogo". */
+  readonly notGame = output<void>();
 
   protected readonly dur = computed(() => durationSec(this.session(), this.live()));
   protected readonly isCrash = computed(() => crashed(this.session(), this.live()));

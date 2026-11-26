@@ -5,6 +5,7 @@ import { TelemetryService, urlParam } from './telemetry.service';
 import { widgetEn, widgetPt } from './i18n-12-widget';
 import { monitorEn, monitorPt } from './i18n-12-monitor';
 import { v13En, v13Pt } from './i18n-13-reports';
+import { v14En, v14Pt } from './i18n-14';
 
 export type Lang = 'pt-BR' | 'en';
 export type LanguagePref = 'auto' | Lang;
@@ -697,6 +698,7 @@ const ptBR = {
   ...monitorPt,
   ...reportsPt,
   ...v13Pt,
+  ...v14Pt,
 };
 
 export type Dict = typeof ptBR;
@@ -1367,6 +1369,7 @@ const en: Dict = {
   ...monitorEn,
   ...reportsEn,
   ...v13En,
+  ...v14En,
 };
 
 /** Exportado para os testes (npm test); a página usa I18n.s. */

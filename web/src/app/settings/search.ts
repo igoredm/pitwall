@@ -67,6 +67,7 @@ function buildIndex(s: Dict): Entry[] {
   add('health', 'latest', P.health, s.rp.latest, s.rp.healthIntro, 'power', s.rp.searchHealth);
   add('health', 'latest', P.health, s.rp.readingsTitle, s.rp.copyForum, 'health', s.rp.searchReadings);
   add('health', 'events', P.health, s.rp.eventsTitle, s.rp.eventsHint, 'health', s.rp.searchEvents);
+  add('health', 'installs', P.health, s.v14.installsTitle, s.v14.installsHint, 'health', s.v14.searchInstalls);
   add('health', 'history', P.health, s.rp.incHistory, s.rp.keeps20, 'health', s.rp.searchIncidents);
   add('sessions', 'last', P.sessions, s.rp.stutters, s.rp.wholeMatch, 'sessions', s.rp.searchLast);
   add('sessions', 'last', P.sessions, s.rp.avgTitle, s.rp.avgHint, 'sessions', s.rp.searchAvg);

@@ -39,7 +39,7 @@ const PAGE = 20;
       <!-- ================================================= última partida -->
       <section class="sec first" data-anchor="last" data-tour="game-last">
         @if (shown(); as x) {
-          <pw-last-session [session]="x" [live]="isLive(x)" [latest]="isLatest(x)" [series]="lastSeries()" (share)="shareFor.set(x)" (seePc)="seePc($event)" />
+          <pw-last-session [session]="x" [live]="isLive(x)" [latest]="isLatest(x)" [series]="lastSeries()" (share)="shareFor.set(x)" (seePc)="seePc($event)" (notGame)="notGame(x.exe)" />
         } @else {
           <div class="sh"><h2>{{ sx.rp.lastMatch }}</h2></div>
           <div class="grp">
@@ -277,7 +277,9 @@ export class SessionsPage {
     const d = this.ctx.draft();
     const set = new Map<string, string>();
     for (const x of [...this.t.sessions(), ...this.hist().items]) set.set(x.exe.toLowerCase(), x.exe);
-    for (const x of [...(d?.games.include ?? []), ...Object.keys(d?.games.profiles ?? {})]) if (!set.has(x.toLowerCase())) set.set(x.toLowerCase(), x);
+    // 1.4: perfil de um exe marcado como "não é um jogo" não volta para o filtro
+    const ignored = new Set((d?.games.ignore ?? []).map((x) => x.toLowerCase()));
+    for (const x of [...(d?.games.include ?? []), ...Object.keys(d?.games.profiles ?? {})]) if (!set.has(x.toLowerCase()) && !ignored.has(x.toLowerCase())) set.set(x.toLowerCase(), x);
     if (this.exe()) set.set(this.exe().toLowerCase(), this.exe());
     return [...set.values()].sort((a, b) => a.localeCompare(b));
   });
@@ -312,6 +314,27 @@ export class SessionsPage {
   protected open(x: GameSession) {
     this.picked.set(x);
     this.ctx.go('sessions', 'last');
+  }
+
+  /** 1.4: "Não é um jogo": confirma, manda ignorar o exe e tira as partidas dele da página. */
+  protected async notGame(exe: string) {
+    const s = this.s();
+    const ok = await this.ctx.confirm({ title: s.v14.notGameTitle(exe), body: s.v14.notGameBody(exe), confirm: s.v14.notGameConfirm, danger: true });
+    if (!ok) return;
+    this.t.send({ type: 'markNotGame', exe });
+    const same = (x: GameSession) => x.exe.toLowerCase() === exe.toLowerCase();
+    if (this.picked() && same(this.picked()!)) this.picked.set(null);
+    const gone = new Set(this.known().filter(same).map((x) => x.start));
+    if (this.selection().some((st) => gone.has(st))) this.setSelection(this.selection().filter((st) => !gone.has(st)));
+    this.hist.update((h) => ({ ...h, items: h.items.filter((x) => !same(x)) }));
+    if (this.exe().toLowerCase() === exe.toLowerCase()) this.exe.set('');
+    // O backend apaga e manda "sessions" de novo; a primeira página do histórico vem depois disso
+    setTimeout(() => {
+      this.load(0);
+      // A tendência também sai das sessões: pede de novo (outro jogo, se era o deste exe)
+      const te = this.t.trend()?.exe;
+      this.t.requestTrend(te && te.toLowerCase() !== exe.toLowerCase() ? te : undefined);
+    }, 400);
   }
 
   /** Link "Ver relatório do PC": abre o incidente da queda em Relatório do PC. */
