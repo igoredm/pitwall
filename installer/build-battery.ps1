@@ -30,13 +30,16 @@ if (-not (Get-Command g++ -ErrorAction SilentlyContinue)) {
 }
 
 Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue
-# O repositório original (krisgfx9) saiu do ar em 2026-11-22 (conta suspensa). O ferloom preserva o histórico: daqui só
-# usamos o commit revisado, não a reescrita em Rust que está na main dele.
-git clone -q https://github.com/ferloom/Wireless-Device-Battery-Monitor $work
-if ($LASTEXITCODE) { throw "git clone falhou" }
+# O repositório original (krisgfx9) saiu do ar em 2026-11-22 (conta suspensa). Daqui só usamos o commit revisado.
+# Em 2026-11-25 o ferloom reescreveu o histórico: o commit não está mais em nenhum branch (um clone normal não traz),
+# mas o GitHub ainda entrega pelo hash. O hash da árvore abaixo garante que é o mesmo código.
+New-Item -ItemType Directory $work | Out-Null
 Push-Location $work
-git checkout -q $Commit
-if ($LASTEXITCODE) { throw "commit $Commit não encontrado" }
+git init -q
+git fetch -q --depth 1 https://github.com/ferloom/Wireless-Device-Battery-Monitor.git $Commit
+if ($LASTEXITCODE) { throw "commit $Commit não encontrado no ferloom" }
+git checkout -q FETCH_HEAD
+if ($LASTEXITCODE) { throw "checkout de $Commit falhou" }
 if ((git rev-parse "HEAD^{tree}") -ne $Tree) { throw "o código do commit $Commit não é o revisado" }
 
 # Drivers próprios do Pitwall (tools\battery-patches): hoje o AULA "Infortech" (Kunlun X5, L9, SC880, SC900 V2...).
