@@ -30,11 +30,11 @@ qrcode-generator 2.0.4 — Kazuhiko Arase
 Battery Hub — ferloom (versão em Rust), a partir do original de krisgfx9 (antes WirelessBattery)
   Licença: GPL-3.0. Código: https://github.com/ferloom/Wireless-Device-Battery-Monitor ; o Pitwall compila o branch
   "pitwall" do seu fork, https://github.com/igoredm/Wireless-Device-Battery-Monitor (commit
-  96d9bf5b4683f029842c46994977264469c4e22e, sobre a v1.7.6 do ferloom).
+  d5ca4ec7d25da119b1e6e16440ede100520d5b3d, sobre a v1.8 do ferloom).
   Programa separado em tools\battery\, executado como "BatteryHub.exe --json" para ler a bateria de mouses,
   headsets, teclados e controles sem fio. Modificações do Pitwall: (1) src/bin/json.rs, um executável que faz uma
   leitura, imprime JSON e sai (sem janela, sem atualizador; só ele é distribuído, e não importa nenhuma biblioteca
   de rede); (2) src/drivers/aula_infortech.rs, driver para mouses AULA no receptor 38A6 "AULA Receiver" (Kunlun X5,
   L9, SC880, SC900 V2...). O código-fonte correspondente, com o diff das modificações (PITWALL-CHANGES.diff),
-  acompanha a instalação (tools\battery\BatteryHub-source-96d9bf5-pitwall.zip), assim como o texto da licença
+  acompanha a instalação (tools\battery\BatteryHub-source-d5ca4ec-pitwall.zip), assim como o texto da licença
   (tools\battery\LICENSE-GPL-3.0.txt).

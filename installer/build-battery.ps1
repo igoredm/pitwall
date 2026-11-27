@@ -2,7 +2,7 @@
 # fork, github.com/igoredm/Wireless-Device-Battery-Monitor, branch "pitwall".
 # Resultado em tools\battery\ (empacotado pelo instalador como programa separado, com licença e código-fonte).
 #
-# Desde a 1.5 é a versão em Rust do ferloom (v1.7.6), que reescreveu o Battery Hub original do krisgfx9. O branch
+# Desde a 1.5 é a versão em Rust do ferloom (v1.8), que reescreveu o Battery Hub original do krisgfx9. O branch
 # "pitwall" do fork tem só dois acréscimos nossos (veja PITWALL-CHANGES.diff no zip de código-fonte):
 #   * src/bin/json.rs: "batteryhub-json", uma leitura de todos os aparelhos em JSON (mesmos campos do --json antigo)
 #     e sai; sem janela, sem bandeja, sem atualizador. É o único executável que compilamos;
@@ -14,11 +14,11 @@
 #
 # Requer git e Rust (rustup, toolchain >= 1.99).
 param(
-    [string]$Commit = "96d9bf5b4683f029842c46994977264469c4e22e",
+    [string]$Commit = "d5ca4ec7d25da119b1e6e16440ede100520d5b3d",
     # Hash da árvore de arquivos do commit revisado: garante o mesmo código, venha de onde vier
-    [string]$Tree = "26a4b1f06ebbe6d72608b882f02ec6f4bdecc316",
-    # Commit do ferloom em que o branch "pitwall" se baseia (tag v1.7.6): o diff das nossas mudanças sai daqui
-    [string]$Base = "181b371c4c10301c6810acd18601a177085de95b",
+    [string]$Tree = "8f03fe7fe25e5bd36930b51b371efe587ed545ab",
+    # Commit do ferloom em que o branch "pitwall" se baseia (tag v1.8): o diff das nossas mudanças sai daqui
+    [string]$Base = "2139533809e7f71f6f0bd1563ffb76a86faaad24",
     [string]$Repo = "https://github.com/igoredm/Wireless-Device-Battery-Monitor.git"
 )
 $ErrorActionPreference = "Stop"

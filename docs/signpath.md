@@ -74,7 +74,7 @@ ships as a separate executable with its source. No proprietary components are pa
 | PresentMon 2.6.0 (console) | github.com/GameTechDev/PresentMon release | pinned SHA-256 in `fetch-deps.ps1` | MIT |
 | PawnIO 2.2.0 setup | github.com/namazso/PawnIO.Setup release | pinned SHA-256; official signed installer, run unmodified | GPL-2.0 / LGPL |
 | WebView2 Evergreen bootstrapper | go.microsoft.com (Microsoft) | Authenticode signature must be valid and issued to Microsoft Corporation | Microsoft |
-| Battery Hub (Rust) | built in CI from reviewed commit `96d9bf5` of github.com/igoredm/Wireless-Device-Battery-Monitor (ferloom v1.7.6 + our windowless JSON reader and AULA driver) | commit + tree hash pinned; the binary must import no network DLL; source zip + diff shipped (GPL) | GPL-3.0 |
+| Battery Hub (Rust) | built in CI from reviewed commit `d5ca4ec` of github.com/igoredm/Wireless-Device-Battery-Monitor (ferloom v1.8 + our windowless JSON reader and AULA driver) | commit + tree hash pinned; the binary must import no network DLL; source zip + diff shipped (GPL) | GPL-3.0 |
 | LibreHardwareMonitorLib 0.9.6, WebView2 SDK | NuGet | NuGet package signatures | MPL-2.0 / Microsoft |
 
 > We only request signing for our own files (`Pitwall.exe`, `Pitwall.dll` and the installer). Third-party
