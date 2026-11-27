@@ -2,7 +2,8 @@
 
 Descoberto em 2026-11-17 a partir do driver web oficial (https://hub.aulacn.com, SDK "InfortechDevice" embutido
 no bundle). Verificado num **AULA Kunlun X5 Ultra** (PID do mouse `2F08`) pelo receptor `38A6:28F9`.
-Implementado em `tools/battery-patches/aula_infortech.cpp` (driver extra do Battery Hub, ex-WirelessBattery).
+Implementado em `src/drivers/aula_infortech.rs` do nosso fork do Battery Hub
+(https://github.com/igoredm/Wireless-Device-Battery-Monitor, branch `pitwall`). Até a 1.4 era `tools/battery-patches/aula_infortech.cpp`.
 
 ## Dispositivos
 

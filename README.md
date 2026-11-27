@@ -73,20 +73,21 @@ Short version: Pitwall only reads. It never touches the game, and everything it 
   - CSV in `%LOCALAPPDATA%\Pitwall\logs`, flushed to disk on every line (useful when the PC crashes); old logs are pruned
     (30 days / 500 MB by default). A crash report shows the last 60 s before an unexpected shutdown.
   - GPU tuning through NVIDIA's official NVML only; restored on exit, on game exit and after a crash.
-  - Wireless battery: bundled Battery Hub by krisgfx9 ([source history](https://github.com/ferloom/Wireless-Device-Battery-Monitor), original repo currently offline; built from a
-    reviewed commit without its network and self-update code, plus our AULA driver in `tools/battery-patches`) and [HeadsetControl](https://github.com/Sapd/HeadsetControl).
+  - Wireless battery: bundled [Battery Hub](https://github.com/ferloom/Wireless-Device-Battery-Monitor) (Rust, by ferloom, from
+    krisgfx9's original), built from a reviewed commit of [our fork](https://github.com/igoredm/Wireless-Device-Battery-Monitor/tree/pitwall)
+    that adds a windowless `batteryhub-json` reader (no updater, no network imports) and our AULA receiver driver.
 - `web` — Angular 22: widget (`#/widget`) and settings (`#/settings`), served to WebView2 at `https://pitwall.local`.
 - `tests/Pitwall.Tests` — xUnit (`dotnet test`).
 - `installer` — Inno Setup script and build scripts.
 
 ## Building
 
-Requirements: .NET 10 SDK, Node 24, Inno Setup 6, MinGW-w64 (for the battery reader).
+Requirements: .NET 10 SDK, Node 24, Inno Setup 6, Rust 1.99+ (for the battery reader).
 
 ```bash
 cd web && npm ci && npx ng build
 powershell -ExecutionPolicy Bypass -File installer/fetch-deps.ps1      # PresentMon, PawnIO, WebView2 (pinned, verified)
-powershell -ExecutionPolicy Bypass -File installer/build-battery.ps1   # Battery Hub + HeadsetControl
+powershell -ExecutionPolicy Bypass -File installer/build-battery.ps1   # Battery Hub (from our fork)
 powershell -ExecutionPolicy Bypass -File installer/build.ps1 -Version 0.7.0
 ```
 
@@ -114,5 +115,5 @@ after pairing with a code.
 
 ## License
 
-Pitwall's code: [MIT](LICENSE). `tools/battery-patches/` is GPL-3.0 (it modifies Battery Hub).
+Pitwall's code: [MIT](LICENSE). The bundled battery reader is GPL-3.0 and ships as a separate program with its source.
 Bundled third-party programs keep their own licenses — see [installer/THIRD-PARTY-NOTICES.txt](installer/THIRD-PARTY-NOTICES.txt).

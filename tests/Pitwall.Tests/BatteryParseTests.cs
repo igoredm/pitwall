@@ -48,6 +48,21 @@ public class BatteryParseTests
         Assert.Equal(40, d.Percent);
     }
 
+    /// <summary>1.5: saída real do batteryhub-json (Rust, fork igoredm) no PC do autor: campo "full" novo é ignorado.</summary>
+    [Fact]
+    public void RealOutput_RustReader()
+    {
+        const string json = "[{\"key\":\"compx:373b:11d9\",\"name\":\"ATK 8K mouse\",\"via\":\"2.4 GHz receiver\",\"kind\":\"mouse\",\"percent\":-1,\"level\":\"\",\"detail\":\"\",\"charging\":false,\"full\":false,\"asleep\":false,\"connected\":false,\"millivolts\":0,\"graceSec\":1800}," +
+            "{\"key\":\"aula-infortech:38A6:28F9\",\"name\":\"AULA X5 Ultra\",\"via\":\"2.4 GHz receiver\",\"kind\":\"mouse\",\"percent\":91,\"level\":\"\",\"detail\":\"\",\"charging\":false,\"full\":false,\"asleep\":false,\"connected\":true,\"millivolts\":0,\"graceSec\":1800}]\n";
+        var list = BatteryService.Parse(json);
+        Assert.Equal(2, list.Count);
+        Assert.False(list[0].Connected);
+        Assert.Null(list[0].Percent);
+        Assert.Equal("AULA X5 Ultra", list[1].Name);
+        Assert.Equal(91, list[1].Percent);
+        Assert.True(list[1].Connected);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("[]\n")]

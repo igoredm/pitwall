@@ -8,7 +8,7 @@
 
 #define AppName "Pitwall"
 #ifndef AppVersion
-  #define AppVersion "1.4.0"
+  #define AppVersion "1.5.0"
 #endif
 #define AppExe "Pitwall.exe"
 
@@ -133,6 +133,10 @@ Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=
 ; Leitor de bateria com o nome antigo (até a 1.2.1): virou BatteryHub.exe
 Type: files; Name: "{app}\tools\battery\WirelessBattery.exe"
 Type: files; Name: "{app}\tools\battery\WirelessBattery-source-*.zip"
+; 1.5: Battery Hub em Rust (código-fonte novo) e sem HeadsetControl
+Type: files; Name: "{app}\tools\battery\BatteryHub-source-*.zip"
+Type: files; Name: "{app}\tools\battery\headsetcontrol.exe"
+Type: files; Name: "{app}\tools\battery\headsetcontrol-*-source.tar.gz"
 
 [UninstallDelete]
 ; Cache do WebView2. Config (%APPDATA%\Pitwall) e logs (%LOCALAPPDATA%\Pitwall\logs) ficam, como a maioria dos apps.

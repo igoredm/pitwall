@@ -14,8 +14,9 @@
   - Binários de terceiros: versão fixa e verificada (hash ou assinatura) em `installer/fetch-deps.ps1`.
   - O app roda como administrador: trate toda entrada (config, WebSocket, rede, arquivos) como não confiável.
 - PRs pequenos e focados; descreva como testou (hardware, jogo, tema).
-- Ao contribuir, você concorda em licenciar sua contribuição sob a [licença MIT](LICENSE)
-  (exceto `tools/battery-patches/`, GPL-3.0).
+- Ao contribuir, você concorda em licenciar sua contribuição sob a [licença MIT](LICENSE).
+  Mudanças no leitor de bateria (GPL-3.0) vão no nosso fork:
+  [igoredm/Wireless-Device-Battery-Monitor](https://github.com/igoredm/Wireless-Device-Battery-Monitor/tree/pitwall).
 
 ## English
 
@@ -31,5 +32,6 @@
   - Third-party binaries: pinned and verified (hash or signature) in `installer/fetch-deps.ps1`.
   - The app runs as administrator: treat every input (config, WebSocket, network, files) as untrusted.
 - Keep PRs small and focused; describe how you tested (hardware, game, theme).
-- By contributing you agree to license your contribution under the [MIT license](LICENSE)
-  (except `tools/battery-patches/`, GPL-3.0).
+- By contributing you agree to license your contribution under the [MIT license](LICENSE).
+  Changes to the battery reader (GPL-3.0) go to our fork:
+  [igoredm/Wireless-Device-Battery-Monitor](https://github.com/igoredm/Wireless-Device-Battery-Monitor/tree/pitwall).
